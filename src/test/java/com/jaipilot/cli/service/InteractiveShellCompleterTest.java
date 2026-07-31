@@ -21,6 +21,7 @@ class InteractiveShellCompleterTest {
         List<String> values = candidateValues(completer.suggest("/g", 2));
 
         assertTrue(values.contains("/generate"));
+        assertTrue(values.contains("/clean"));
         assertTrue(values.contains("/status"));
     }
 
@@ -82,6 +83,20 @@ class InteractiveShellCompleterTest {
         assertTrue(values.contains("--cached"));
         assertTrue(values.contains("--show-logs"));
         assertTrue(values.contains("--threshold"));
+    }
+
+    @Test
+    void cleanCompletionSuggestsSafeModesOptionsAndClasses() throws Exception {
+        InteractiveShellCompleter completer = completerForSampleProject();
+
+        List<String> values = candidateValues(completer.suggest("/clean ", 7));
+
+        assertTrue(values.contains("--changed"));
+        assertTrue(values.contains("--all"));
+        assertTrue(values.contains("--check"));
+        assertTrue(values.contains("changed"));
+        assertTrue(values.contains("all"));
+        assertTrue(values.contains("OrderService"));
     }
 
     private InteractiveShellCompleter completerForSampleProject() throws Exception {

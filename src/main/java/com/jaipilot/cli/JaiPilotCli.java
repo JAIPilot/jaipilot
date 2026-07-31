@@ -1,5 +1,6 @@
 package com.jaipilot.cli;
 
+import com.jaipilot.cli.commands.CleanCommand;
 import com.jaipilot.cli.commands.DoctorCommand;
 import com.jaipilot.cli.commands.GenerateCommand;
 import com.jaipilot.cli.commands.StatusCommand;
@@ -19,9 +20,10 @@ import picocli.CommandLine.Model.CommandSpec;
         name = "jaipilot",
         mixinStandardHelpOptions = true,
         versionProvider = JaiPilotVersionProvider.class,
-        description = "Generate Java unit tests locally with coding agents.",
+        description = "Generate tests, improve Java code, and track coverage locally with Codex.",
         subcommands = {
             GenerateCommand.class,
+            CleanCommand.class,
             StatusCommand.class,
             DoctorCommand.class
         }

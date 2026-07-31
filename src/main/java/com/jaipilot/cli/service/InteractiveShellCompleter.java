@@ -18,6 +18,7 @@ public final class InteractiveShellCompleter implements Completer {
     private static final Duration CLASS_CACHE_TTL = Duration.ofSeconds(3);
     private static final List<String> ROOT_COMMANDS = List.of(
             "/generate",
+            "/clean",
             "/status",
             "/doctor",
             "/help",
@@ -31,6 +32,14 @@ public final class InteractiveShellCompleter implements Completer {
             "--show-logs"
     );
     private static final List<String> STATUS_OPTIONS = List.of("--threshold", "--cached", "--show-logs");
+    private static final List<String> CLEAN_OPTIONS = List.of(
+            "--changed",
+            "--all",
+            "--check",
+            "--dry-run",
+            "--model",
+            "--show-logs"
+    );
     private static final List<String> THRESHOLD_VALUES = List.of("70", "75", "80", "85", "90", "95");
     private static final List<String> GENERATE_ALL_VALUES = List.of("changed", "uncommitted", "coverage", "for");
     private static final List<String> FOR_VALUES = List.of("uncommitted", "80", "85", "90");
@@ -66,10 +75,43 @@ public final class InteractiveShellCompleter implements Completer {
         }
         return switch (command) {
             case "/generate" -> suggestGenerate(context);
+            case "/clean" -> suggestClean(context);
             case "/status" -> suggestStatus(context);
             case "/doctor", "/help", "/exit", "/quit" -> List.of();
             default -> commandCandidates(ROOT_COMMANDS, "commands", "Top-level shell command");
         };
+    }
+
+    private List<Candidate> suggestClean(CompletionContext context) {
+        if (expectsValue(context, "--model")) {
+            return List.of();
+        }
+        List<Candidate> candidates = new ArrayList<>();
+        for (String option : CLEAN_OPTIONS) {
+            if (!context.tokens().contains(option)) {
+                candidates.add(optionCandidate(option));
+            }
+        }
+        if (cleanSelectorStillAvailable(context) && !context.currentPrefix().startsWith("-")) {
+            candidates.add(simpleValueCandidate("changed", "clean", "Changed production classes (default)"));
+            candidates.add(simpleValueCandidate("all", "clean", "All production classes"));
+            candidates.addAll(classSelectorCandidates(context.currentPrefix()));
+        }
+        return candidates;
+    }
+
+    private boolean cleanSelectorStillAvailable(CompletionContext context) {
+        for (int index = 1; index < context.activeIndex(); index++) {
+            String token = context.tokens().get(index);
+            if ("--model".equals(token)) {
+                index++;
+                continue;
+            }
+            if (!token.startsWith("-")) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private List<Candidate> suggestGenerate(CompletionContext context) {

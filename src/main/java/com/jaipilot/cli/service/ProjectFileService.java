@@ -34,6 +34,8 @@ public final class ProjectFileService {
             ".gradle",
             ".idea",
             ".vscode",
+            ".scannerwork",
+            "node_modules",
             "out"
     );
     private static final Set<String> COPY_EXCLUDED_FILE_NAMES = Set.of(
@@ -111,7 +113,7 @@ public final class ProjectFileService {
             }
         } catch (Exception exception) {
             rollbackFiles(movedPaths, originalContents);
-            throw new IllegalStateException("Failed to merge generated tests transactionally.", exception);
+            throw new IllegalStateException("Failed to merge files transactionally.", exception);
         } finally {
             stagedFiles.values().forEach(staged -> {
                 try {
@@ -129,7 +131,7 @@ public final class ProjectFileService {
             return !Objects.equals(expectedFingerprints.get(path), current);
         }).toList();
         if (!drifted.isEmpty()) {
-            throw new IllegalStateException("Test files changed while batch generation was running: " + drifted);
+            throw new IllegalStateException("Files changed while the isolated workflow was running: " + drifted);
         }
     }
 
@@ -171,6 +173,33 @@ public final class ProjectFileService {
 
     public Map<Path, FileFingerprint> snapshotJavaSourceFiles(Path root) {
         return snapshotFiles(root, this::isJavaSourcePath);
+    }
+
+    public Map<Path, FileFingerprint> snapshotWorkspaceFiles(Path root) {
+        Map<Path, FileFingerprint> snapshot = new LinkedHashMap<>();
+        try {
+            Files.walkFileTree(root, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path directory, BasicFileAttributes attributes) {
+                    String name = directory.getFileName() == null ? "" : directory.getFileName().toString();
+                    if (!directory.equals(root) && COPY_EXCLUDED_DIRECTORY_NAMES.contains(name)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
+                    if (!COPY_EXCLUDED_FILE_NAMES.contains(file.getFileName().toString())) {
+                        snapshot.put(file.normalize(), fingerprint(file));
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to snapshot workspace files under " + root, exception);
+        }
+        return Map.copyOf(snapshot);
     }
 
     private Map<Path, FileFingerprint> snapshotFiles(Path root, Predicate<Path> pathFilter) {

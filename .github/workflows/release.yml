@@ -25,16 +25,24 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
           cache: maven
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Install npm development metadata
+        run: npm ci --ignore-scripts
 
       - name: Resolve version
         id: version
@@ -49,8 +57,11 @@ jobs:
       - name: Smoke test install script
         run: ./scripts/smoke-test-install.sh --version "${{ steps.version.outputs.value }}" --classifier "${{ matrix.classifier }}"
 
+      - name: Smoke test npm installation
+        run: ./scripts/smoke-test-npm.sh --version "${{ steps.version.outputs.value }}" --classifier "${{ matrix.classifier }}"
+
       - name: Upload release assets
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bundled-runtime-${{ matrix.classifier }}
           path: |
@@ -65,16 +76,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download release assets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: target/release-assets
           merge-multiple: true
 
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: JAIPilot CLI ${{ github.ref_name }}
           generate_release_notes: true
@@ -82,3 +93,33 @@ jobs:
             target/release-assets/*.tar.gz
             target/release-assets/*.sha256
             install.sh
+
+  publish-npm:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node for trusted publishing
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Use an OIDC-capable npm CLI
+        run: npm install --global "npm@>=11.5.1 <12"
+
+      - name: Verify release version
+        run: |
+          package_version=$(node -p "require('./package.json').version")
+          test "$package_version" = "${GITHUB_REF_NAME#v}"
+
+      - name: Publish verified npm package
+        run: |
+          npm ci --ignore-scripts
+          npm publish --access public

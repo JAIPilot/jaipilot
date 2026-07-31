@@ -9,6 +9,7 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 POM_FILE="$REPO_ROOT/pom.xml"
 VERSION_PROVIDER_FILE="$REPO_ROOT/src/main/java/com/jaipilot/cli/JaiPilotVersionProvider.java"
+PACKAGE_FILE="$REPO_ROOT/package.json"
 VERSION=""
 PUSH_CHANGES=0
 
@@ -17,9 +18,9 @@ usage() {
 Usage: scripts/release-build.sh --version <version> [--push]
 
 Prepares a new JAIPilot release by:
-  1. Updating the project version.
-  2. Running the full Maven verify build.
-  3. Smoke-testing the install script for that version.
+  1. Updating the Maven, Java, and npm package versions.
+  2. Running the full Maven and npm verification gates.
+  3. Smoke-testing shell and npm installation for that version.
   4. Creating a release commit (including current worktree changes) and annotated git tag.
 
 Options:
@@ -53,12 +54,18 @@ current_branch() {
 update_versions() {
   NEW_VERSION=$1 perl -0pi -e 's#<revision>[^<]+</revision>#<revision>$ENV{NEW_VERSION}</revision>#' "$POM_FILE"
   NEW_VERSION=$1 perl -0pi -e 's/version = "[^"]+";/version = "$ENV{NEW_VERSION}";/' "$VERSION_PROVIDER_FILE"
+  (
+    cd "$REPO_ROOT"
+    npm version "$1" --no-git-tag-version --allow-same-version --ignore-scripts >/dev/null
+  )
 }
 
 ensure_version_applied() {
   expected=$1
   [ "$(current_version)" = "$expected" ] || die "Failed to update pom.xml to version $expected"
   grep -Fq "version = \"$expected\";" "$VERSION_PROVIDER_FILE" || die "Failed to update JaiPilotVersionProvider to version $expected"
+  [ "$(node -p "require('$PACKAGE_FILE').version")" = "$expected" ] \
+    || die "Failed to update package.json to version $expected"
 }
 
 ensure_tag_absent() {
@@ -109,6 +116,8 @@ done
 require_command git
 require_command perl
 require_command grep
+require_command node
+require_command npm
 
 validate_version "$VERSION"
 
@@ -120,13 +129,17 @@ CURRENT_VERSION=$(current_version)
 
 ensure_tag_absent "v$VERSION"
 
-if [ "$CURRENT_VERSION" != "$VERSION" ] || ! grep -Fq "version = \"$VERSION\";" "$VERSION_PROVIDER_FILE"; then
+if [ "$CURRENT_VERSION" != "$VERSION" ] \
+  || ! grep -Fq "version = \"$VERSION\";" "$VERSION_PROVIDER_FILE" \
+  || [ "$(node -p "require('$PACKAGE_FILE').version")" != "$VERSION" ]; then
   update_versions "$VERSION"
   ensure_version_applied "$VERSION"
 fi
 
 ./mvnw -B clean verify
+npm ci --ignore-scripts
 ./scripts/smoke-test-install.sh --version "$VERSION"
+./scripts/smoke-test-npm.sh --version "$VERSION"
 
 commit_and_tag "$VERSION"
 

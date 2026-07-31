@@ -43,7 +43,7 @@ class JunitLlmCommandHelpIntegrationTest {
     }
 
     @Test
-    void rootHelpListsGenerateAndDoctorCommands() {
+    void rootHelpListsGenerateCleanStatusAndDoctorCommands() {
         StringWriter outBuffer = new StringWriter();
         CommandLine commandLine = JaiPilotCommandLineFactory.configure(new CommandLine(new JaiPilotCli()))
                 .setOut(new PrintWriter(outBuffer, true))
@@ -53,9 +53,35 @@ class JunitLlmCommandHelpIntegrationTest {
 
         assertEquals(0, exitCode);
         assertTrue(outBuffer.toString().contains("generate"));
+        assertTrue(outBuffer.toString().contains("clean"));
         assertTrue(outBuffer.toString().contains("doctor"));
         assertTrue(outBuffer.toString().contains("status"));
         assertFalse(outBuffer.toString().contains("login"));
+    }
+
+    @Test
+    void cleanHelpDocumentsSafeTargetAndCheckModes() {
+        String helpOutput = executeHelp("clean");
+
+        assertTrue(helpOutput.contains("--changed"));
+        assertTrue(helpOutput.contains("--all"));
+        assertTrue(helpOutput.contains("--check"));
+        assertTrue(helpOutput.contains("--dry-run"));
+        assertTrue(helpOutput.contains("isolated workspace"));
+    }
+
+    @Test
+    void cleanRejectsConflictingTargetsBeforeRunningWorkflows() {
+        StringWriter errBuffer = new StringWriter();
+        CommandLine commandLine = JaiPilotCommandLineFactory.configure(new CommandLine(new JaiPilotCli()))
+                .setOut(new PrintWriter(new StringWriter(), true))
+                .setErr(new PrintWriter(errBuffer, true));
+
+        int exitCode = commandLine.execute("clean", "OrderService", "--all");
+
+        assertEquals(2, exitCode);
+        assertTrue(errBuffer.toString().contains("Choose only one cleanup target"));
+        assertFalse(errBuffer.toString().contains("Exception"));
     }
 
     @Test

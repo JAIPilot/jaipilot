@@ -63,5 +63,8 @@ Update this file when any of these change:
 - Installed interactive shells check for a newer stable GitHub release at startup and offer update-now or skip; source builds and non-interactive commands do not check.
 - Self-updates install a new versioned payload through the bundled installer while preserving any custom external bin launcher.
 - The CLI UX favors structured sections, tables, coverage meters, cleaned Codex diagnostics, and spinners over raw tool logs or JSON.
+- `jaipilot clean` defaults to changed production classes; explicit class and `--all` targets are supported, while `--check`/`--dry-run` verifies and reports a candidate without merging it.
+- Java cleanup runs Codex only in a disposable workspace, permits production edits only for the selected source allowlist plus Java regression tests, rejects deletions and other changes, clean-build verifies the candidate, detects real-workspace drift, and merges transactionally.
+- The root `jaipilot` npm package is a dependency-free launcher with no install lifecycle script. It checksum-verifies and caches the matching bundled GitHub release on first execution and supports macOS/Linux on x64/aarch64.
 - Coverage discovery accepts XML under `target/site/jacoco*/`, `target/coverage-reports/**/`, and `build/reports/jacoco/**/`, including Gradle's `jacocoTestReport.xml`.
 - Multi-module coverage requires one recognized Maven or Gradle aggregate XML; ambiguous per-module report sets fail instead of producing incorrect target selection.

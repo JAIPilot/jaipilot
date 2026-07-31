@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/assets/jaipilot-logo.svg" alt="JAIPilot logo" width="160" />
   <h1>JAIPilot CLI</h1>
-  <p><strong>Generate Java unit tests locally with Codex and track JaCoCo coverage from the terminal.</strong></p>
+  <p><strong>Generate tests, improve Java code, and track JaCoCo coverage locally with Codex.</strong></p>
   <p>
     <a href="https://github.com/JAIPilot/jaipilot-cli/actions/workflows/ci.yml">
       <img src="https://github.com/JAIPilot/jaipilot-cli/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI">
@@ -15,7 +15,7 @@
   </p>
 </div>
 
-`jaipilot-cli` is a Java-only local workflow. It does not call any custom backend or hosted service. Test generation comes from the coding agent you already use, starting with `codex`.
+`jaipilot-cli` is a local Java workflow. It does not call any custom backend or hosted service. Test generation and verified code cleanup come from the coding agent you already use, starting with `codex`.
 
 ## Watch the Demo
 
@@ -28,6 +28,9 @@ JAIPilot prefers a repository's Maven or Gradle wrapper and falls back to a glob
 - JLine-powered interactive shell with command history, visible Tab completion menus, and inline history suggestions
 - Rich ANSI output with sections, tables, coverage meters, and live phase spinners
 - Java class targeting by path, fully qualified name, or simple unique class name
+- Context-aware Java cleanup in an isolated workspace, with a strict production-file allowlist
+- Clean-build verification before and after cleanup, transactional merging, and concurrent-edit detection
+- Check-only cleanup for CI or review workflows without modifying the project
 - Isolated parallel batch generation with deterministic, collision-safe test merging
 - Allowlisted, isolated repair plus clean full-suite validation and fresh JaCoCo coverage after batch generation
 - Codex-driven project preparation for changed-class batches and as a repair fallback when direct coverage refresh fails
@@ -37,18 +40,34 @@ JAIPilot prefers a repository's Maven or Gradle wrapper and falls back to a glob
 - Per-class and total agent token usage
 - Interactive startup checks that offer to install a newer JAIPilot release or skip it
 - Friendly CLI errors instead of raw stack traces
+- Dependency-free npm launcher with no install lifecycle script and a checksum-verified bundled Java runtime
 
 ## Prerequisites
 
-- Java 17+
 - `codex` installed and already authenticated locally
 - A usable repo-local `mvnw` or `gradlew`, or a globally installed `mvn` or `gradle`, for fresh `status` and coverage-based generation
 - JaCoCo XML reporting configured in the project build for `status` and coverage-based generation; `status --cached` only requires an existing report
 - Optional: a SonarQube or SonarQube Cloud project if you want code-smell and quality-gate analysis for this repository
 
+The bundled release and npm installation include a Java runtime. Running from source requires Java 17+.
+
 ## Install
 
-Install the latest published CLI:
+Install the latest published CLI with npm:
+
+```bash
+npm install --global jaipilot
+```
+
+Or run it without a permanent global launcher:
+
+```bash
+npx jaipilot --version
+```
+
+The npm package has no dependencies and no `postinstall` script. Its first execution uses the repository's hardened installer to download the matching macOS or Linux bundled-runtime release from GitHub, verify its SHA-256 checksum, and cache it under the user's data directory. Later executions launch that verified local runtime directly.
+
+Alternatively, install directly from GitHub Releases:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot-cli/main/install.sh | sh
@@ -111,6 +130,9 @@ Press Tab to open suggestions and complete commands, options, thresholds, and Ja
   /generate all changed          Generate tests for changed or uncommitted production classes.
   /generate all coverage 80      Generate tests for classes below the current threshold.
   /generate <class> --show-logs  Stream live build and Codex logs.
+  /clean [class]                 Improve changed classes by default, or one selected class.
+  /clean all                     Improve all production classes in a verified sandbox.
+  /clean --check                 Report verified improvements without applying them.
   /status                        Refresh full-suite coverage and show classes below threshold.
   /status --cached               Read the existing JaCoCo report without running tests.
   /doctor                        Check local Codex, build, and JaCoCo prerequisites.
@@ -127,12 +149,33 @@ jaipilot generate --changed
 jaipilot generate --coverage-below
 jaipilot generate --coverage-below 80
 jaipilot generate com.acme.OrderService --show-logs
+jaipilot clean
+jaipilot clean com.acme.OrderService
+jaipilot clean --all
+jaipilot clean --check
 jaipilot status
 jaipilot status --threshold 90
 jaipilot status --show-logs
 jaipilot status --cached
 jaipilot doctor
 ```
+
+## Verified Java Cleanup
+
+`jaipilot clean` improves changed Java production classes by default. Pass a class selector for one class, or `--all` for the full production source set. Use `--check` (also available as `--dry-run`) to build and report a candidate without modifying the project; it exits `1` when verified improvements are available.
+
+The cleanup workflow is designed to do more than report static findings:
+
+1. Run the project's clean full test suite to establish a passing baseline.
+2. Copy the project into an isolated temporary workspace without Git metadata or build output.
+3. Give Codex an explicit production-file allowlist and the surrounding project/test context.
+4. Reject production edits outside that allowlist, non-Java edits, file deletions, build changes, and unrelated artifacts.
+5. Permit only allowlisted production edits and Java test edits; the Codex prompt restricts those tests to directly relevant regressions.
+6. Run the clean full test suite against the candidate.
+7. Detect any concurrent changes in the real workspace.
+8. Merge the verified files transactionally, or discard them in check-only mode.
+
+This complements rule-based tools such as SonarQube: static analysis remains useful for broad, repeatable policy checks, while JAIPilot can apply context-aware improvements and prove the resulting project still passes its real build. Performance or superiority claims should be made only from comparable, reproducible project fixtures.
 
 ## What `status` Shows
 
@@ -195,6 +238,7 @@ The bundled Codex prompt templates now live in:
 - `src/main/resources/prompts/prepare-java-project.md`
 - `src/main/resources/prompts/generate-java-tests.md`
 - `src/main/resources/prompts/validate-java-test-batch.md`
+- `src/main/resources/prompts/clean-java-code.md`
 
 JAIPilot fills those templates with project or source-class context at runtime.
 
@@ -212,6 +256,8 @@ JAIPilot fills those templates with project or source-class context at runtime.
 10. JAIPilot merges every touched Java test deterministically and rejects divergent same-path edits from parallel workers.
 11. Batch modes let Codex repair only the generated tests in a disposable workspace, merge those allowlisted repairs transactionally, then run the clean build directly in the real project.
 12. JAIPilot verifies that every touched generated test executed, requires a newly generated JaCoCo XML report, and then prints repository-level coverage summaries. If Codex repair is unavailable, the direct build remains the source of truth.
+
+The `clean` command uses its own isolated, allowlisted, clean-build-verified transaction described above; it does not modify production code through the unit-test generation path.
 
 ## License
 
