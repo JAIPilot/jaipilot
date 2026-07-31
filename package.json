@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "Local OpenRewrite- and Codex-powered Java cleanup, unit-test generation, and JaCoCo coverage workflows.",
   "license": "MIT",
   "type": "module",
