@@ -27,6 +27,8 @@ This file is the durable local memory for Codex-driven JAIPilot runs in this rep
   Stream build output while refreshing clean full-suite coverage.
 - `jaipilot doctor`
   Check Codex, build, git, and coverage prerequisites.
+- `jaipilot clean [class|--changed|--all] [--check]`
+  Run pinned, exactly scoped OpenRewrite cleanup and common-static-analysis recipes, then have Codex review/refine the candidate and independently clean-build verify it before an optional transactional merge.
 
 ## Memory To Keep Fresh
 
@@ -63,5 +65,8 @@ Update this file when any of these change:
 - Installed interactive shells check for a newer stable GitHub release at startup and offer update-now or skip; source builds and non-interactive commands do not check.
 - Self-updates install a new versioned payload through the bundled installer while preserving any custom external bin launcher.
 - The CLI UX favors structured sections, tables, coverage meters, cleaned Codex diagnostics, and spinners over raw tool logs or JSON.
+- `jaipilot clean` defaults to changed production classes; explicit class and `--all` targets are supported, while `--check`/`--dry-run` verifies and reports a candidate without merging it.
+- Java cleanup runs pinned OpenRewrite `CodeCleanup` and `CommonStaticAnalysis` recipes together in a disposable workspace with an exact selected-source precondition and no persisted build configuration. It scope-checks that deterministic candidate before Codex reviews, refines, or reverts it and may add only directly relevant Java regression tests. JAIPilot then rejects deletions, symlinks, and other changes, independently clean-build verifies the candidate, detects real-workspace drift, and merges transactionally.
+- The root `jaipilot` npm package is a dependency-free launcher with no install lifecycle script. It checksum-verifies and caches the matching bundled GitHub release on first execution and supports macOS/Linux on x64/aarch64.
 - Coverage discovery accepts XML under `target/site/jacoco*/`, `target/coverage-reports/**/`, and `build/reports/jacoco/**/`, including Gradle's `jacocoTestReport.xml`.
 - Multi-module coverage requires one recognized Maven or Gradle aggregate XML; ambiguous per-module report sets fail instead of producing incorrect target selection.

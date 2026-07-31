@@ -85,6 +85,35 @@ public final class ProcessExecutor {
             OutputListener outputListener,
             Map<String, String> environmentOverrides
     ) throws IOException, InterruptedException {
+        return execute(
+                command,
+                workingDirectory,
+                timeout,
+                verbose,
+                verboseWriter,
+                stdinText,
+                progressListener,
+                outputListener,
+                environmentOverrides,
+                Integer.MAX_VALUE
+        );
+    }
+
+    public ExecutionResult execute(
+            List<String> command,
+            Path workingDirectory,
+            Duration timeout,
+            boolean verbose,
+            PrintWriter verboseWriter,
+            String stdinText,
+            ProgressListener progressListener,
+            OutputListener outputListener,
+            Map<String, String> environmentOverrides,
+            int maxCapturedCharacters
+    ) throws IOException, InterruptedException {
+        if (maxCapturedCharacters <= 0) {
+            throw new IllegalArgumentException("maxCapturedCharacters must be positive.");
+        }
         ProcessBuilder processBuilder = new ProcessBuilder(command)
                 .directory(workingDirectory.toFile())
                 .redirectErrorStream(true);
@@ -96,7 +125,7 @@ public final class ProcessExecutor {
         try {
             ProgressListener listener = progressListener == null ? ProgressListener.noOp() : progressListener;
             OutputListener lineListener = outputListener == null ? OutputListener.noOp() : outputListener;
-            StringBuilder output = new StringBuilder();
+            CapturedOutput output = new CapturedOutput(maxCapturedCharacters);
             Thread readerThread = new Thread(
                     () -> readOutput(process, output, verbose, verboseWriter, lineListener),
                     "jaipilot-process-reader"
@@ -129,7 +158,7 @@ public final class ProcessExecutor {
             }
             readerThread.join(TimeUnit.SECONDS.toMillis(5));
             int exitCode = finished ? process.exitValue() : -1;
-            ExecutionResult result = new ExecutionResult(command, exitCode, !finished, output.toString(), elapsed);
+            ExecutionResult result = new ExecutionResult(command, exitCode, !finished, output.value(), elapsed);
             listener.onFinish(result, elapsed);
             return result;
         } catch (InterruptedException exception) {
@@ -248,7 +277,7 @@ public final class ProcessExecutor {
 
     private static void readOutput(
             Process process,
-            StringBuilder output,
+            CapturedOutput output,
             boolean verbose,
             PrintWriter verboseWriter,
             OutputListener outputListener
@@ -257,7 +286,7 @@ public final class ProcessExecutor {
                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                output.append(line).append(System.lineSeparator());
+                output.appendLine(line);
                 if (verbose) {
                     verboseWriter.println(line);
                 }
@@ -267,9 +296,35 @@ public final class ProcessExecutor {
                 verboseWriter.flush();
             }
         } catch (IOException exception) {
-            output.append("Failed to read process output: ")
-                    .append(exception.getMessage())
-                    .append(System.lineSeparator());
+            output.appendLine("Failed to read process output: " + exception.getMessage());
+        }
+    }
+
+    private static final class CapturedOutput {
+
+        private final int maximumCharacters;
+        private final StringBuilder value = new StringBuilder();
+
+        private CapturedOutput(int maximumCharacters) {
+            this.maximumCharacters = maximumCharacters;
+        }
+
+        private void appendLine(String line) {
+            String appended = line + System.lineSeparator();
+            if (appended.length() >= maximumCharacters) {
+                value.setLength(0);
+                value.append(appended, appended.length() - maximumCharacters, appended.length());
+                return;
+            }
+            int overflow = value.length() + appended.length() - maximumCharacters;
+            if (overflow > 0) {
+                value.delete(0, overflow);
+            }
+            value.append(appended);
+        }
+
+        private String value() {
+            return value.toString();
         }
     }
 

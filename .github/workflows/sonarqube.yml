@@ -21,13 +21,13 @@ jobs:
     steps:
       - name: Checkout
         if: ${{ env.SONAR_TOKEN != '' && (env.SONAR_HOST_URL != '' || env.SONAR_ORGANIZATION != '') && (github.event_name != 'pull_request' || env.SONAR_ENABLE_PULL_REQUEST_ANALYSIS == 'true') }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Java
         if: ${{ env.SONAR_TOKEN != '' && (env.SONAR_HOST_URL != '' || env.SONAR_ORGANIZATION != '') && (github.event_name != 'pull_request' || env.SONAR_ENABLE_PULL_REQUEST_ANALYSIS == 'true') }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"

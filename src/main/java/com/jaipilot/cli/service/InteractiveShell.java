@@ -188,6 +188,15 @@ public final class InteractiveShell {
             translated.addAll(Arrays.asList(tokens).subList(trailingStart, tokens.length));
             return translated.toArray(String[]::new);
         }
+        if ("clean".equals(tokens[0])) {
+            if (tokens.length >= 2 && "changed".equals(tokens[1])) {
+                return translateCleanMode(tokens, "--changed");
+            }
+            if (tokens.length >= 2 && "all".equals(tokens[1])) {
+                return translateCleanMode(tokens, "--all");
+            }
+            return Arrays.copyOf(tokens, tokens.length);
+        }
         if (!"generate".equals(tokens[0])) {
             return new String[0];
         }
@@ -219,6 +228,14 @@ public final class InteractiveShell {
             return Arrays.copyOf(tokens, tokens.length);
         }
         return new String[0];
+    }
+
+    private String[] translateCleanMode(String[] tokens, String option) {
+        String[] translated = new String[tokens.length];
+        translated[0] = "clean";
+        translated[1] = option;
+        System.arraycopy(tokens, 2, translated, 2, tokens.length - 2);
+        return translated;
     }
 
     private String[] translateGenerateMode(

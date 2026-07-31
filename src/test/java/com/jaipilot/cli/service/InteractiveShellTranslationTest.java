@@ -57,4 +57,20 @@ class InteractiveShellTranslationTest {
                 shell.translate("/status 90% --show-logs")
         );
     }
+
+    @Test
+    void cleanAliasesPreserveCheckAndModelOptions() {
+        assertArrayEquals(
+                new String[] {"clean", "--changed", "--check", "--model", "gpt-5"},
+                shell.translate("/clean changed --check --model gpt-5")
+        );
+        assertArrayEquals(
+                new String[] {"clean", "--all", "--show-logs"},
+                shell.translate("/clean all --show-logs")
+        );
+        assertArrayEquals(
+                new String[] {"clean", "OrderService", "--check"},
+                shell.translate("/clean OrderService --check")
+        );
+    }
 }

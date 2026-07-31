@@ -1,10 +1,7 @@
 package com.jaipilot.cli.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jaipilot.cli.ui.TerminalUi;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -22,7 +19,6 @@ import java.util.regex.Pattern;
 
 public final class CodexCliUnitTestGenerator {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Duration PREPARATION_TIMEOUT = Duration.ofMinutes(30);
     private static final Duration CODEX_TIMEOUT = Duration.ofMinutes(20);
     private static final Pattern TEST_COUNT_PATTERN = Pattern.compile("<testsuite\\b[^>]*\\btests=\"(\\d+)\"");
@@ -30,9 +26,9 @@ public final class CodexCliUnitTestGenerator {
     private final ProjectFileService fileService;
     private final JavaProjectService projectService;
     private final CoverageReportService coverageReportService;
-    private final ProcessExecutor processExecutor;
     private final PromptTemplateService promptTemplateService;
     private final CoverageRefreshService coverageRefreshService;
+    private final CodexCliRunner codexCliRunner;
 
     public CodexCliUnitTestGenerator(ProjectFileService fileService, JavaProjectService projectService) {
         this(
@@ -54,8 +50,8 @@ public final class CodexCliUnitTestGenerator {
         this.fileService = fileService;
         this.projectService = projectService;
         this.coverageReportService = coverageReportService;
-        this.processExecutor = processExecutor;
         this.promptTemplateService = promptTemplateService;
+        this.codexCliRunner = new CodexCliRunner(processExecutor);
         this.coverageRefreshService = new CoverageRefreshService(
                 projectService,
                 coverageReportService,
@@ -65,21 +61,7 @@ public final class CodexCliUnitTestGenerator {
     }
 
     public Optional<String> codexVersion(Path workingDirectory) {
-        try {
-            ProcessExecutor.ExecutionResult result = processExecutor.execute(
-                    List.of("codex", "--version"),
-                    workingDirectory,
-                    Duration.ofSeconds(15),
-                    false,
-                    new PrintWriter(System.err, true)
-            );
-            if (result.exitCode() == 0) {
-                return Optional.of(result.output().trim());
-            }
-        } catch (Exception ignored) {
-            // Ignore and report absence.
-        }
-        return Optional.empty();
+        return codexCliRunner.version(workingDirectory);
     }
 
     public GenerationResult generate(
@@ -527,9 +509,7 @@ public final class CodexCliUnitTestGenerator {
     }
 
     public void ensureCodexAvailable(Path workingDirectory) {
-        if (codexVersion(workingDirectory).isEmpty()) {
-            throw new IllegalStateException("Codex CLI is not installed or not available on PATH.");
-        }
+        codexCliRunner.ensureAvailable(workingDirectory);
     }
 
     private AgentUsage runCodex(
@@ -544,53 +524,29 @@ public final class CodexCliUnitTestGenerator {
             String progressLabel,
             String failurePrefix
     ) throws Exception {
-        List<String> command = buildCodexCommand(model);
-        command.add("exec");
-        command.add("--json");
-        command.add("--skip-git-repo-check");
-        command.add("--ephemeral");
-        command.add("-");
-
-        printLiveLogHeader(ui, logWriter, showLogs, "agent", command);
-        CodexJsonLogRenderer logRenderer = showLogs ? new CodexJsonLogRenderer(ui, logWriter) : null;
-        ProcessExecutor.ExecutionResult result = processExecutor.execute(
-                command,
+        CodexCliRunner.RunResult result = codexCliRunner.run(
                 workingDirectory,
-                timeout,
-                false,
-                logWriter,
+                model,
                 prompt,
-                progressListener(ui, progressLabel, showLogs, showProgress),
-                logRenderer,
-                CoverageRefreshService.buildToolCacheEnvironment(workingDirectory, System.getenv())
+                ui,
+                showLogs,
+                showProgress,
+                logWriter,
+                timeout,
+                progressLabel,
+                failurePrefix
         );
-        if (result.timedOut()) {
-            throw new IllegalStateException(failurePrefix + System.lineSeparator() + "Timed out.");
-        }
-        if (result.exitCode() != 0) {
-            throw new IllegalStateException(
-                    failurePrefix + System.lineSeparator() + summarizeFailure(result.output(), ui)
-            );
-        }
-        return parseUsage(result.output());
+        CodexCliRunner.Usage usage = result.usage();
+        return new AgentUsage(
+                usage.inputTokens(),
+                usage.cachedInputTokens(),
+                usage.outputTokens(),
+                usage.reasoningOutputTokens()
+        );
     }
 
     List<String> buildCodexCommand(String model) {
-        List<String> command = new ArrayList<>();
-        command.add("codex");
-        command.add("-a");
-        command.add("never");
-        command.add("-c");
-        command.add("hide_agent_reasoning=true");
-        command.add("-c");
-        command.add("features.multi_agent=false");
-        command.add("-s");
-        command.add("workspace-write");
-        if (model != null && !model.isBlank()) {
-            command.add("-m");
-            command.add(model.trim());
-        }
-        return command;
+        return codexCliRunner.buildCommand(model);
     }
 
     private CoverageDelta captureCoverageDelta(
@@ -651,98 +607,12 @@ public final class CodexCliUnitTestGenerator {
                 + "Only stop once the repository is buildable, tests pass, and a readable JaCoCo XML report exists.";
     }
 
-    private AgentUsage parseUsage(String output) {
-        AgentUsage usage = AgentUsage.zero();
-        for (String line : output.lines().toList()) {
-            String trimmed = line.trim();
-            if (!trimmed.startsWith("{")) {
-                continue;
-            }
-            try {
-                JsonNode node = OBJECT_MAPPER.readTree(trimmed);
-                if (!"turn.completed".equals(node.path("type").asText())) {
-                    continue;
-                }
-                JsonNode usageNode = node.path("usage");
-                usage = new AgentUsage(
-                        usageNode.path("input_tokens").asLong(0L),
-                        usageNode.path("cached_input_tokens").asLong(0L),
-                        usageNode.path("output_tokens").asLong(0L),
-                        usageNode.path("reasoning_output_tokens").asLong(0L)
-                );
-            } catch (Exception ignored) {
-                // Ignore non-JSON or unexpected lines in mixed output.
-            }
-        }
-        return usage;
-    }
-
-    private ProcessExecutor.ProgressListener progressListener(
-            TerminalUi ui,
-            String label,
-            boolean showLogs,
-            boolean showProgress
-    ) {
-        if (showLogs || !showProgress) {
-            return ProcessExecutor.ProgressListener.noOp();
-        }
-        return ui.spinner(label);
-    }
-
-    private void printLiveLogHeader(
-            TerminalUi ui,
-            PrintWriter logWriter,
-            boolean showLogs,
-            String stage,
-            List<String> command
-    ) {
-        if (!showLogs) {
-            return;
-        }
-        logWriter.printf("%s %s%n", ui.badge(TerminalUi.Tone.PRIMARY, stage), formatCommand(command));
-        logWriter.flush();
-    }
-
-    private String formatCommand(List<String> command) {
-        return command.stream()
-                .map(this::quoteIfNeeded)
-                .reduce((left, right) -> left + " " + right)
-                .orElse("");
-    }
-
     static Map<String, String> buildToolCacheEnvironment(Path workingDirectory, Map<String, String> currentEnvironment) {
         return CoverageRefreshService.buildToolCacheEnvironment(workingDirectory, currentEnvironment);
     }
 
-    private String quoteIfNeeded(String value) {
-        if (value.indexOf(' ') < 0 && value.indexOf('\t') < 0) {
-            return value;
-        }
-        return "\"" + value.replace("\"", "\\\"") + "\"";
-    }
     String summarizeFailure(String output, TerminalUi ui) {
-        CodexJsonLogRenderer renderer = new CodexJsonLogRenderer(
-                ui,
-                new PrintWriter(Writer.nullWriter())
-        );
-        List<String> rendered = (output == null ? List.<String>of() : output.lines().toList()).stream()
-                .map(renderer::render)
-                .filter(value -> value != null && !value.isBlank())
-                .toList();
-        List<String> important = rendered.stream()
-                .filter(value -> {
-                    String lowerCase = value.toLowerCase(java.util.Locale.ROOT);
-                    return lowerCase.contains("error")
-                            || lowerCase.contains("failed")
-                            || lowerCase.contains("warning");
-                })
-                .toList();
-        List<String> selected = important.isEmpty() ? rendered : important;
-        if (selected.isEmpty()) {
-            return "Codex exited without a readable error. Re-run with --show-logs for details.";
-        }
-        int start = Math.max(0, selected.size() - 8);
-        return String.join(System.lineSeparator(), selected.subList(start, selected.size()));
+        return codexCliRunner.summarizeFailure(output, ui);
     }
 
     public record GenerationResult(

@@ -10,17 +10,20 @@ public final class PromptTemplateService {
     private static final String INITIAL_TEMPLATE_PATH = "prompts/generate-java-tests.md";
     private static final String PREPARATION_TEMPLATE_PATH = "prompts/prepare-java-project.md";
     private static final String BATCH_VALIDATION_TEMPLATE_PATH = "prompts/validate-java-test-batch.md";
+    private static final String CLEANUP_TEMPLATE_PATH = "prompts/clean-java-code.md";
 
     private final ProjectFileService fileService;
     private final String initialTemplate;
     private final String preparationTemplate;
     private final String batchValidationTemplate;
+    private final String cleanupTemplate;
 
     public PromptTemplateService(ProjectFileService fileService) {
         this.fileService = Objects.requireNonNull(fileService, "fileService");
         this.initialTemplate = fileService.readResource(INITIAL_TEMPLATE_PATH);
         this.preparationTemplate = fileService.readResource(PREPARATION_TEMPLATE_PATH);
         this.batchValidationTemplate = fileService.readResource(BATCH_VALIDATION_TEMPLATE_PATH);
+        this.cleanupTemplate = fileService.readResource(CLEANUP_TEMPLATE_PATH);
     }
 
     public String buildInitialPrompt(JavaProjectService.JavaClassDescriptor descriptor) {
@@ -52,6 +55,38 @@ public final class PromptTemplateService {
                         .orElse("- None")
         );
         return render(batchValidationTemplate, values);
+    }
+
+    public String buildCleanupPrompt(
+            java.nio.file.Path projectRoot,
+            List<java.nio.file.Path> targetFiles,
+            List<java.nio.file.Path> openRewriteChangedRelativePaths
+    ) {
+        Map<String, String> values = new LinkedHashMap<>();
+        putIfReferenced(cleanupTemplate, values, "PROJECT_ROOT", projectRoot.toString());
+        putIfReferenced(
+                cleanupTemplate,
+                values,
+                "TARGET_FILES",
+                targetFiles.stream()
+                        .map(path -> "- " + path)
+                        .reduce((left, right) -> left + System.lineSeparator() + right)
+                        .orElse("- None")
+        );
+        putIfReferenced(
+                cleanupTemplate,
+                values,
+                "DETERMINISTIC_CLEANUP",
+                openRewriteChangedRelativePaths.isEmpty()
+                        ? "OpenRewrite's targeted cleanup and common static-analysis recipes completed without changing a selected file."
+                        : "OpenRewrite's targeted cleanup and common static-analysis recipes changed these selected files before your review:"
+                                + System.lineSeparator()
+                                + openRewriteChangedRelativePaths.stream()
+                                        .map(path -> "- " + path.toString().replace('\\', '/'))
+                                        .reduce((left, right) -> left + System.lineSeparator() + right)
+                                        .orElseThrow()
+        );
+        return render(cleanupTemplate, values);
     }
 
     private void putIfReferenced(Map<String, String> values, String key, String value) {

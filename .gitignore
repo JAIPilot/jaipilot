@@ -3,8 +3,13 @@ target/
 .idea/
 *.iml
 .classpath
+.classpath.txt
 .project
 .settings/
 github-app/node_modules/
+node_modules/
 github-app/.env
 .codex/
+
+# Local Codex instructions; keep repository guidance in AGENTS.md portable.
+AGENTS.override.md

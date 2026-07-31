@@ -79,6 +79,20 @@ class CodexCliUnitTestGeneratorTest {
     }
 
     @Test
+    void sharedCodexRunnerParsesCompletedTurnUsage() {
+        CodexCliRunner.Usage usage = new CodexCliRunner().parseUsage("""
+                {"type":"thread.started","thread_id":"abc"}
+                {"type":"turn.completed","usage":{"input_tokens":1000,"cached_input_tokens":800,"output_tokens":200,"reasoning_output_tokens":125}}
+                """);
+
+        assertEquals(1_000L, usage.inputTokens());
+        assertEquals(800L, usage.cachedInputTokens());
+        assertEquals(200L, usage.outputTokens());
+        assertEquals(125L, usage.reasoningOutputTokens());
+        assertEquals(1_200L, usage.totalTokens());
+    }
+
+    @Test
     void invalidatingCoverageRemovesTheDiscoveredReport() throws Exception {
         Path firstReport = tempDir.resolve("target/site/jacoco/jacoco.xml");
         Path secondReport = tempDir.resolve("module/target/site/jacoco-it/jacoco.xml");

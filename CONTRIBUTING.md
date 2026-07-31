@@ -7,11 +7,14 @@ Thanks for contributing to JAIPilot.
 - Java 17+
 - Git
 - A POSIX shell environment for the helper scripts
+- Node.js 20+ and npm for package verification
 
 Clone the repo and run:
 
 ```sh
 ./mvnw -B verify
+npm ci --ignore-scripts
+npm run pack:check
 ```
 
 This runs the unit tests, integration tests, packaging, and the install smoke test used in CI.
@@ -28,6 +31,7 @@ Smoke-test the install script:
 
 ```sh
 ./scripts/smoke-test-install.sh
+./scripts/smoke-test-npm.sh
 ```
 
 ## Pull Request Guidelines
@@ -42,7 +46,16 @@ Before opening a pull request, run:
 
 ```sh
 ./mvnw -B verify
+npm ci --ignore-scripts
+./scripts/smoke-test-install.sh
+./scripts/smoke-test-npm.sh
 ```
+
+## Release Publishing
+
+`scripts/release-build.sh` keeps the Maven revision, Java fallback version, `package.json`, and `package-lock.json` aligned. Tag builds publish the bundled runtime archives to GitHub Releases, then publish the dependency-free `jaipilot` launcher to npm.
+
+The npm package should use npm trusted publishing rather than a long-lived token. Before the first automated publication, a package owner must claim `jaipilot` on npm and configure this repository's `release.yml` workflow as its GitHub Actions trusted publisher with `npm publish` permission. The workflow requests `id-token: write`, uses an OIDC-capable npm CLI, and publishes only after all platform release assets exist. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
 
 ## Reporting Bugs
 

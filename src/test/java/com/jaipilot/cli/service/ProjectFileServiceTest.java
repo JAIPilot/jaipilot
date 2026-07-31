@@ -78,11 +78,13 @@ class ProjectFileServiceTest {
         Files.createDirectories(sourceRoot.resolve(".git"));
         Files.createDirectories(sourceRoot.resolve("target/classes"));
         Files.createDirectories(sourceRoot.resolve("build/tmp"));
+        Files.createDirectories(sourceRoot.resolve("node_modules/tool"));
         Files.createDirectories(sourceRoot.resolve("src/main/java/com/example"));
         Path wrapperScript = sourceRoot.resolve("mvnw");
         Files.writeString(sourceRoot.resolve(".git/config"), "[core]");
         Files.writeString(sourceRoot.resolve("target/classes/Example.class"), "compiled");
         Files.writeString(sourceRoot.resolve("build/tmp/output.txt"), "generated");
+        Files.writeString(sourceRoot.resolve("node_modules/tool/index.js"), "generated");
         Files.writeString(sourceRoot.resolve(".DS_Store"), "ignored");
         Files.writeString(sourceRoot.resolve("pom.xml"), "<project/>");
         Files.writeString(wrapperScript, "#!/bin/sh\nexit 0\n");
@@ -98,7 +100,29 @@ class ProjectFileServiceTest {
         assertFalse(Files.exists(destinationRoot.resolve(".git/config")));
         assertFalse(Files.exists(destinationRoot.resolve("target/classes/Example.class")));
         assertFalse(Files.exists(destinationRoot.resolve("build/tmp/output.txt")));
+        assertFalse(Files.exists(destinationRoot.resolve("node_modules/tool/index.js")));
         assertFalse(Files.exists(destinationRoot.resolve(".DS_Store")));
+    }
+
+    @Test
+    void workspaceSnapshotSkipsBuildCachesAndIncludesProjectInputs() throws Exception {
+        Path source = tempDir.resolve("src/main/java/com/example/Example.java");
+        Path buildOutput = tempDir.resolve("target/classes/Example.class");
+        Path dependency = tempDir.resolve("node_modules/tool/index.js");
+        Files.createDirectories(source.getParent());
+        Files.createDirectories(buildOutput.getParent());
+        Files.createDirectories(dependency.getParent());
+        Files.writeString(source, "class Example {}\n");
+        Files.writeString(buildOutput, "compiled");
+        Files.writeString(dependency, "dependency");
+        Files.writeString(tempDir.resolve("pom.xml"), "<project/>\n");
+
+        Map<Path, ProjectFileService.FileFingerprint> snapshot = projectFileService.snapshotWorkspaceFiles(tempDir);
+
+        assertTrue(snapshot.containsKey(source));
+        assertTrue(snapshot.containsKey(tempDir.resolve("pom.xml")));
+        assertFalse(snapshot.containsKey(buildOutput));
+        assertFalse(snapshot.containsKey(dependency));
     }
 
     @Test

@@ -77,4 +77,29 @@ class PromptTemplateServiceTest {
         assertTrue(prompt.contains("- " + generatedTest));
         assertTrue(prompt.contains("Do not edit any path outside the generated test file allowlist"));
     }
+
+    @Test
+    void buildCleanupPromptRequiresScopedBehaviorPreservingVerifiedChanges() {
+        Path projectRoot = tempDir.resolve("sample");
+        Path target = projectRoot.resolve("src/main/java/com/example/OrderService.java");
+
+        String prompt = promptTemplateService.buildCleanupPrompt(
+                projectRoot,
+                java.util.List.of(target),
+                java.util.List.of(Path.of("src/main/java/com/example/OrderService.java"))
+        );
+
+        assertTrue(prompt.contains("Improve the selected Java production code in this isolated workspace."));
+        assertTrue(prompt.contains("Project root: `" + projectRoot + "`"));
+        assertTrue(prompt.contains("- " + target));
+        assertTrue(prompt.contains(
+                "OpenRewrite's targeted cleanup and common static-analysis recipes changed these selected files"
+        ));
+        assertTrue(prompt.contains("- src/main/java/com/example/OrderService.java"));
+        assertTrue(prompt.contains("Keep, refine, or revert each deterministic edit"));
+        assertTrue(prompt.contains("Preserve public APIs, CLI behavior, serialization formats"));
+        assertTrue(prompt.contains("Edit production Java only in the allowlist"));
+        assertTrue(prompt.contains("Do not change correct code merely to produce a diff"));
+        assertTrue(prompt.contains("clean full test suite"));
+    }
 }
