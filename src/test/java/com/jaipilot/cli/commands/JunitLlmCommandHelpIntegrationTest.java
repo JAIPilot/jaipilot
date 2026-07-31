@@ -68,6 +68,7 @@ class JunitLlmCommandHelpIntegrationTest {
         assertTrue(helpOutput.contains("--check"));
         assertTrue(helpOutput.contains("--dry-run"));
         assertTrue(helpOutput.contains("isolated workspace"));
+        assertTrue(helpOutput.contains("OpenRewrite and Codex"));
     }
 
     @Test

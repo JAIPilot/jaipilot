@@ -15,7 +15,7 @@
   </p>
 </div>
 
-`jaipilot-cli` is a local Java workflow. It does not call any custom backend or hosted service. Test generation and verified code cleanup come from the coding agent you already use, starting with `codex`.
+`jaipilot-cli` is a local Java workflow. It does not call any custom backend or hosted service. Test generation comes from the coding agent you already use, starting with `codex`; verified cleanup combines pinned OpenRewrite recipes with Codex's repository-specific review.
 
 ## Watch the Demo
 
@@ -28,7 +28,8 @@ JAIPilot prefers a repository's Maven or Gradle wrapper and falls back to a glob
 - JLine-powered interactive shell with command history, visible Tab completion menus, and inline history suggestions
 - Rich ANSI output with sections, tables, coverage meters, and live phase spinners
 - Java class targeting by path, fully qualified name, or simple unique class name
-- Context-aware Java cleanup in an isolated workspace, with a strict production-file allowlist
+- Hybrid Java cleanup: deterministic OpenRewrite `CodeCleanup` plus `CommonStaticAnalysis`, followed by repository-aware Codex review and refinement
+- Exact production-file recipe scoping in an isolated workspace, without persisting OpenRewrite configuration in the target project
 - Clean-build verification before and after cleanup, transactional merging, and concurrent-edit detection
 - Rejection of out-of-scope edits, deletions, symlink substitutions, build-time source rewrites, and stale candidates
 - Check-only cleanup for CI or review workflows without modifying the project
@@ -43,11 +44,13 @@ JAIPilot prefers a repository's Maven or Gradle wrapper and falls back to a glob
 - Interactive startup checks that offer to install a newer JAIPilot release or skip it
 - Friendly CLI errors instead of raw stack traces
 - Dependency-free npm launcher with no install lifecycle script and a checksum-verified bundled Java runtime
+- Bounded OpenRewrite process output, cancellation-aware timeouts, and explicit per-phase timing
 
 ## Prerequisites
 
 - `codex` installed and already authenticated locally
 - A usable repo-local `mvnw` or `gradlew`, or a globally installed `mvn` or `gradle`, for fresh `status` and coverage-based generation
+- Network access to Maven Central (and the Gradle Plugin Portal for Gradle projects) on the first cleanup run, unless the pinned OpenRewrite artifacts are already cached
 - JaCoCo XML reporting configured in the project build for `status` and coverage-based generation; `status --cached` only requires an existing report
 - Optional: a SonarQube or SonarQube Cloud project if you want code-smell and quality-gate analysis for this repository
 
@@ -132,7 +135,7 @@ Press Tab to open suggestions and complete commands, options, thresholds, and Ja
   /generate all changed          Generate tests for changed or uncommitted production classes.
   /generate all coverage 80      Generate tests for classes below the current threshold.
   /generate <class> --show-logs  Stream live build and Codex logs.
-  /clean [class]                 Improve changed classes by default, or one selected class.
+  /clean [class]                 Run OpenRewrite + Codex on changed classes or one class.
   /clean all                     Improve all production classes in a verified sandbox.
   /clean --check                 Report verified improvements without applying them.
   /status                        Refresh full-suite coverage and show classes below threshold.
@@ -166,16 +169,19 @@ jaipilot doctor
 
 `jaipilot clean` improves changed Java production classes by default. Pass a class selector for one class, or `--all` for the full production source set. Use `--check` (also available as `--dry-run`) to build and report a candidate without modifying the project; it exits `1` when verified improvements are available.
 
-The cleanup workflow is designed to do more than report static findings:
+The cleanup workflow is designed to do more than report static findings. It runs OpenRewrite's pinned [`CodeCleanup`](https://docs.openrewrite.org/recipes/staticanalysis/codecleanup) and [`CommonStaticAnalysis`](https://docs.openrewrite.org/recipes/staticanalysis/commonstaticanalysis) composites in one source-model pass, then uses Codex for contextual judgment:
 
 1. Run the project's clean full test suite to establish a passing baseline.
 2. Copy the project into an isolated temporary workspace without Git metadata or build output.
-3. Give Codex an explicit production-file allowlist and the surrounding project/test context.
-4. Reject production edits outside that allowlist, non-Java edits, file deletions, build changes, and unrelated artifacts.
-5. Permit only allowlisted production edits and Java test edits; the Codex prompt restricts those tests to directly relevant regressions.
-6. Run the clean full test suite against the candidate.
-7. Detect any concurrent changes in the real workspace.
-8. Merge the verified files transactionally, or discard them in check-only mode.
+3. Run OpenRewrite `CodeCleanup` and `CommonStaticAnalysis` once in that sandbox, preconditioned to the exact selected production paths. JAIPilot pins the Maven/Gradle plugin and recipe artifact versions and does not edit the project's build files.
+4. Immediately reject any OpenRewrite deletion, symlink, or edit outside the selected production-file allowlist.
+5. Give Codex the OpenRewrite candidate, explicit production-file allowlist, and surrounding project/test context. Codex must review, retain, refine, or revert each deterministic edit rather than trust it blindly.
+6. Reject production edits outside that allowlist, non-Java edits, file deletions, build changes, and unrelated artifacts. Permit only directly relevant Java regression-test edits in addition to selected production files.
+7. Run the clean full test suite against the combined candidate and reject build-time source rewrites.
+8. Detect any concurrent changes in the real workspace.
+9. Merge the verified files transactionally, or discard them in check-only mode.
+
+Maven cleanup uses the efficient `test-compile` + `runNoFork` path described by the [OpenRewrite Maven plugin](https://docs.openrewrite.org/reference/rewrite-maven-plugin). Gradle cleanup injects the pinned plugin through a temporary init script. Both recipe configuration files live outside the project and are deleted after the run. The terminal reports baseline verification, OpenRewrite, Codex, and candidate-verification durations separately. Initial artifact resolution is expected to be slower; subsequent runs reuse the normal Maven or Gradle caches.
 
 ### JAIPilot compared with SonarQube
 
@@ -183,19 +189,19 @@ JAIPilot is designed to beat finding-only analysis at the complete Java remediat
 
 | Capability | JAIPilot | SonarQube | Stronger today |
 | --- | --- | --- | --- |
-| Repository-specific understanding | Uses the selected source, call sites, build, tests, and local instructions as agent context | Uses deterministic language analyzers and configured rules | JAIPilot for project-specific intent |
-| Remediation output | Produces allowlisted production edits and directly relevant regression tests | Primarily reports issues; automated fixes depend on rule and product support | JAIPilot for end-to-end remediation |
+| Repository-specific understanding | Uses the selected source, call sites, build, tests, local instructions, and deterministic recipe candidate as agent context | Uses deterministic language analyzers and configured rules | JAIPilot for project-specific intent |
+| Remediation output | Applies pinned OpenRewrite recipes, then produces context-reviewed allowlisted edits and directly relevant regression tests | Primarily reports issues; automated fixes depend on rule and product support | JAIPilot for end-to-end remediation |
 | Behavioral proof | Requires a passing clean baseline and independently runs the clean full suite on the candidate | A quality gate proves configured analysis conditions, not application behavior | JAIPilot |
 | Safe application | Disposable sandbox, deletion and symlink rejection, post-build drift checks, concurrent-workspace detection, transactional merge | Does not own the developer's source merge transaction | JAIPilot |
 | Coverage workflow | Refreshes JaCoCo, selects exact under-covered classes, generates tests, and reports before/after coverage | Imports coverage and applies configured coverage gates | JAIPilot for actively raising Java coverage; SonarQube for centralized gates |
 | Failure recovery | Leaves the live project untouched when generation, scope validation, build verification, or merging fails | Reports analysis failure without attempting a source transaction | JAIPilot for remediation recovery |
 | Local operation | No JAIPilot backend, no server administration, and no repository upload to a JAIPilot service | Self-hosted or cloud service with project administration | JAIPilot for zero-administration local workflows |
-| Repeatable static rules | Agent judgment is contextual and model-dependent | Large deterministic rule catalog and configurable quality profiles | SonarQube |
+| Repeatable static rules | Pinned OpenRewrite cleanup and common-static-analysis composites are deterministic; Codex review remains model-dependent | Large deterministic rule catalog and configurable quality profiles | JAIPilot gains a broad deterministic remediation base; SonarQube still has broader configurable analysis profiles |
 | Security data-flow analysis | Can reason about security in repository context but is not a formal taint-analysis engine | Dedicated security rules, taint analysis, and hotspot review | SonarQube |
 | Governance and history | Terminal-first per-run evidence | Dashboards, portfolios, policy administration, trends, and audit history | SonarQube |
 | Language breadth | Focused on Java 17+ workflows | Broad multi-language analysis | SonarQube |
 
-For verified Java remediation, JAIPilot's acceptance bar is deliberately stronger than a static finding: no candidate is accepted until scope checks and the project's real clean build pass, and no candidate is merged over concurrent edits. That is the workflow where JAIPilot can make a defensible "better than SonarQube" claim today.
+For verified Java remediation, JAIPilot's acceptance bar is deliberately stronger than a static finding: deterministic edits receive contextual review, no candidate is accepted until scope checks and the project's real clean build pass, and no candidate is merged over concurrent edits. That is the workflow where JAIPilot can make a defensible "better than SonarQube" claim today.
 
 Broader superiority must be earned on the same repository revisions and measurement boundaries. A comparison should record valid findings, accepted fixes, build and test outcomes, false positives, escaped defects, elapsed time, and reviewer actions. JAIPilot wins a comparison only when it produces more accepted, verified remediations without increasing regressions or false positives. Deterministic rule breadth, formal security analysis, and centralized governance remain explicit product gaps rather than hidden marketing claims.
 

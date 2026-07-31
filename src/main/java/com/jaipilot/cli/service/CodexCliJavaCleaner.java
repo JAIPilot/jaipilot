@@ -20,6 +20,7 @@ public final class CodexCliJavaCleaner {
 
     private final ProjectFileService fileService;
     private final PromptTemplateService promptTemplateService;
+    private final DeterministicCleaner deterministicCleaner;
     private final CleanupAgent cleanupAgent;
     private final BuildVerifier buildVerifier;
 
@@ -27,6 +28,7 @@ public final class CodexCliJavaCleaner {
         this(
                 fileService,
                 new PromptTemplateService(fileService),
+                new OpenRewriteCleanupService(projectService)::clean,
                 defaultAgent(new CodexCliRunner()),
                 new JavaBuildVerificationService(projectService)::verify
         );
@@ -38,8 +40,26 @@ public final class CodexCliJavaCleaner {
             CleanupAgent cleanupAgent,
             BuildVerifier buildVerifier
     ) {
+        this(
+                fileService,
+                promptTemplateService,
+                (root, targets, ui, showLogs, logWriter) ->
+                        new OpenRewriteCleanupService.RewriteResult(List.of(), Duration.ZERO),
+                cleanupAgent,
+                buildVerifier
+        );
+    }
+
+    CodexCliJavaCleaner(
+            ProjectFileService fileService,
+            PromptTemplateService promptTemplateService,
+            DeterministicCleaner deterministicCleaner,
+            CleanupAgent cleanupAgent,
+            BuildVerifier buildVerifier
+    ) {
         this.fileService = Objects.requireNonNull(fileService, "fileService");
         this.promptTemplateService = Objects.requireNonNull(promptTemplateService, "promptTemplateService");
+        this.deterministicCleaner = Objects.requireNonNull(deterministicCleaner, "deterministicCleaner");
         this.cleanupAgent = Objects.requireNonNull(cleanupAgent, "cleanupAgent");
         this.buildVerifier = Objects.requireNonNull(buildVerifier, "buildVerifier");
     }
@@ -74,17 +94,52 @@ public final class CodexCliJavaCleaner {
                     .map(path -> sandboxRoot.resolve(normalizedRoot.relativize(path)).normalize())
                     .toList();
             Map<Path, ProjectFileService.FileFingerprint> sandboxBefore = fileService.snapshotWorkspaceFiles(sandboxRoot);
+            OpenRewriteCleanupService.RewriteResult rewriteResult = deterministicCleaner.improve(
+                    sandboxRoot,
+                    sandboxTargets,
+                    ui,
+                    showLogs,
+                    logWriter
+            );
+            Map<Path, ProjectFileService.FileFingerprint> sandboxAfterRewrite =
+                    fileService.snapshotWorkspaceFiles(sandboxRoot);
+            List<Path> rewriteChangedRelativePaths = changedRelativePaths(
+                    sandboxRoot,
+                    sandboxBefore,
+                    sandboxAfterRewrite
+            );
+            validateScope(
+                    sandboxRoot,
+                    sandboxTargets,
+                    sandboxBefore,
+                    sandboxAfterRewrite,
+                    rewriteChangedRelativePaths,
+                    false,
+                    "OpenRewrite"
+            );
             CodexCliRunner.RunResult agentResult = cleanupAgent.improve(
                     sandboxRoot,
                     model,
-                    promptTemplateService.buildCleanupPrompt(sandboxRoot, sandboxTargets),
+                    promptTemplateService.buildCleanupPrompt(
+                            sandboxRoot,
+                            sandboxTargets,
+                            rewriteChangedRelativePaths
+                    ),
                     ui,
                     showLogs,
                     logWriter
             );
             Map<Path, ProjectFileService.FileFingerprint> sandboxAfter = fileService.snapshotWorkspaceFiles(sandboxRoot);
             List<Path> changedRelativePaths = changedRelativePaths(sandboxRoot, sandboxBefore, sandboxAfter);
-            validateScope(sandboxRoot, sandboxTargets, sandboxBefore, sandboxAfter, changedRelativePaths);
+            validateScope(
+                    sandboxRoot,
+                    sandboxTargets,
+                    sandboxBefore,
+                    sandboxAfter,
+                    changedRelativePaths,
+                    true,
+                    "Cleanup"
+            );
 
             if (changedRelativePaths.isEmpty()) {
                 ensureProjectUnchanged(normalizedRoot, projectBaseline);
@@ -94,6 +149,8 @@ public final class CodexCliJavaCleaner {
                         checkOnly,
                         agentResult.usage(),
                         baseline.elapsed(),
+                        rewriteResult.elapsed(),
+                        rewriteChangedRelativePaths,
                         null,
                         agentResult.elapsed()
                 );
@@ -130,6 +187,8 @@ public final class CodexCliJavaCleaner {
                     checkOnly,
                     agentResult.usage(),
                     baseline.elapsed(),
+                    rewriteResult.elapsed(),
+                    rewriteChangedRelativePaths,
                     candidate.elapsed(),
                     agentResult.elapsed()
             );
@@ -163,7 +222,7 @@ public final class CodexCliJavaCleaner {
         LinkedHashSet<Path> normalized = new LinkedHashSet<>();
         for (JavaProjectService.JavaClassDescriptor target : targets) {
             Path path = target.cutPath().toAbsolutePath().normalize();
-            if (!path.startsWith(projectRoot) || !isProductionJava(path)) {
+            if (!path.startsWith(projectRoot) || !isProductionJava(path) || Files.isSymbolicLink(path)) {
                 throw new IllegalArgumentException("Cleanup target is not a Java production file under the project: " + path);
             }
             normalized.add(path);
@@ -176,7 +235,9 @@ public final class CodexCliJavaCleaner {
             List<Path> sandboxTargets,
             Map<Path, ProjectFileService.FileFingerprint> before,
             Map<Path, ProjectFileService.FileFingerprint> after,
-            List<Path> changedRelativePaths
+            List<Path> changedRelativePaths,
+            boolean allowTests,
+            String phase
     ) {
         Set<Path> allowedProduction = sandboxTargets.stream()
                 .map(path -> sandboxRoot.relativize(path).normalize())
@@ -190,19 +251,20 @@ public final class CodexCliJavaCleaner {
                 continue;
             }
             if (Files.isSymbolicLink(sandboxPath)
-                    || (!allowedProduction.contains(relative) && !isTestJava(sandboxPath))) {
+                    || (!allowedProduction.contains(relative) && !(allowTests && isTestJava(sandboxPath)))) {
                 invalid.add(relative);
             }
         }
         if (!deleted.isEmpty()) {
-            throw new IllegalStateException("Codex cleanup deleted files; deletions are not allowed: " + deleted);
+            throw new IllegalStateException(phase + " cleanup deleted files; deletions are not allowed: " + deleted);
         }
         if (!invalid.isEmpty()) {
-            throw new IllegalStateException("Codex cleanup edited files outside the production/test allowlist: " + invalid);
+            String scope = allowTests ? "production/test allowlist" : "selected production-file allowlist";
+            throw new IllegalStateException(phase + " cleanup edited files outside the " + scope + ": " + invalid);
         }
         for (Path target : sandboxTargets) {
-            if (!before.containsKey(target) || !after.containsKey(target)) {
-                throw new IllegalStateException("Cleanup target disappeared from the isolated workspace: " + target);
+            if (!before.containsKey(target) || !after.containsKey(target) || Files.isSymbolicLink(target)) {
+                throw new IllegalStateException("Cleanup target is missing or symbolic in the isolated workspace: " + target);
             }
         }
     }
@@ -267,6 +329,17 @@ public final class CodexCliJavaCleaner {
     }
 
     @FunctionalInterface
+    interface DeterministicCleaner {
+        OpenRewriteCleanupService.RewriteResult improve(
+                Path sandboxRoot,
+                List<Path> targetFiles,
+                TerminalUi ui,
+                boolean showLogs,
+                PrintWriter logWriter
+        );
+    }
+
+    @FunctionalInterface
     interface CleanupAgent {
         CodexCliRunner.RunResult improve(
                 Path sandboxRoot,
@@ -294,6 +367,8 @@ public final class CodexCliJavaCleaner {
             boolean checkOnly,
             CodexCliRunner.Usage usage,
             Duration baselineVerificationElapsed,
+            Duration openRewriteElapsed,
+            List<Path> openRewriteChangedRelativePaths,
             Duration candidateVerificationElapsed,
             Duration agentElapsed
     ) {

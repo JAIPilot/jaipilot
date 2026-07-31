@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <name>JAIPilot CLI</name>
-    <description>Java CLI for local Codex-driven JUnit generation with JaCoCo validation and coverage reporting.</description>
+    <description>Java CLI for verified OpenRewrite and Codex cleanup, JUnit generation, and JaCoCo coverage reporting.</description>
     <url>https://github.com/JAIPilot/jaipilot-cli</url>
 
     <licenses>

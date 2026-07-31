@@ -20,7 +20,7 @@ import picocli.CommandLine.Model.CommandSpec;
         name = "jaipilot",
         mixinStandardHelpOptions = true,
         versionProvider = JaiPilotVersionProvider.class,
-        description = "Generate tests, improve Java code, and track coverage locally with Codex.",
+        description = "Generate tests, improve Java code with OpenRewrite and Codex, and track coverage locally.",
         subcommands = {
             GenerateCommand.class,
             CleanCommand.class,

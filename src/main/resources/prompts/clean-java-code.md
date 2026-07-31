@@ -6,6 +6,10 @@ Production-file allowlist:
 
 {{TARGET_FILES}}
 
+Deterministic cleanup already performed:
+
+{{DETERMINISTIC_CLEANUP}}
+
 Before editing, read these files if they exist:
 
 - AGENTS.override.md
@@ -15,6 +19,7 @@ Before editing, read these files if they exist:
 Objectives
 
 - Understand each target in its real call graph, module, build, and test context before changing it.
+- Review the OpenRewrite candidate first. Keep, refine, or revert each deterministic edit based on repository context and behavioral value; do not trust or churn it blindly.
 - Make behavior-preserving improvements that materially increase clarity, correctness, maintainability, testability, reliability, security, or measured performance.
 - Consolidate proven duplication, simplify control flow and state, strengthen resource and error handling, remove genuinely unreachable or obsolete code, and use clear Java 17+ idioms where they improve the code.
 - Preserve public APIs, CLI behavior, serialization formats, exception contracts, threading semantics, and observable side effects unless an existing regression test proves they are wrong.

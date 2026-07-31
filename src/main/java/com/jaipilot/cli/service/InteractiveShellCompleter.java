@@ -330,7 +330,7 @@ public final class InteractiveShellCompleter implements Completer {
             case "--coverage-below" -> "Generate tests for classes below a coverage threshold";
             case "--agent" -> "Override the agent provider";
             case "--model" -> "Override the Codex model";
-            case "--show-logs" -> "Stream live Codex logs";
+            case "--show-logs" -> "Stream live workflow logs";
             default -> "Command option";
         };
         return new Candidate(option, option, "option", description, null, null, true);

@@ -30,7 +30,7 @@ class CodexCliJavaCleanerTest {
         List<Path> verifiedRoots = new ArrayList<>();
         CodexCliJavaCleaner cleaner = cleaner(
                 (sandbox, model, prompt, ui, logs, writer) -> {
-                    Files.writeString(sandbox.resolve(sample.targetRelative()), improvedSource());
+                    fileService.writeFile(sandbox.resolve(sample.targetRelative()), improvedSource());
                     Path test = sandbox.resolve("src/test/java/com/example/OrderServiceTest.java");
                     Files.createDirectories(test.getParent());
                     Files.writeString(test, "package com.example; class OrderServiceTest {}\n");
@@ -108,7 +108,10 @@ class CodexCliJavaCleanerTest {
         CodexCliJavaCleaner cleaner = cleaner(
                 (sandbox, model, prompt, ui, logs, writer) -> {
                     Files.writeString(sandbox.resolve(sample.targetRelative()), improvedSource());
-                    Files.writeString(sandbox.resolve(sample.unrelatedRelative()), "package com.example; class Other { int changed; }\n");
+                    fileService.writeFile(
+                            sandbox.resolve(sample.unrelatedRelative()),
+                            "package com.example; class Other { int changed; }\n"
+                    );
                     return runResult();
                 },
                 (root, ui, logs, writer) -> {
@@ -162,6 +165,45 @@ class CodexCliJavaCleanerTest {
 
         assertTrue(failure.getMessage().contains("deletions are not allowed"));
         assertEquals(sample.originalTarget(), Files.readString(sample.target()));
+    }
+
+    @Test
+    void symbolicLinkTargetIsRejectedBeforeAnyBuildOrCleanupRuns() throws Exception {
+        SampleProject sample = createSampleProject();
+        Path external = tempDir.resolve("external.java");
+        Files.writeString(external, sample.originalTarget());
+        Files.delete(sample.target());
+        Files.createSymbolicLink(sample.target(), external);
+        AtomicInteger agentRuns = new AtomicInteger();
+        AtomicInteger verifications = new AtomicInteger();
+        CodexCliJavaCleaner cleaner = cleaner(
+                (sandbox, model, prompt, ui, logs, writer) -> {
+                    agentRuns.incrementAndGet();
+                    return runResult();
+                },
+                (root, ui, logs, writer) -> {
+                    verifications.incrementAndGet();
+                    return verificationResult();
+                }
+        );
+
+        IllegalArgumentException failure = assertThrows(
+                IllegalArgumentException.class,
+                () -> cleaner.clean(
+                        sample.root(),
+                        List.of(sample.descriptor()),
+                        null,
+                        false,
+                        ui(),
+                        false,
+                        new PrintWriter(new StringWriter(), true)
+                )
+        );
+
+        assertTrue(failure.getMessage().contains("not a Java production file"));
+        assertEquals(0, agentRuns.get());
+        assertEquals(0, verifications.get());
+        assertEquals(sample.originalTarget(), Files.readString(external));
     }
 
     @Test
@@ -294,6 +336,91 @@ class CodexCliJavaCleanerTest {
         assertEquals(2, verifications.get());
     }
 
+    @Test
+    void openRewriteRunsBeforeCodexAndItsCandidateIsReportedForReview() throws Exception {
+        SampleProject sample = createSampleProject();
+        List<String> phases = new ArrayList<>();
+        CodexCliJavaCleaner cleaner = cleaner(
+                (sandbox, targets, ui, logs, writer) -> {
+                    phases.add("openrewrite");
+                    assertEquals(List.of(sandbox.resolve(sample.targetRelative())), targets);
+                    fileService.writeFile(sandbox.resolve(sample.targetRelative()), improvedSource());
+                    return new OpenRewriteCleanupService.RewriteResult(
+                            List.of("rewriteRun"),
+                            Duration.ofMillis(15)
+                    );
+                },
+                (sandbox, model, prompt, ui, logs, writer) -> {
+                    phases.add("codex");
+                    assertEquals(improvedSource(), Files.readString(sandbox.resolve(sample.targetRelative())));
+                    assertTrue(prompt.contains("OpenRewrite's targeted cleanup and common static-analysis recipes changed"));
+                    assertTrue(prompt.contains(sample.targetRelative().toString().replace('\\', '/')));
+                    return runResult();
+                },
+                (root, ui, logs, writer) -> verificationResult()
+        );
+
+        CodexCliJavaCleaner.CleanupResult result = cleaner.clean(
+                sample.root(),
+                List.of(sample.descriptor()),
+                null,
+                false,
+                ui(),
+                false,
+                new PrintWriter(new StringWriter(), true)
+        );
+
+        assertEquals(List.of("openrewrite", "codex"), phases);
+        assertEquals(Duration.ofMillis(15), result.openRewriteElapsed());
+        assertEquals(List.of(sample.targetRelative()), result.openRewriteChangedRelativePaths());
+        assertEquals(improvedSource(), Files.readString(sample.target()));
+    }
+
+    @Test
+    void outOfScopeOpenRewriteEditIsRejectedBeforeCodexRuns() throws Exception {
+        SampleProject sample = createSampleProject();
+        AtomicInteger agentRuns = new AtomicInteger();
+        AtomicInteger verifications = new AtomicInteger();
+        CodexCliJavaCleaner cleaner = cleaner(
+                (sandbox, targets, ui, logs, writer) -> {
+                    fileService.writeFile(
+                            sandbox.resolve(sample.unrelatedRelative()),
+                            "package com.example; class Other { int changed; }\n"
+                    );
+                    return new OpenRewriteCleanupService.RewriteResult(
+                            List.of("rewriteRun"),
+                            Duration.ofMillis(15)
+                    );
+                },
+                (sandbox, model, prompt, ui, logs, writer) -> {
+                    agentRuns.incrementAndGet();
+                    return runResult();
+                },
+                (root, ui, logs, writer) -> {
+                    verifications.incrementAndGet();
+                    return verificationResult();
+                }
+        );
+
+        IllegalStateException failure = assertThrows(
+                IllegalStateException.class,
+                () -> cleaner.clean(
+                        sample.root(),
+                        List.of(sample.descriptor()),
+                        null,
+                        false,
+                        ui(),
+                        false,
+                        new PrintWriter(new StringWriter(), true)
+                )
+        );
+
+        assertTrue(failure.getMessage().contains("OpenRewrite cleanup edited files outside"));
+        assertEquals(0, agentRuns.get());
+        assertEquals(1, verifications.get());
+        assertEquals(sample.originalUnrelated(), Files.readString(sample.unrelated()));
+    }
+
     private CodexCliJavaCleaner cleaner(
             CodexCliJavaCleaner.CleanupAgent agent,
             CodexCliJavaCleaner.BuildVerifier verifier
@@ -301,6 +428,20 @@ class CodexCliJavaCleanerTest {
         return new CodexCliJavaCleaner(
                 fileService,
                 new PromptTemplateService(fileService),
+                agent,
+                verifier
+        );
+    }
+
+    private CodexCliJavaCleaner cleaner(
+            CodexCliJavaCleaner.DeterministicCleaner deterministicCleaner,
+            CodexCliJavaCleaner.CleanupAgent agent,
+            CodexCliJavaCleaner.BuildVerifier verifier
+    ) {
+        return new CodexCliJavaCleaner(
+                fileService,
+                new PromptTemplateService(fileService),
+                deterministicCleaner,
                 agent,
                 verifier
         );

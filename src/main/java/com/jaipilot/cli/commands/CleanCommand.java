@@ -21,7 +21,7 @@ import picocli.CommandLine.Spec;
 @Command(
         name = "clean",
         mixinStandardHelpOptions = true,
-        description = "Improves Java code with Codex in an isolated workspace, verifies it, then merges safe changes."
+        description = "Improves Java code with OpenRewrite and Codex in an isolated workspace, verifies it, then merges safe changes."
 )
 public final class CleanCommand implements Callable<Integer> {
 
@@ -62,7 +62,7 @@ public final class CleanCommand implements Callable<Integer> {
 
     @Option(
             names = "--show-logs",
-            description = "Stream live build and Codex logs."
+            description = "Stream live build, OpenRewrite, and Codex logs."
     )
     private boolean showLogs;
 
@@ -89,7 +89,7 @@ public final class CleanCommand implements Callable<Integer> {
         Path projectRoot = projectService.resolveProjectRoot(Path.of("").toAbsolutePath().normalize());
         List<JavaProjectService.JavaClassDescriptor> targets = resolveTargets(projectRoot);
 
-        ui.printBanner("Verified Java cleanup with Codex");
+        ui.printBanner("Verified Java cleanup with OpenRewrite + Codex");
         LinkedHashMap<String, String> metadata = new LinkedHashMap<>();
         metadata.put("project", projectRoot.toString());
         metadata.put("target mode", targetMode());
@@ -129,7 +129,7 @@ public final class CleanCommand implements Callable<Integer> {
 
         ui.section("Result");
         if (result.changedRelativePaths().isEmpty()) {
-            ui.success("Codex found no worthwhile safe cleanup for the selected classes.");
+            ui.success("OpenRewrite and Codex found no worthwhile safe cleanup for the selected classes.");
         } else {
             ui.printTable(
                     List.of("Verified file", "Kind"),
@@ -146,6 +146,8 @@ public final class CleanCommand implements Callable<Integer> {
 
         LinkedHashMap<String, String> summary = new LinkedHashMap<>();
         summary.put("baseline verify", formatDuration(result.baselineVerificationElapsed()));
+        summary.put("openrewrite", formatDuration(result.openRewriteElapsed()));
+        summary.put("rewrite candidates", String.valueOf(result.openRewriteChangedRelativePaths().size()));
         summary.put("codex", formatDuration(result.agentElapsed()));
         summary.put("candidate verify", formatDuration(result.candidateVerificationElapsed()));
         summary.put("changed files", String.valueOf(result.changedRelativePaths().size()));

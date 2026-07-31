@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -114,6 +115,26 @@ class ProcessExecutorTest {
         );
 
         assertProcessStopped(childPid.get(), "Stdin failure left a child process alive");
+    }
+
+    @Test
+    void boundedCaptureRetainsTheMostRecentProcessOutput() throws Exception {
+        ProcessExecutor executor = new ProcessExecutor();
+
+        ProcessExecutor.ExecutionResult result = executor.execute(
+                List.of("sh", "-c", "printf 'discard-this-prefix\\nkeep-this-tail\\n'"),
+                Path.of("").toAbsolutePath(),
+                Duration.ofSeconds(5),
+                false,
+                new PrintWriter(new StringWriter(), true),
+                null,
+                ProcessExecutor.ProgressListener.noOp(),
+                ProcessExecutor.OutputListener.noOp(),
+                Map.of(),
+                15
+        );
+
+        assertEquals("keep-this-tail" + System.lineSeparator(), result.output());
     }
 
     private List<String> childCommand(Path pidFile, boolean closeStdin) {

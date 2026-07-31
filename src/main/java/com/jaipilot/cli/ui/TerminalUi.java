@@ -64,7 +64,7 @@ public final class TerminalUi {
                 new CommandHint("/generate all changed", "Generate tests for changed or uncommitted production classes."),
                 new CommandHint("/generate all coverage 80", "Generate tests for classes below the current threshold."),
                 new CommandHint("/generate <class> --show-logs", "Stream live build and Codex logs."),
-                new CommandHint("/clean [class]", "Improve changed classes by default, or one selected class."),
+                new CommandHint("/clean [class]", "Run OpenRewrite + Codex on changed classes or one class."),
                 new CommandHint("/clean all", "Improve all production classes in a verified sandbox."),
                 new CommandHint("/clean --check", "Report verified improvements without applying them."),
                 new CommandHint("/status", "Refresh full-suite coverage and show classes below threshold."),

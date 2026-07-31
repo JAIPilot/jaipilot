@@ -57,7 +57,11 @@ public final class PromptTemplateService {
         return render(batchValidationTemplate, values);
     }
 
-    public String buildCleanupPrompt(java.nio.file.Path projectRoot, List<java.nio.file.Path> targetFiles) {
+    public String buildCleanupPrompt(
+            java.nio.file.Path projectRoot,
+            List<java.nio.file.Path> targetFiles,
+            List<java.nio.file.Path> openRewriteChangedRelativePaths
+    ) {
         Map<String, String> values = new LinkedHashMap<>();
         putIfReferenced(cleanupTemplate, values, "PROJECT_ROOT", projectRoot.toString());
         putIfReferenced(
@@ -68,6 +72,19 @@ public final class PromptTemplateService {
                         .map(path -> "- " + path)
                         .reduce((left, right) -> left + System.lineSeparator() + right)
                         .orElse("- None")
+        );
+        putIfReferenced(
+                cleanupTemplate,
+                values,
+                "DETERMINISTIC_CLEANUP",
+                openRewriteChangedRelativePaths.isEmpty()
+                        ? "OpenRewrite's targeted cleanup and common static-analysis recipes completed without changing a selected file."
+                        : "OpenRewrite's targeted cleanup and common static-analysis recipes changed these selected files before your review:"
+                                + System.lineSeparator()
+                                + openRewriteChangedRelativePaths.stream()
+                                        .map(path -> "- " + path.toString().replace('\\', '/'))
+                                        .reduce((left, right) -> left + System.lineSeparator() + right)
+                                        .orElseThrow()
         );
         return render(cleanupTemplate, values);
     }
