@@ -30,7 +30,9 @@ JAIPilot prefers a repository's Maven or Gradle wrapper and falls back to a glob
 - Java class targeting by path, fully qualified name, or simple unique class name
 - Context-aware Java cleanup in an isolated workspace, with a strict production-file allowlist
 - Clean-build verification before and after cleanup, transactional merging, and concurrent-edit detection
+- Rejection of out-of-scope edits, deletions, symlink substitutions, build-time source rewrites, and stale candidates
 - Check-only cleanup for CI or review workflows without modifying the project
+- Directly relevant regression-test creation during cleanup instead of finding-only output
 - Isolated parallel batch generation with deterministic, collision-safe test merging
 - Allowlisted, isolated repair plus clean full-suite validation and fresh JaCoCo coverage after batch generation
 - Codex-driven project preparation for changed-class batches and as a repair fallback when direct coverage refresh fails
@@ -175,7 +177,27 @@ The cleanup workflow is designed to do more than report static findings:
 7. Detect any concurrent changes in the real workspace.
 8. Merge the verified files transactionally, or discard them in check-only mode.
 
-This complements rule-based tools such as SonarQube: static analysis remains useful for broad, repeatable policy checks, while JAIPilot can apply context-aware improvements and prove the resulting project still passes its real build. Performance or superiority claims should be made only from comparable, reproducible project fixtures.
+### JAIPilot compared with SonarQube
+
+JAIPilot is designed to beat finding-only analysis at the complete Java remediation journey: understand the repository, make a worthwhile change, prove the candidate against the real clean build, and merge it without overwriting concurrent work. SonarQube remains a useful deterministic scanner and governance platform. They can run together, but they optimize different outcomes.
+
+| Capability | JAIPilot | SonarQube | Stronger today |
+| --- | --- | --- | --- |
+| Repository-specific understanding | Uses the selected source, call sites, build, tests, and local instructions as agent context | Uses deterministic language analyzers and configured rules | JAIPilot for project-specific intent |
+| Remediation output | Produces allowlisted production edits and directly relevant regression tests | Primarily reports issues; automated fixes depend on rule and product support | JAIPilot for end-to-end remediation |
+| Behavioral proof | Requires a passing clean baseline and independently runs the clean full suite on the candidate | A quality gate proves configured analysis conditions, not application behavior | JAIPilot |
+| Safe application | Disposable sandbox, deletion and symlink rejection, post-build drift checks, concurrent-workspace detection, transactional merge | Does not own the developer's source merge transaction | JAIPilot |
+| Coverage workflow | Refreshes JaCoCo, selects exact under-covered classes, generates tests, and reports before/after coverage | Imports coverage and applies configured coverage gates | JAIPilot for actively raising Java coverage; SonarQube for centralized gates |
+| Failure recovery | Leaves the live project untouched when generation, scope validation, build verification, or merging fails | Reports analysis failure without attempting a source transaction | JAIPilot for remediation recovery |
+| Local operation | No JAIPilot backend, no server administration, and no repository upload to a JAIPilot service | Self-hosted or cloud service with project administration | JAIPilot for zero-administration local workflows |
+| Repeatable static rules | Agent judgment is contextual and model-dependent | Large deterministic rule catalog and configurable quality profiles | SonarQube |
+| Security data-flow analysis | Can reason about security in repository context but is not a formal taint-analysis engine | Dedicated security rules, taint analysis, and hotspot review | SonarQube |
+| Governance and history | Terminal-first per-run evidence | Dashboards, portfolios, policy administration, trends, and audit history | SonarQube |
+| Language breadth | Focused on Java 17+ workflows | Broad multi-language analysis | SonarQube |
+
+For verified Java remediation, JAIPilot's acceptance bar is deliberately stronger than a static finding: no candidate is accepted until scope checks and the project's real clean build pass, and no candidate is merged over concurrent edits. That is the workflow where JAIPilot can make a defensible "better than SonarQube" claim today.
+
+Broader superiority must be earned on the same repository revisions and measurement boundaries. A comparison should record valid findings, accepted fixes, build and test outcomes, false positives, escaped defects, elapsed time, and reviewer actions. JAIPilot wins a comparison only when it produces more accepted, verified remediations without increasing regressions or false positives. Deterministic rule breadth, formal security analysis, and centralized governance remain explicit product gaps rather than hidden marketing claims.
 
 ## What `status` Shows
 
