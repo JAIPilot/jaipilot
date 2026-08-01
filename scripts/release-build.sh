@@ -8,8 +8,8 @@ export LC_ALL LANG
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 POM_FILE="$REPO_ROOT/pom.xml"
-VERSION_PROVIDER_FILE="$REPO_ROOT/src/main/java/com/jaipilot/cli/JaiPilotVersionProvider.java"
 PACKAGE_FILE="$REPO_ROOT/package.json"
+PLUGIN_FILES="$REPO_ROOT/plugin/jaipilot/.codex-plugin/plugin.json $REPO_ROOT/plugin/jaipilot/plugin.json $REPO_ROOT/plugin/jaipilot/.claude-plugin/plugin.json"
 VERSION=""
 PUSH_CHANGES=0
 
@@ -18,7 +18,7 @@ usage() {
 Usage: scripts/release-build.sh --version <version> [--push]
 
 Prepares a new JAIPilot release by:
-  1. Updating the Maven, Java, and npm package versions.
+  1. Updating the Maven, npm, and cross-agent plugin versions.
   2. Running the full Maven and npm verification gates.
   3. Smoke-testing shell and npm installation for that version.
   4. Creating a release commit (including current worktree changes) and annotated git tag.
@@ -53,7 +53,9 @@ current_branch() {
 
 update_versions() {
   NEW_VERSION=$1 perl -0pi -e 's#<revision>[^<]+</revision>#<revision>$ENV{NEW_VERSION}</revision>#' "$POM_FILE"
-  NEW_VERSION=$1 perl -0pi -e 's/version = "[^"]+";/version = "$ENV{NEW_VERSION}";/' "$VERSION_PROVIDER_FILE"
+  for plugin_file in $PLUGIN_FILES; do
+    NEW_VERSION=$1 perl -0pi -e 's#"version"\s*:\s*"[^"]+"#"version": "$ENV{NEW_VERSION}"#' "$plugin_file"
+  done
   (
     cd "$REPO_ROOT"
     npm version "$1" --no-git-tag-version --allow-same-version --ignore-scripts >/dev/null
@@ -63,9 +65,12 @@ update_versions() {
 ensure_version_applied() {
   expected=$1
   [ "$(current_version)" = "$expected" ] || die "Failed to update pom.xml to version $expected"
-  grep -Fq "version = \"$expected\";" "$VERSION_PROVIDER_FILE" || die "Failed to update JaiPilotVersionProvider to version $expected"
   [ "$(node -p "require('$PACKAGE_FILE').version")" = "$expected" ] \
     || die "Failed to update package.json to version $expected"
+  for plugin_file in $PLUGIN_FILES; do
+    grep -Fq "\"version\": \"$expected\"" "$plugin_file" \
+      || die "Failed to update plugin version in $plugin_file"
+  done
 }
 
 ensure_tag_absent() {
@@ -130,7 +135,6 @@ CURRENT_VERSION=$(current_version)
 ensure_tag_absent "v$VERSION"
 
 if [ "$CURRENT_VERSION" != "$VERSION" ] \
-  || ! grep -Fq "version = \"$VERSION\";" "$VERSION_PROVIDER_FILE" \
   || [ "$(node -p "require('$PACKAGE_FILE').version")" != "$VERSION" ]; then
   update_versions "$VERSION"
   ensure_version_applied "$VERSION"

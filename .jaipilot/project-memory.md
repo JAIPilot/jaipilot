@@ -1,72 +1,58 @@
 # JAIPilot Project Memory
 
-This file is the durable local memory for Codex-driven JAIPilot runs in this repository.
+This is the durable implementation memory for JAIPilot MCP. Keep evolving facts here; keep stable repository rules in `AGENTS.md` and reusable agent procedures in `plugin/jaipilot/skills/`.
 
-## Current Workflow Direction
+## Current Direction
 
-- Prefer the backend-free local workflow.
-- Use `codex` as the generation engine.
-- Use the JAIPilot CLI as the orchestrator.
-- Do not depend on any custom backend or hosted service for local test generation.
+- `main` is MCP- and Agent-Skills-native from 2.0.0 onward. The prior CLI is archived at `archive/cli-v1.0.16` and tag `v1.0.16`.
+- The product is a local stdio MCP server. It has no interactive shell, custom backend, hosted generation API, or embedded model provider.
+- The connected coding agent owns reasoning and source edits. JAIPilot owns deterministic project discovery, target selection, isolation, OpenRewrite, validation evidence, drift protection, and transactional apply.
+- stdout is JSON-RPC only. Diagnostics and installation receipts use stderr.
 
-## Command Surface
+## MCP Surface
 
-- `jaipilot`
-  Opens the interactive shell.
-- `jaipilot generate <class>`
-  Generate tests for one class without broad repository preparation.
-- `jaipilot generate --changed`
-  Generate tests for uncommitted Java production classes.
-- `jaipilot generate --coverage-below 80`
-  Refresh clean full-suite coverage, then generate tests only for classes below the threshold in that exact snapshot.
-- `jaipilot status`
-  Refresh clean full-suite coverage, then show JaCoCo totals, test-file presence, and classes below the threshold.
-- `jaipilot status --cached`
-  Explicitly read existing JaCoCo XML without running tests; warn that it may reflect an older or focused run.
-- `jaipilot status --show-logs`
-  Stream build output while refreshing clean full-suite coverage.
-- `jaipilot doctor`
-  Check Codex, build, git, and coverage prerequisites.
-- `jaipilot clean [class|--changed|--all] [--check]`
-  Run pinned, exactly scoped OpenRewrite cleanup and common-static-analysis recipes, then have Codex review/refine the candidate and independently clean-build verify it before an optional transactional merge.
+- `jaipilot_inspect_project`: read build/project/coverage/run metadata.
+- `jaipilot_prepare_tests`: clean-baseline and isolate named, changed, all, or fresh-coverage-selected production classes.
+- `jaipilot_prepare_cleanup`: clean-baseline, isolate, and run exact-scoped OpenRewrite first.
+- `jaipilot_get_run`: inspect active run state.
+- `jaipilot_read_run_file` / `jaipilot_write_run_file`: bounded fallback for hosts without direct sandbox filesystem access.
+- `jaipilot_validate_run`: enforce scope, build, test execution, coverage, and build-drift gates.
+- `jaipilot_apply_run`: apply only an immediately validated and unchanged candidate transactionally.
+- `jaipilot_discard_run`: delete the isolated candidate.
 
-## Memory To Keep Fresh
+## Workflow Invariants
 
-Update this file when any of these change:
+- Default test coverage target is 80%.
+- Maven wrapper is preferred only when executable `mvnw` and `.mvn/wrapper/maven-wrapper.properties` both exist.
+- Gradle wrapper is preferred only when executable `gradlew` and `gradle/wrapper/gradle-wrapper.properties` both exist.
+- Fresh Maven coverage uses `<wrapper-or-mvn> -B clean verify`.
+- Fresh Gradle coverage uses `<wrapper-or-gradle> --no-daemon clean test jacocoTestReport`, or `clean testCodeCoverageReport` for coverage aggregation.
+- Coverage refresh invalidates recognized XML first, is protected by a project-scoped lock, and never falls back to stale or partial reports after failure.
+- Coverage selection uses the immutable snapshot returned by the same clean refresh.
+- Coverage discovery accepts reports under `target/site/jacoco*/`, `target/coverage-reports/**/`, and `build/reports/jacoco/**/`. Ambiguous multi-module reports fail unless one aggregate report is identifiable.
+- Test generation can change only `src/test/java/**/*.java`. Production files and build configuration are immutable in that workflow.
+- Changed tests must have a newly generated Surefire, Failsafe, or Gradle XML report with non-zero execution.
+- Cleanup runs pinned OpenRewrite `CodeCleanup` and `CommonStaticAnalysis` recipes in one scoped sandbox pass without persisting build configuration. The agent reviews the result and may change only selected production Java plus directly relevant Java tests.
+- Preparing captures complete non-excluded live and sandbox snapshots. Validation rejects deletion, symlinks, invalid scope, build-time source drift, and missing test evidence. Apply rejects post-validation candidate drift and any live-worktree drift.
+- Active work is capped at four runs globally and one per real project. Runs expire after two hours and operations on one run are serialized.
+- MCP file reads/writes are UTF-8, traversal- and symlink-safe, allowlisted, and capped at 262,144 characters.
 
-- preferred build, test, and coverage commands per build tool
-- confirmed JaCoCo XML report path
-- coverage report discovery rules
-- mocking and fixture conventions
-- known module-specific quirks
-- stable examples of good generated tests
+## Quality Position
 
-## Current Known Defaults
+- JAIPilot should beat static-finding-only workflows at useful verified local remediation and unit-test creation.
+- “Better than SonarQube” is defensible only for a scoped, measured workflow where JAIPilot produces more accepted, behaviorally verified remediations without more regressions or false positives.
+- Do not make universal or “supreme” claims. SonarQube remains stronger for broad deterministic security analysis, quality governance, portfolios, and historical dashboards; OpenRewrite remains the deterministic transformation engine JAIPilot leverages.
+- Compare accepted fixes, false positives, escaped defects, generated-test quality, build/test outcomes, coverage, elapsed time, reviewer actions, cancellation, and recovery using identical revisions and boundaries.
 
-- Maven wrapper is preferred only when `mvnw` and `.mvn/wrapper/maven-wrapper.properties` both exist.
-- Gradle wrapper is preferred only when `gradlew` and `gradle/wrapper/gradle-wrapper.properties` both exist.
-- Default coverage threshold is `80%`.
-- Fresh coverage invalidates recognized JaCoCo XML first, then runs `<wrapper-or-mvn> -B clean verify` for Maven, `<wrapper-or-gradle> --no-daemon clean test jacocoTestReport` for standard Gradle, or `<wrapper-or-gradle> --no-daemon clean testCodeCoverageReport` for Gradle aggregation.
-- A failed, timed-out, unreadable, or report-less refresh removes partial output and never falls back to stale JaCoCo XML.
-- Coverage refreshes use a project-scoped cross-process lock; overlapping status or generation refreshes fail before invalidation.
-- `status` refreshes clean full-suite coverage by default; `status --cached` is the explicit no-build escape hatch and must display a stale/focused-report warning.
-- Status test-file presence is a naming heuristic only; fresh JaCoCo counters, not the presence label, prove execution coverage.
-- Explicit class generation skips the repository preparation pass so Codex focuses on the requested class and its generated test.
-- Explicit class generation reports target-class coverage only; focused JaCoCo runs can overwrite whole-project totals with single-test execution data.
-- Changed-class batches prepare the repository before the direct clean refresh.
-- Coverage-based batches run the direct clean refresh first and invoke Codex preparation only as a repair fallback, so zero-miss runs do not spend agent tokens.
-- Coverage-based generation selects below-threshold classes from the exact immutable snapshot returned by that refresh, not by rereading mutable report files later.
-- Parallel workers return every touched Java test; JAIPilot merges non-conflicting outputs deterministically and rejects divergent same-path edits.
-- JAIPilot disables nested Codex agents inside workers because the CLI already owns batch parallelism.
-- After batch merging, Codex may repair only allowlisted generated tests in a disposable workspace; JAIPilot transactionally merges those repairs, always runs the clean build directly, checks every touched generated test report, and requires fresh JaCoCo XML before reporting success.
-- Codex is expected to determine the final test file path and class name from repository conventions.
-- Codex is expected to own the test-run, fix, and coverage loop during generation.
-- The interactive shell stores history at `~/.jaipilot/history`.
-- Installed interactive shells check for a newer stable GitHub release at startup and offer update-now or skip; source builds and non-interactive commands do not check.
-- Self-updates install a new versioned payload through the bundled installer while preserving any custom external bin launcher.
-- The CLI UX favors structured sections, tables, coverage meters, cleaned Codex diagnostics, and spinners over raw tool logs or JSON.
-- `jaipilot clean` defaults to changed production classes; explicit class and `--all` targets are supported, while `--check`/`--dry-run` verifies and reports a candidate without merging it.
-- Java cleanup runs pinned OpenRewrite `CodeCleanup` and `CommonStaticAnalysis` recipes together in a disposable workspace with an exact selected-source precondition and no persisted build configuration. It scope-checks that deterministic candidate before Codex reviews, refines, or reverts it and may add only directly relevant Java regression tests. JAIPilot then rejects deletions, symlinks, and other changes, independently clean-build verifies the candidate, detects real-workspace drift, and merges transactionally.
-- The root `jaipilot` npm package is a dependency-free launcher with no install lifecycle script. It checksum-verifies and caches the matching bundled GitHub release on first execution and supports macOS/Linux on x64/aarch64.
-- Coverage discovery accepts XML under `target/site/jacoco*/`, `target/coverage-reports/**/`, and `build/reports/jacoco/**/`, including Gradle's `jacocoTestReport.xml`.
-- Multi-module coverage requires one recognized Maven or Gradle aggregate XML; ambiguous per-module report sets fail instead of producing incorrect target selection.
+## Packaging And Delivery
+
+- Maven artifact: `com.jaipilot:jaipilot-mcp`.
+- npm package: `jaipilot`; executable: `jaipilot-mcp`.
+- Published archives include a jlink runtime, shaded server, launcher, installer, and `plugin/jaipilot`.
+- npm remains dependency-free and has no install lifecycle script. First launch checksum-verifies and caches the matching GitHub archive.
+- Plugin manifests exist for Codex, Claude, and generic/Copilot plugin discovery; the portable skills are `jaipilot-generate-tests` and `jaipilot-clean-java`.
+- For requested end-to-end changes, delivery includes tests, commit, push, ready PR, merge to `main`, and release/publish verification. Do not stop at PR or claim an external step that did not succeed.
+
+## Keep Fresh
+
+Update this file when MCP tools, protocol invariants, build/coverage commands, recipe versions, run limits, packaging layout, agent skill behavior, or verified performance findings change.

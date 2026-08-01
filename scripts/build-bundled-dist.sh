@@ -17,7 +17,7 @@ usage() {
   cat <<'EOF'
 Usage: scripts/build-bundled-dist.sh --version <version> [--classifier <platform>]
 
-Builds a platform-specific JAIPilot distribution with a bundled Java runtime image.
+Builds a platform-specific JAIPilot MCP distribution with a bundled Java runtime image and Agent Skills.
 EOF
 }
 
@@ -96,21 +96,27 @@ done
 require_command jdeps
 require_command jlink
 require_command tar
+require_command grep
 
-SHADOW_JAR="$TARGET_DIR/jaipilot-cli-$VERSION-all.jar"
+SHADOW_JAR="$TARGET_DIR/jaipilot-mcp-$VERSION-all.jar"
 [ -f "$SHADOW_JAR" ] || die "Missing shaded jar: $SHADOW_JAR. Run ./mvnw package first."
 
 PLATFORM_CLASSIFIER=$(resolve_classifier)
 MODULES=$(jdeps --multi-release 17 --ignore-missing-deps --print-module-deps "$SHADOW_JAR")
 MODULES=$(append_module "$MODULES" "jdk.crypto.ec")
+if jlink --help 2>&1 | grep -q 'zip-\[0-9\]'; then
+  JLINK_COMPRESSION="zip-6"
+else
+  JLINK_COMPRESSION="2"
+fi
 
-APP_NAME="jaipilot-$VERSION-$PLATFORM_CLASSIFIER"
+APP_NAME="jaipilot-mcp-$VERSION-$PLATFORM_CLASSIFIER"
 APP_DIR="$STAGING_ROOT/$APP_NAME"
 RUNTIME_DIR="$TARGET_DIR/runtime-image-$PLATFORM_CLASSIFIER"
 ARCHIVE_PATH="$DIST_DIR/$APP_NAME.tar.gz"
 
 rm -rf "$APP_DIR" "$RUNTIME_DIR"
-mkdir -p "$APP_DIR/bin" "$APP_DIR/lib" "$APP_DIR/libexec" "$DIST_DIR"
+mkdir -p "$APP_DIR/bin" "$APP_DIR/lib" "$APP_DIR/libexec" "$APP_DIR/plugin" "$DIST_DIR"
 
 jlink \
   --add-modules "$MODULES" \
@@ -118,13 +124,15 @@ jlink \
   --strip-debug \
   --no-header-files \
   --no-man-pages \
-  --compress=2
+  --generate-cds-archive \
+  --compress "$JLINK_COMPRESSION"
 
-cp "$REPO_ROOT/src/main/dist/bin/jaipilot" "$APP_DIR/bin/jaipilot"
-chmod +x "$APP_DIR/bin/jaipilot"
-cp "$SHADOW_JAR" "$APP_DIR/lib/jaipilot.jar"
+cp "$REPO_ROOT/src/main/dist/bin/jaipilot-mcp" "$APP_DIR/bin/jaipilot-mcp"
+chmod +x "$APP_DIR/bin/jaipilot-mcp"
+cp "$SHADOW_JAR" "$APP_DIR/lib/jaipilot-mcp.jar"
 cp "$REPO_ROOT/install.sh" "$APP_DIR/libexec/install.sh"
 chmod +x "$APP_DIR/libexec/install.sh"
+cp -R "$REPO_ROOT/plugin/jaipilot" "$APP_DIR/plugin/jaipilot"
 cp -R "$RUNTIME_DIR" "$APP_DIR/runtime"
 
 rm -f "$ARCHIVE_PATH"

@@ -17,7 +17,7 @@ usage() {
 Usage: scripts/smoke-test-npm.sh [--version <version>] [--classifier <platform>]
 
 Packs the dependency-free npm launcher, installs it into an isolated npm prefix,
-then uses a local checksum-verified bundled release to exercise `jaipilot --version`.
+then verifies MCP initialization and tool discovery through a local release archive.
 EOF
 }
 
@@ -90,7 +90,7 @@ require_command npm
 [ -n "$VERSION" ] || VERSION=$(node -p "require('$REPO_ROOT/package.json').version")
 [ -n "$CLASSIFIER" ] || CLASSIFIER="$(resolve_os)-$(resolve_arch)"
 
-ARCHIVE="$DIST_DIR/jaipilot-$VERSION-$CLASSIFIER.tar.gz"
+ARCHIVE="$DIST_DIR/jaipilot-mcp-$VERSION-$CLASSIFIER.tar.gz"
 [ -f "$ARCHIVE" ] || die "Missing bundled release archive: $ARCHIVE"
 
 rm -rf "$SMOKE_DIR"
@@ -109,27 +109,20 @@ PACKAGE=$(ls -1 "$SMOKE_DIR/package"/jaipilot-*.tgz | head -n 1)
 npm install --global --prefix "$SMOKE_DIR/prefix" "$PACKAGE" \
   --ignore-scripts --no-audit --no-fund >/dev/null
 
-LAUNCHER="$SMOKE_DIR/prefix/bin/jaipilot"
+LAUNCHER="$SMOKE_DIR/prefix/bin/jaipilot-mcp"
 [ -x "$LAUNCHER" ] || die "npm did not create the jaipilot bin launcher"
 
 JAIPILOT_NPM_HOME="$SMOKE_DIR/app" \
 JAIPILOT_NPM_ARCHIVE_URL="file://$ARCHIVE" \
 JAIPILOT_NPM_CHECKSUM_URL="file://$CHECKSUM" \
-  "$LAUNCHER" --version > "$SMOKE_DIR/version.txt"
+  node "$REPO_ROOT/scripts/smoke-test-mcp.mjs" "$LAUNCHER"
 
-grep -Fq "Installed JAIPilot" "$SMOKE_DIR/version.txt" \
-  || die "npm launcher did not print the verified installation receipt"
-tail -n 1 "$SMOKE_DIR/version.txt" > "$SMOKE_DIR/first-version.txt"
-grep -Fxq "$VERSION" "$SMOKE_DIR/first-version.txt" \
-  || die "npm launcher returned the wrong version: $(cat "$SMOKE_DIR/first-version.txt")"
-[ -x "$SMOKE_DIR/app/current/bin/jaipilot" ] \
+[ -x "$SMOKE_DIR/app/current/bin/jaipilot-mcp" ] \
   || die "npm launcher did not install the bundled JAIPilot executable"
 [ -x "$SMOKE_DIR/app/current/runtime/bin/java" ] \
   || die "npm launcher did not install the bundled Java runtime"
 
-JAIPILOT_NPM_HOME="$SMOKE_DIR/app" "$LAUNCHER" --version > "$SMOKE_DIR/cached-version.txt"
-cmp "$SMOKE_DIR/first-version.txt" "$SMOKE_DIR/cached-version.txt" \
-  || die "cached npm launch did not preserve the installed version"
+JAIPILOT_NPM_HOME="$SMOKE_DIR/app" node "$REPO_ROOT/scripts/smoke-test-mcp.mjs" "$LAUNCHER"
 
 echo "Smoke-tested npm installation"
 echo "  Package: $PACKAGE"

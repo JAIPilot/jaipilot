@@ -44,7 +44,7 @@ export function installedVersion(appDirectory) {
   try {
     const versionDirectory = realpathSync(current);
     const version = versionDirectory.split(/[\\/]/).at(-1);
-    return /^\d+\.\d+\.\d+$/.test(version) && existsSync(join(versionDirectory, "bin", "jaipilot"))
+    return /^\d+\.\d+\.\d+$/.test(version) && existsSync(join(versionDirectory, "bin", "jaipilot-mcp"))
       ? version
       : null;
   } catch {
@@ -84,7 +84,7 @@ export async function main(args, environment = process.env) {
     }
   }
 
-  const executable = join(appDirectory, "current", "bin", "jaipilot");
+  const executable = join(appDirectory, "current", "bin", "jaipilot-mcp");
   if (!existsSync(executable)) {
     throw new Error(`installed launcher was not found at ${executable}`);
   }
