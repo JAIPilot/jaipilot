@@ -24,8 +24,8 @@ usage() {
   cat <<'EOF'
 Usage: install.sh [options]
 
-Installs the latest JAIPilot release with a bundled Java runtime and an archive
-checksum verification step.
+Installs the latest JAIPilot MCP server, portable Agent Skills, and bundled Java
+runtime with SHA-256 verification.
 
 Options:
   --version <version>      Install a specific release version.
@@ -34,7 +34,7 @@ Options:
   --checksum-url <url>     Override the archive checksum URL. Intended for testing.
   --prefix <dir>           Installation prefix. Default: ~/.local
   --bin-dir <dir>          Explicit bin directory. Overrides --prefix/bin.
-  --app-dir <dir>          Explicit app directory. Overrides --prefix/share/jaipilot.
+  --app-dir <dir>          Explicit app directory. Overrides --prefix/share/jaipilot-mcp.
   --lib-dir <dir>          Deprecated alias for --app-dir.
   --no-bin-link            Keep the existing external bin launcher unchanged.
   -h, --help               Show this help text.
@@ -166,7 +166,7 @@ resolve_latest_version() {
 resolve_version_from_archive_url() {
   [ -n "$ARCHIVE_URL" ] || return 1
   archive_name=$(printf '%s\n' "$ARCHIVE_URL" | sed 's#^.*\/##; s/[?#].*$//')
-  version=$(printf '%s\n' "$archive_name" | sed -n 's/^jaipilot-\([0-9][0-9.]*\)-.*\.tar\.gz$/\1/p')
+  version=$(printf '%s\n' "$archive_name" | sed -n 's/^jaipilot-mcp-\([0-9][0-9.]*\)-.*\.tar\.gz$/\1/p')
   [ -n "$version" ] || return 1
   printf '%s\n' "$version"
 }
@@ -213,7 +213,7 @@ resolve_archive_url() {
     return
   fi
 
-  printf 'https://github.com/%s/releases/download/v%s/jaipilot-%s-%s.tar.gz\n' "$REPO" "$RESOLVED_VERSION" "$RESOLVED_VERSION" "$RESOLVED_PLATFORM"
+  printf 'https://github.com/%s/releases/download/v%s/jaipilot-mcp-%s-%s.tar.gz\n' "$REPO" "$RESOLVED_VERSION" "$RESOLVED_VERSION" "$RESOLVED_PLATFORM"
 }
 
 resolve_checksum_url() {
@@ -294,7 +294,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$BIN_DIR" ] || BIN_DIR="${PREFIX}/bin"
-[ -n "$APP_DIR" ] || APP_DIR="${PREFIX}/share/jaipilot"
+[ -n "$APP_DIR" ] || APP_DIR="${PREFIX}/share/jaipilot-mcp"
 
 require_command curl
 require_command tar
@@ -315,6 +315,7 @@ acquire_install_lock
 
 ARCHIVE_PATH="$TMP_DIR/jaipilot.tar.gz"
 CHECKSUM_PATH="$TMP_DIR/jaipilot.tar.gz.sha256"
+ARCHIVE_LIST="$TMP_DIR/archive.list"
 curl -fsSL "$ARCHIVE_URL" -o "$ARCHIVE_PATH"
 curl -fsSL "$CHECKSUM_URL" -o "$CHECKSUM_PATH"
 
@@ -322,13 +323,26 @@ EXPECTED_SHA256=$(read_expected_sha256 "$CHECKSUM_PATH")
 ACTUAL_SHA256=$(compute_sha256 "$ARCHIVE_PATH")
 [ "$EXPECTED_SHA256" = "$ACTUAL_SHA256" ] || die "SHA-256 mismatch for downloaded archive."
 
+tar -tzf "$ARCHIVE_PATH" > "$ARCHIVE_LIST"
+while IFS= read -r entry; do
+  case "$entry" in
+    /*|../*|*/../*|*/..)
+      die "Release archive contains an unsafe path: $entry"
+      ;;
+  esac
+done < "$ARCHIVE_LIST"
+
 tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
 
 EXTRACTED_DIR=$(find "$TMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n 1)
 [ -n "${EXTRACTED_DIR:-}" ] || die "Failed to unpack the JAIPilot archive."
-[ -f "$EXTRACTED_DIR/lib/jaipilot.jar" ] || die "Downloaded archive is missing lib/jaipilot.jar."
-[ -x "$EXTRACTED_DIR/bin/jaipilot" ] || die "Downloaded archive is missing bin/jaipilot."
+[ -f "$EXTRACTED_DIR/lib/jaipilot-mcp.jar" ] || die "Downloaded archive is missing lib/jaipilot-mcp.jar."
+[ -x "$EXTRACTED_DIR/bin/jaipilot-mcp" ] || die "Downloaded archive is missing bin/jaipilot-mcp."
 [ -x "$EXTRACTED_DIR/runtime/bin/java" ] || die "Downloaded archive is missing the bundled Java runtime."
+[ -f "$EXTRACTED_DIR/plugin/jaipilot/.codex-plugin/plugin.json" ] \
+  || die "Downloaded archive is missing the JAIPilot plugin."
+[ ! -L "$EXTRACTED_DIR/lib/jaipilot-mcp.jar" ] || die "Downloaded server jar must not be a symbolic link."
+[ ! -L "$EXTRACTED_DIR/bin/jaipilot-mcp" ] || die "Downloaded launcher must not be a symbolic link."
 
 if [ "$WRITE_BIN_LINK" -eq 1 ]; then
   mkdir -p "$BIN_DIR"
@@ -352,46 +366,48 @@ case "$(resolve_os)" in
 esac
 CURRENT_LINK_TMP=""
 
-cat > "$APP_DIR/bin/jaipilot" <<EOF
+cat > "$APP_DIR/bin/jaipilot-mcp" <<EOF
 #!/usr/bin/env sh
 set -eu
 BASE_DIR=\$(CDPATH= cd -- "\$(dirname -- "\$0")/.." && pwd)
-exec "\$BASE_DIR/current/bin/jaipilot" "\$@"
+exec "\$BASE_DIR/current/bin/jaipilot-mcp" "\$@"
 EOF
 
-chmod +x "$APP_DIR/bin/jaipilot"
+chmod +x "$APP_DIR/bin/jaipilot-mcp"
 
 if [ "$WRITE_BIN_LINK" -eq 1 ]; then
-  cat > "$BIN_DIR/jaipilot" <<EOF
+  cat > "$BIN_DIR/jaipilot-mcp" <<EOF
 #!/usr/bin/env sh
 set -eu
-exec "$APP_DIR/bin/jaipilot" "\$@"
+exec "$APP_DIR/bin/jaipilot-mcp" "\$@"
 EOF
 
-  chmod +x "$BIN_DIR/jaipilot"
+  chmod +x "$BIN_DIR/jaipilot-mcp"
 fi
 
-echo "Installed JAIPilot"
-echo "  Version: $RESOLVED_VERSION"
-echo "  Archive: $ARCHIVE_URL"
-echo "  SHA-256: $ACTUAL_SHA256"
-echo "  App: $APP_DIR"
-echo "  Current: $APP_DIR/current"
-echo "  Payload: $VERSION_DIR"
-echo "  Runtime: $APP_DIR/current/runtime/bin/java"
-echo "  App launcher: $APP_DIR/bin/jaipilot"
+{
+  echo "Installed JAIPilot MCP"
+  echo "  Version: $RESOLVED_VERSION"
+  echo "  Archive: $ARCHIVE_URL"
+  echo "  SHA-256: $ACTUAL_SHA256"
+  echo "  App: $APP_DIR"
+  echo "  Current: $APP_DIR/current"
+  echo "  Payload: $VERSION_DIR"
+  echo "  Runtime: $APP_DIR/current/runtime/bin/java"
+  echo "  Plugin: $APP_DIR/current/plugin/jaipilot"
+  echo "  App launcher: $APP_DIR/bin/jaipilot-mcp"
 
-if [ "$WRITE_BIN_LINK" -eq 1 ]; then
-  echo "  Launcher: $BIN_DIR/jaipilot"
-  if contains_path_entry "$BIN_DIR"; then
-    echo "  PATH: $BIN_DIR is already on PATH"
+  if [ "$WRITE_BIN_LINK" -eq 1 ]; then
+    echo "  Launcher: $BIN_DIR/jaipilot-mcp"
+    if contains_path_entry "$BIN_DIR"; then
+      echo "  PATH: $BIN_DIR is already on PATH"
+    else
+      echo "  PATH: add $BIN_DIR to your PATH"
+    fi
   else
-    echo "  PATH: add $BIN_DIR to your PATH"
+    echo "  Launcher: unchanged (--no-bin-link)"
   fi
-else
-  echo "  Launcher: unchanged (--no-bin-link)"
-fi
 
-echo
-echo "You can now run:"
-echo "  jaipilot --help"
+  echo
+  echo "Configure your coding tool to run: jaipilot-mcp"
+} >&2

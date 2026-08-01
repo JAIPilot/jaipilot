@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.jaipilot</groupId>
-    <artifactId>jaipilot-cli</artifactId>
+    <artifactId>jaipilot-mcp</artifactId>
     <version>${revision}</version>
     <packaging>jar</packaging>
 
-    <name>JAIPilot CLI</name>
-    <description>Java CLI for verified OpenRewrite and Codex cleanup, JUnit generation, and JaCoCo coverage reporting.</description>
+    <name>JAIPilot MCP</name>
+    <description>Local MCP server and Agent Skills for isolated Java unit-test generation and verified OpenRewrite cleanup.</description>
     <url>https://github.com/JAIPilot/jaipilot-cli</url>
 
     <licenses>
@@ -29,10 +29,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <revision>1.0.16</revision>
+        <revision>2.0.0</revision>
         <maven.compiler.release>17</maven.compiler.release>
-        <picocli.version>4.7.7</picocli.version>
-        <jline.version>3.29.0</jline.version>
+        <mcp.version>2.0.0</mcp.version>
+        <slf4j.version>2.0.16</slf4j.version>
         <junit.version>5.11.4</junit.version>
         <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
@@ -43,17 +43,11 @@
         <jacoco.maven.plugin.version>0.8.15</jacoco.maven.plugin.version>
         <sonar.maven.plugin.version>5.5.0.6356</sonar.maven.plugin.version>
         <sonar.projectKey>JAIPilot_jaipilot-cli</sonar.projectKey>
-        <sonar.projectName>JAIPilot CLI</sonar.projectName>
+        <sonar.projectName>JAIPilot MCP</sonar.projectName>
         <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>${picocli.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -61,9 +55,22 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline</artifactId>
-            <version>${jline.version}</version>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-core</artifactId>
+            <version>${mcp.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-json-jackson2</artifactId>
+            <version>${mcp.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
@@ -76,7 +83,7 @@
     </dependencies>
 
     <build>
-        <finalName>jaipilot-cli</finalName>
+        <finalName>jaipilot-mcp</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -157,7 +164,7 @@
                             <Implementation-Version>${project.version}</Implementation-Version>
                         </manifestEntries>
                         <manifest>
-                            <mainClass>com.jaipilot.cli.JaiPilotCli</mainClass>
+                            <mainClass>com.jaipilot.mcp.JaiPilotMcpServer</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -187,8 +194,9 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.jaipilot.cli.JaiPilotCli</mainClass>
+                                    <mainClass>com.jaipilot.mcp.JaiPilotMcpServer</mainClass>
                                 </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>

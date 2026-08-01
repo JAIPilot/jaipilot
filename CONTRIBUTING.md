@@ -1,74 +1,59 @@
 # Contributing
 
-Thanks for contributing to JAIPilot.
+Thanks for contributing to JAIPilot MCP.
 
-## Development Setup
+## Development setup
 
-- Java 17+
-- Git
-- A POSIX shell environment for the helper scripts
-- Node.js 20+ and npm for package verification
+You need Java 17+, Git, a POSIX shell, and Node.js 20+ with npm.
 
-Clone the repo and run:
-
-```sh
+```bash
 ./mvnw -B verify
 npm ci --ignore-scripts
+npm test
+```
+
+`verify` runs the Java suite, creates JaCoCo XML, builds the shaded stdio server, and produces the current-platform bundled distribution.
+
+## Common checks
+
+```bash
+./mvnw -B test
+node scripts/smoke-test-mcp.mjs java -jar target/jaipilot-mcp-2.0.0-all.jar
+./scripts/smoke-test-install.sh
+./scripts/smoke-test-npm.sh
 npm run pack:check
 ```
 
-This runs the unit tests, integration tests, packaging, and the install smoke test used in CI.
+The MCP smoke test performs a real initialize and tools/list exchange and rejects non-JSON stdout. Installer and npm smokes exercise checksum verification, the bundled runtime, first launch, and cached launch.
 
-## Common Commands
+## Pull requests
 
-Build and test:
+- Keep changes focused and add deterministic tests for behavior, safety gates, races, timeouts, and failure modes.
+- Preserve stdout exclusively for JSON-RPC.
+- Keep model reasoning in the connected coding agent; do not add a provider-specific subprocess to the server.
+- Update README, skills, manifests, and project memory when their contract changes.
+- Include repeatable before/after evidence for performance-sensitive changes.
+- Do not commit `target/`, npm packs, temporary workspaces, or local configuration.
 
-```sh
-./mvnw -B verify
-```
+Before opening a pull request:
 
-Smoke-test the install script:
-
-```sh
-./scripts/smoke-test-install.sh
-./scripts/smoke-test-npm.sh
-```
-
-## Pull Request Guidelines
-
-- keep changes focused and scoped to a clear problem
-- include tests for behavioral changes when practical
-- update documentation when CLI behavior or installation steps change
-- prefer small, reviewable pull requests over broad refactors
-- do not commit generated `target/` output
-
-Before opening a pull request, run:
-
-```sh
+```bash
+git diff --check
 ./mvnw -B verify
 npm ci --ignore-scripts
+npm test
 ./scripts/smoke-test-install.sh
 ./scripts/smoke-test-npm.sh
 ```
 
-## Release Publishing
+## Release publishing
 
-`scripts/release-build.sh` keeps the Maven revision, Java fallback version, `package.json`, and `package-lock.json` aligned. Tag builds publish the bundled runtime archives to GitHub Releases, then publish the dependency-free `jaipilot` launcher to npm.
+`scripts/release-build.sh` aligns the Maven revision, `package.json`, `package-lock.json`, and all plugin manifests. A `v*` tag builds checksum-protected macOS/Linux x64/arm64 archives, publishes a GitHub Release, and then publishes the dependency-free `jaipilot` npm package.
 
-The npm package should use npm trusted publishing rather than a long-lived token. Before the first automated publication, a package owner must claim `jaipilot` on npm and configure this repository's `release.yml` workflow as its GitHub Actions trusted publisher with `npm publish` permission. The workflow requests `id-token: write`, uses an OIDC-capable npm CLI, and publishes only after all platform release assets exist. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
+npm publishing uses trusted publishing rather than a long-lived token. A package owner must claim `jaipilot` and configure `.github/workflows/release.yml` as the package's GitHub Actions trusted publisher. The workflow requests `id-token: write` and publishes npm only after all GitHub release assets exist. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
 
-## Reporting Bugs
+## Reporting bugs and security issues
 
-When filing a bug, include:
+For a bug, include the JAIPilot version, MCP host, Java version, build tool/version, operating system, tool name and arguments, stderr diagnostics, and a minimal project when possible.
 
-- JAIPilot version
-- Java version
-- Maven version
-- operating system
-- the command you ran
-- relevant logs or failing output
-- a minimal sample project, if available
-
-## Security
-
-For security issues, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
+Follow [SECURITY.md](SECURITY.md) for vulnerabilities; do not disclose them in a public issue.

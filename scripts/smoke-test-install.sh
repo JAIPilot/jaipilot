@@ -16,8 +16,8 @@ usage() {
   cat <<'EOF'
 Usage: scripts/smoke-test-install.sh [--version <version>] [--classifier <platform>]
 
-Smoke-tests the install script by pointing it at a locally built JAIPilot tar.gz
-archive and then running `jaipilot --version` from the installed location.
+Smoke-tests the install script against a local release archive, then completes an
+MCP initialize and tools/list exchange through the installed launcher.
 EOF
 }
 
@@ -92,15 +92,15 @@ done
 RESOLVED_CLASSIFIER=$(resolve_classifier)
 
 if [ -n "$VERSION" ]; then
-  TAR_GZ="$DIST_DIR/jaipilot-$VERSION-$RESOLVED_CLASSIFIER.tar.gz"
+  TAR_GZ="$DIST_DIR/jaipilot-mcp-$VERSION-$RESOLVED_CLASSIFIER.tar.gz"
 else
-  TAR_GZ=$(ls -1t "$DIST_DIR"/jaipilot-*-"$RESOLVED_CLASSIFIER".tar.gz 2>/dev/null | head -n 1)
+  TAR_GZ=$(ls -1t "$DIST_DIR"/jaipilot-mcp-*-"$RESOLVED_CLASSIFIER".tar.gz 2>/dev/null | head -n 1)
 fi
 
 [ -n "${TAR_GZ:-}" ] || die "Could not find a JAIPilot tar.gz distribution under $DIST_DIR"
 [ -f "$TAR_GZ" ] || die "Missing distribution archive: $TAR_GZ"
 CHECKSUM_FILE="$TAR_GZ.sha256"
-INSTALL_VERSION=${VERSION:-$(basename "$TAR_GZ" | sed -n "s/^jaipilot-\\([0-9][0-9.]*\\)-$RESOLVED_CLASSIFIER\\.tar\\.gz$/\\1/p")}
+INSTALL_VERSION=${VERSION:-$(basename "$TAR_GZ" | sed -n "s/^jaipilot-mcp-\\([0-9][0-9.]*\\)-$RESOLVED_CLASSIFIER\\.tar\\.gz$/\\1/p")}
 [ -n "${INSTALL_VERSION:-}" ] || die "Could not determine the distribution version from $TAR_GZ"
 
 printf '%s  %s\n' "$(compute_sha256 "$TAR_GZ")" "$(basename "$TAR_GZ")" > "$CHECKSUM_FILE"
@@ -148,11 +148,11 @@ grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/active-lock.log" \
   --app-dir "$SMOKE_DIR/app"
 
 [ -L "$SMOKE_DIR/app/current" ] || die "Install did not create the current symlink"
-[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Install did not create the stable app launcher"
+[ -x "$SMOKE_DIR/app/bin/jaipilot-mcp" ] || die "Install did not create the stable app launcher"
 [ -x "$SMOKE_DIR/app/current/libexec/install.sh" ] || die "Distribution did not include the self-update installer"
-"$SMOKE_DIR/bin/jaipilot" --version
+node "$REPO_ROOT/scripts/smoke-test-mcp.mjs" "$SMOKE_DIR/bin/jaipilot-mcp"
 
-EXTERNAL_LAUNCHER_SHA256=$(compute_sha256 "$SMOKE_DIR/bin/jaipilot")
+EXTERNAL_LAUNCHER_SHA256=$(compute_sha256 "$SMOKE_DIR/bin/jaipilot-mcp")
 "$SMOKE_DIR/app/current/libexec/install.sh" \
   --version "$INSTALL_VERSION" \
   --archive-url "file://$TAR_GZ" \
@@ -161,13 +161,13 @@ EXTERNAL_LAUNCHER_SHA256=$(compute_sha256 "$SMOKE_DIR/bin/jaipilot")
   --app-dir "$SMOKE_DIR/app" \
   --no-bin-link
 
-[ ! -e "$SMOKE_DIR/ignored-bin/jaipilot" ] || die "--no-bin-link created an external launcher"
-[ "$EXTERNAL_LAUNCHER_SHA256" = "$(compute_sha256 "$SMOKE_DIR/bin/jaipilot")" ] \
+[ ! -e "$SMOKE_DIR/ignored-bin/jaipilot-mcp" ] || die "--no-bin-link created an external launcher"
+[ "$EXTERNAL_LAUNCHER_SHA256" = "$(compute_sha256 "$SMOKE_DIR/bin/jaipilot-mcp")" ] \
   || die "--no-bin-link changed the existing external launcher"
 [ -L "$SMOKE_DIR/app/current" ] || die "Self-update did not preserve the current symlink"
-[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Self-update did not preserve the stable app launcher"
-"$SMOKE_DIR/app/bin/jaipilot" --version
-"$SMOKE_DIR/bin/jaipilot" --version
+[ -x "$SMOKE_DIR/app/bin/jaipilot-mcp" ] || die "Self-update did not preserve the stable app launcher"
+node "$REPO_ROOT/scripts/smoke-test-mcp.mjs" "$SMOKE_DIR/app/bin/jaipilot-mcp"
+node "$REPO_ROOT/scripts/smoke-test-mcp.mjs" "$SMOKE_DIR/bin/jaipilot-mcp"
 
 rm -f "$SMOKE_DIR/app/current"
 mkdir -p "$SMOKE_DIR/app/current"

@@ -45,7 +45,7 @@ test("installed version comes from a valid current release link", async () => {
   const root = await mkdtemp(join(tmpdir(), "jaipilot-npm-test-"));
   const versionDirectory = join(root, "versions", "1.2.3");
   await mkdir(join(versionDirectory, "bin"), { recursive: true });
-  await writeFile(join(versionDirectory, "bin", "jaipilot"), "launcher\n");
+  await writeFile(join(versionDirectory, "bin", "jaipilot-mcp"), "launcher\n");
   await symlink("versions/1.2.3", join(root, "current"));
 
   assert.equal(installedVersion(root), "1.2.3");
