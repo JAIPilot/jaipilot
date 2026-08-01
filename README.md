@@ -35,19 +35,19 @@ There is no interactive JAIPilot CLI and no JAIPilot backend. Your coding agent 
 
 ## Install
 
-The npm package contains no runtime dependencies or install lifecycle script. On first launch it downloads the matching GitHub release, verifies its SHA-256 checksum, and caches the bundled Java runtime.
-
-```bash
-npm install --global jaipilot
-```
-
-Or install the checksum-protected release payload directly:
+Install the published, checksum-protected release payload:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot-cli/main/install.sh | sh
 ```
 
-Both routes install `jaipilot-mcp`. Direct installation also prints the exact path of the bundled `plugin/jaipilot` directory. Supported release platforms are macOS and Linux on x64 and arm64/aarch64. Building from source requires Java 17+; the published bundles include Java.
+The `jaipilot` npm package is fully prepared but its first publication still requires the package owner to claim the name and register this repository's release workflow as an npm trusted publisher. After that one-time registry setup, this equivalent route is available:
+
+```bash
+npm install --global jaipilot
+```
+
+The npm package has no runtime dependencies or install lifecycle script. Its first launch downloads the matching GitHub release, verifies its SHA-256 checksum, and caches the bundled Java runtime. Both routes install `jaipilot-mcp`; direct installation also prints the exact path of the bundled `plugin/jaipilot` directory. Supported release platforms are macOS and Linux on x64 and arm64/aarch64. Building from source requires Java 17+; the published bundles include Java.
 
 Target repositories need a usable Maven or Gradle build. Coverage-based selection and coverage gates require JaCoCo XML reporting. The first cleanup may need access to Maven Central or the Gradle Plugin Portal for the pinned OpenRewrite artifacts.
 
