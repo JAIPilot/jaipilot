@@ -36,7 +36,7 @@ body:
       label: Minimal reproduction
       description: Share the smallest project shape, request, and sequence that reproduces the issue.
       placeholder: |
-        1. Use JAIPilot v3.1.0 in Codex or Claude Code.
+        1. Use JAIPilot v3.1.1 in Codex or Claude Code.
         2. Open a clean Maven project with ...
         3. Ask "..."
         4. Validation returns ...
@@ -52,7 +52,7 @@ body:
     id: version
     attributes:
       label: JAIPilot version
-      placeholder: v3.1.0
+      placeholder: v3.1.1
     validations:
       required: true
   - type: input

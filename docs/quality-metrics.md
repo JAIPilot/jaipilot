@@ -33,13 +33,19 @@ high finding, or reduces the overall quality score by more than rounding toleran
 JAIPilot uses pinned PIT versions and scopes work to the selected production classes and likely or
 changed tests. It reports every mutation status and up to 100 actionable survivors.
 
-- **Mutation score** = killed mutations ÷ all non-equivalent mutations.
-- **Test strength** = killed mutations ÷ covered mutations (`killed + survived`).
+- **Mutation score** = killed mutations ÷ actionable mutations. Actionable mutations exclude
+  PIT's `EQUIVALENT`, `NON_VIABLE`, and error/unfinished statuses; timed-out mutations remain in the
+  denominator so timeouts cannot inflate the score.
+- **Test strength** = killed mutations ÷ covered actionable mutations
+  (`killed + survived + timed out`).
 - **Mutation evidence** includes total, killed, survived, no-coverage, timed-out, error, and
-  equivalent counts plus class, method, line, mutator, description, reports, commands, and elapsed time.
+  equivalent and non-viable counts plus class, method, line, mutator, description, reports, commands,
+  and elapsed time.
 
-Test generation defaults to a 70% mutation target. A run with no scorable mutations cannot satisfy a
-positive target. JAIPilot does not modify the project's committed Maven or Gradle configuration.
+Test generation always runs PIT and defaults to a 70% mutation target. Cleanup uses the same gate
+whenever a directly related test changes. A run with no scorable mutations cannot satisfy a positive
+target, and an error or unfinished PIT status makes the proof incomplete. JAIPilot does not modify
+the project's committed Maven or Gradle configuration.
 
 ## Test quality
 

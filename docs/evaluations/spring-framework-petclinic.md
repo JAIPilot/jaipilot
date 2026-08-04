@@ -9,7 +9,7 @@ The results apply to the exact revision and environment below.
 | Item | Value |
 | --- | --- |
 | Date | 2026-08-05 |
-| JAIPilot | v3.1.0 candidate, bundled macOS x64 runner |
+| JAIPilot | v3.1.1 candidate, bundled macOS x64 runner |
 | Project | `spring-petclinic/spring-framework-petclinic` |
 | Project revision | `f2b1c6df3a89f4d0294c7402b48ea351af2c92ca` |
 | Host | macOS x64 |
@@ -28,8 +28,8 @@ Every run returned the same seven findings and 97.9 overall quality score.
 
 | Boundary | Raw seconds | Median | p95 |
 | --- | --- | --- | --- |
-| Analyzer only | 0.253, 0.243, 0.264, 0.285, 0.259 | 0.259 s | 0.285 s |
-| JVM startup, discovery, analysis, JSON | 0.96, 0.82, 0.85, 0.87, 0.84 | 0.85 s | 0.96 s |
+| Analyzer only | 0.261, 0.215, 0.212, 0.215, 0.216 | 0.215 s | 0.261 s |
+| JVM startup, discovery, analysis, JSON | 0.77, 0.70, 0.70, 0.70, 0.70 | 0.70 s | 0.77 s |
 
 The report contained no critical/high findings or bug risks: six code smells, one modernization
 opportunity, 0.6% duplication, 66 minutes of estimated debt, maximum cyclomatic complexity 14, and
@@ -40,9 +40,11 @@ maximum cognitive complexity 21.
 Target: `org.springframework.samples.petclinic.model.Owner`, with 80% line-coverage and 70% mutation
 gates.
 
-Preparation took 19.90 seconds wall time, including an 18.65-second clean baseline. JAIPilot found
-55% line and 30% branch coverage, created an isolated candidate, and reported a 100.0 source-quality
-score for the selected class.
+Five identical preparations took 17.84, 16.23, 15.73, 15.72, and 15.85 seconds wall time (15.85
+seconds median, 17.84 seconds p95). Their clean baselines were 16.86, 15.18, 14.70, 14.70, and
+14.83 seconds internally (14.83 seconds median, 16.86 seconds p95). JAIPilot found 55% line and 30%
+branch coverage, created an isolated candidate, and reported a 100.0 source-quality score for the
+selected class on every run.
 
 Five focused tests were added to the existing `OwnerTests` for contact properties, bidirectional pet
 association, case-insensitive lookup, persisted-versus-new filtering, missing lookup, and diagnostic
@@ -54,20 +56,26 @@ state. Validation produced:
 - proof that the one changed test file executed;
 - no warnings, failures, source-quality regressions, or missing reports.
 
-Validation took 31.86 seconds internally and 32.69 seconds wall time; targeted PIT accounted for
-12.74 seconds. Transactional apply changed exactly `OwnerTests.java` and removed the isolated
-workspace and run state.
+The five validations took 28.47, 27.64, 27.44, 27.03, and 27.06 seconds wall time (27.44 seconds
+median, 28.47 seconds p95). Internal validation was 26.77 seconds median and 27.77 seconds p95;
+targeted PIT was 10.89 seconds median and 11.40 seconds p95. Each candidate was discarded after its
+measurement. A final identical candidate was then validated and transactionally applied: exactly
+`OwnerTests.java` changed, and the isolated workspace and active run state were removed.
 
 ## Cleanup journey
 
 Target: `org.springframework.samples.petclinic.util.CallMonitoringAspect` in a second clean checkout.
 
-Preparation took 30.08 seconds wall time: 18.21 seconds for the clean baseline and 10.70 seconds for
-the pinned, exact-scoped OpenRewrite pass. OpenRewrite changed only the target class by removing
-redundant primitive initializers and adding braces. Contextual review then removed the reported
-redundant `else` after a terminal branch.
+Five identical preparations took 25.16, 28.90, 25.31, 25.66, and 25.37 seconds wall time (25.37
+seconds median, 28.90 seconds p95). The pinned, exact-scoped OpenRewrite pass took 8.88, 11.69, 8.89,
+9.10, and 8.95 seconds (8.95 seconds median, 11.69 seconds p95). It changed only the target class by
+removing redundant primitive initializers and adding braces. All five unchanged OpenRewrite
+candidates validated with a stable 99.8 quality score and zero introduced findings. A final
+candidate received the contextual redundant-`else` cleanup before apply.
 
-Validation reran the real build and completed in 18.14 seconds internally, reporting:
+The five OpenRewrite-only validations took 16.13, 16.25, 16.82, 16.51, and 16.33 seconds wall time
+(16.33 seconds median, 16.82 seconds p95). The final refined candidate reran the real build and
+reported:
 
 - overall quality 99.8 → 100.0 and maintainability 99.4 → 100.0;
 - code smells 1 → 0 and remediation debt 5 → 0 minutes;

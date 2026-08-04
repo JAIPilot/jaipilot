@@ -95,6 +95,19 @@ time. Targeted PIT used 12.74 seconds, killed 14/14 mutations, and produced a 98
 with complete evidence. The `CallMonitoringAspect` cleanup prepared in 30.08 seconds and validated
 in 18.95 seconds wall time, resolving one smell and moving quality 99.8 → 100.0.
 
+On 2026-08-05, v3.1.1 removed the mutation bypass, made related-test cleanup candidates use the
+default 70% PIT gate, separated non-viable PIT mutants from errors, and stabilized finding identity
+across measurement-only message changes. Run-state schema 3 no longer exposes a mutation toggle but
+continues to read v1/v2 metadata.
+
+Five repeated Petclinic `Owner` journeys at revision
+`f2b1c6df3a89f4d0294c7402b48ea351af2c92ca` prepared in 15.85 seconds median / 17.84 seconds p95 and
+validated in 27.44 seconds median / 28.47 seconds p95. All five produced 95% line, 100% branch,
+14/14 killed mutations, and a 98.8 `EXCELLENT` score with complete evidence. PIT time was 10.89
+seconds median / 11.40 seconds p95. Five cleanup journeys prepared in 25.37 seconds median / 28.90
+seconds p95 and validated in 16.33 seconds median / 16.82 seconds p95. Final test and cleanup
+candidates were transactionally applied in disposable clones with exactly one allowlisted file each.
+
 ## Keep Fresh
 
 Update this file when runner operations, persistence rules, workflow gates, recipes, run

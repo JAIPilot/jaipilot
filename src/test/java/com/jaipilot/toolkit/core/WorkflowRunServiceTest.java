@@ -77,8 +77,13 @@ class WorkflowRunServiceTest {
         writeExecutedReport(run.workspaceRoot(), "com.example.OrderServiceTest");
         WorkflowRunService.StoredRunState stored = original.exportRun(run.runId());
         ObjectMapper mapper = new ObjectMapper();
+        String encoded = mapper.writeValueAsString(stored);
+        assertFalse(encoded.contains("mutationTestingEnabled"));
+        String legacyEncoded = encoded
+                .replace("\"schemaVersion\":3", "\"schemaVersion\":2")
+                .replaceFirst("\\{", "{\"mutationTestingEnabled\":false,");
         stored = mapper.readValue(
-                mapper.writeValueAsBytes(stored),
+                legacyEncoded,
                 WorkflowRunService.StoredRunState.class
         );
 
@@ -88,6 +93,8 @@ class WorkflowRunServiceTest {
 
         WorkflowRunService.ValidationResult validation = restored.validate(run.runId());
         assertTrue(validation.readyToApply());
+        assertNotNull(validation.mutation());
+        assertEquals(70.0d, validation.mutation().minimumMutationScore());
         WorkflowRunService.StoredRunState validated = restored.exportRun(run.runId());
         validated = mapper.readValue(
                 mapper.writeValueAsBytes(validated),
@@ -345,8 +352,7 @@ class WorkflowRunServiceTest {
                 tempDir,
                 WorkflowRunService.TargetSelection.classes(List.of("OrderService")),
                 80.0d,
-                70.0d,
-                true
+                70.0d
         );
         writeTest(run.workspaceRoot(), "OrderServiceTest", "class OrderServiceTest {}\n");
         writeExecutedReport(run.workspaceRoot(), "com.example.OrderServiceTest");
@@ -381,6 +387,62 @@ class WorkflowRunServiceTest {
         assertFalse(validation.qualityGoalMet());
         assertEquals(1, validation.qualityDelta().newCriticalOrHighFindings());
         assertTrue(validation.failures().stream().anyMatch(message -> message.contains("critical/high")));
+    }
+
+    @Test
+    void improvingASevereComplexityFindingDoesNotReclassifyItAsNew() throws Exception {
+        Path source = tempDir.resolve("src/main/java/com/example/OrderService.java");
+        Files.writeString(source, complexOrderService(21));
+        WorkflowRunService.PreparedRun run = service.prepareCodeCleanup(
+                tempDir,
+                WorkflowRunService.TargetSelection.classes(List.of("OrderService"))
+        );
+        Files.writeString(
+                run.workspaceRoot().resolve("src/main/java/com/example/OrderService.java"),
+                complexOrderService(20)
+        );
+
+        WorkflowRunService.ValidationResult validation = service.validate(run.runId());
+
+        assertTrue(validation.valid());
+        assertTrue(validation.readyToApply());
+        assertEquals(0, validation.qualityDelta().newCriticalOrHighFindings());
+        assertEquals(0, validation.qualityDelta().introducedFindings());
+        assertEquals(0, validation.qualityDelta().resolvedFindings());
+        assertTrue(validation.qualityDelta().qualityScoreAfter()
+                >= validation.qualityDelta().qualityScoreBefore());
+    }
+
+    @Test
+    void cleanupTestChangesAlwaysRunTheDefaultMutationGate() throws Exception {
+        writeTest(tempDir, "OrderServiceTest", "class OrderServiceTest {}\n");
+        service.close();
+        AtomicInteger mutations = new AtomicInteger();
+        service = new WorkflowRunService(
+                fileService,
+                projectService,
+                coverageService,
+                this::successfulBuild,
+                root -> coverage(root, 100.0d),
+                (root, targets) -> successfulRewrite(),
+                null,
+                (root, targets, tests, minimum) -> {
+                    mutations.incrementAndGet();
+                    assertEquals(70.0d, minimum);
+                    return mutationReport(minimum, 100.0d, 100.0d, true);
+                }
+        );
+        WorkflowRunService.PreparedRun run = service.prepareCodeCleanup(
+                tempDir,
+                WorkflowRunService.TargetSelection.classes(List.of("OrderService"))
+        );
+        writeTest(run.workspaceRoot(), "OrderServiceTest", "class OrderServiceTest { int proof = 1; }\n");
+
+        WorkflowRunService.ValidationResult validation = service.validate(run.runId());
+
+        assertTrue(validation.readyToApply());
+        assertEquals(1, mutations.get());
+        assertEquals(70.0d, validation.mutation().minimumMutationScore());
     }
 
     @Test
@@ -451,6 +513,7 @@ class WorkflowRunServiceTest {
                 0,
                 0,
                 0,
+                0,
                 List.of(),
                 List.of("target/jaipilot-pit/mutations.xml"),
                 List.of(List.of("pitest")),
@@ -465,6 +528,16 @@ class WorkflowRunServiceTest {
                 WorkflowRunService.TargetSelection.classes(List.of("OrderService")),
                 80.0d
         );
+    }
+
+    private String complexOrderService(int decisions) {
+        StringBuilder source = new StringBuilder(
+                "package com.example; class OrderService { int value(int n) { int result = 0;\n"
+        );
+        for (int index = 0; index < decisions; index++) {
+            source.append("if (n == ").append(index).append(") result++;\n");
+        }
+        return source.append("return result; } }\n").toString();
     }
 
     private void createProject(boolean jacoco) throws IOException {

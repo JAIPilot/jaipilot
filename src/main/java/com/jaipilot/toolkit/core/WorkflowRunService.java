@@ -1,5 +1,6 @@
 package com.jaipilot.toolkit.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -160,15 +161,14 @@ public final class WorkflowRunService implements AutoCloseable {
             TargetSelection selection,
             double minimumLineCoverage
     ) {
-        return prepareTestGeneration(requestedRoot, selection, minimumLineCoverage, 70.0d, true);
+        return prepareTestGeneration(requestedRoot, selection, minimumLineCoverage, 70.0d);
     }
 
     public PreparedRun prepareTestGeneration(
             Path requestedRoot,
             TargetSelection selection,
             double minimumLineCoverage,
-            double minimumMutationScore,
-            boolean mutationTestingEnabled
+            double minimumMutationScore
     ) {
         validateCoveragePercentage(minimumLineCoverage, "minimumLineCoverage");
         validateCoveragePercentage(minimumMutationScore, "minimumMutationScore");
@@ -177,13 +177,12 @@ public final class WorkflowRunService implements AutoCloseable {
                 WorkflowKind.GENERATE_TESTS,
                 selection,
                 minimumLineCoverage,
-                minimumMutationScore,
-                mutationTestingEnabled
+                minimumMutationScore
         );
     }
 
     public PreparedRun prepareCodeCleanup(Path requestedRoot, TargetSelection selection) {
-        return prepare(requestedRoot, WorkflowKind.CLEAN_JAVA, selection, 0.0d, 0.0d, true);
+        return prepare(requestedRoot, WorkflowKind.CLEAN_JAVA, selection, 0.0d, 70.0d);
     }
 
     private PreparedRun prepare(
@@ -191,8 +190,7 @@ public final class WorkflowRunService implements AutoCloseable {
             WorkflowKind kind,
             TargetSelection selection,
             double minimumLineCoverage,
-            double minimumMutationScore,
-            boolean mutationTestingEnabled
+            double minimumMutationScore
     ) {
         pruneExpiredRuns();
         Path root = resolveRoot(requestedRoot);
@@ -248,7 +246,6 @@ public final class WorkflowRunService implements AutoCloseable {
                     beforeCoverage,
                     minimumLineCoverage,
                     minimumMutationScore,
-                    mutationTestingEnabled,
                     qualityBefore,
                     Instant.now()
             );
@@ -299,7 +296,7 @@ public final class WorkflowRunService implements AutoCloseable {
         run.lock.lock();
         try {
             return new StoredRunState(
-                    2,
+                    3,
                     run.id,
                     run.kind.name(),
                     run.status.name(),
@@ -317,7 +314,6 @@ public final class WorkflowRunService implements AutoCloseable {
                     storeCoverage(run.projectRoot, run.beforeCoverage),
                     run.minimumLineCoverage,
                     run.minimumMutationScore,
-                    run.mutationTestingEnabled,
                     run.qualityBefore,
                     run.createdAt.toString(),
                     storeValidation(run.lastValidation),
@@ -333,7 +329,7 @@ public final class WorkflowRunService implements AutoCloseable {
     /** Restores one trusted, locally persisted toolkit run into this service instance. */
     public void restoreRun(StoredRunState state) {
         Objects.requireNonNull(state, "state");
-        if (state.schemaVersion() != 1 && state.schemaVersion() != 2) {
+        if (state.schemaVersion() < 1 || state.schemaVersion() > 3) {
             throw new IllegalArgumentException("Unsupported JAIPilot run-state schema: " + state.schemaVersion());
         }
         validateStoredRunId(state.runId());
@@ -387,8 +383,7 @@ public final class WorkflowRunService implements AutoCloseable {
                     restoreSnapshot(sandboxRoot, state.workspaceBaseline()),
                     restoreCoverage(projectRoot, state.beforeCoverage()),
                     state.minimumLineCoverage(),
-                    state.schemaVersion() >= 2 ? state.minimumMutationScore() : 0.0d,
-                    state.schemaVersion() >= 2 && state.mutationTestingEnabled(),
+                    state.schemaVersion() >= 2 ? state.minimumMutationScore() : 70.0d,
                     qualityBefore,
                     createdAt
             );
@@ -512,8 +507,7 @@ public final class WorkflowRunService implements AutoCloseable {
 
             MutationTestingService.MutationReport mutation = null;
             boolean mutationGoalMet = true;
-            boolean shouldRunMutation = run.mutationTestingEnabled
-                    && (run.kind == WorkflowKind.GENERATE_TESTS || !changedTests.isEmpty());
+            boolean shouldRunMutation = run.kind == WorkflowKind.GENERATE_TESTS || !changedTests.isEmpty();
             if (shouldRunMutation) {
                 try {
                     mutation = mutationGate.run(
@@ -524,12 +518,7 @@ public final class WorkflowRunService implements AutoCloseable {
                     );
                     mutationGoalMet = mutation.goalMet();
                     if (!mutationGoalMet) {
-                        failures.add(mutation.mutationScore() == null
-                                ? "PIT produced no scorable mutations; the required mutation score is "
-                                        + formatPercentage(run.minimumMutationScore) + "."
-                                : "PIT mutation score " + mutation.mutationScore()
-                                        + "% is below the required "
-                                        + formatPercentage(run.minimumMutationScore) + ".");
+                        failures.add(mutationFailure(run, mutation));
                     } else if (mutation.survived() > 0 || mutation.noCoverage() > 0) {
                         warnings.add("PIT found " + mutation.survived() + " surviving and "
                                 + mutation.noCoverage() + " uncovered mutations; review the mutation evidence.");
@@ -813,19 +802,33 @@ public final class WorkflowRunService implements AutoCloseable {
         return List.copyOf(targets);
     }
 
+    private String mutationFailure(
+            ActiveRun run,
+            MutationTestingService.MutationReport mutation
+    ) {
+        if (mutation.errors() > 0) {
+            return "PIT returned " + mutation.errors()
+                    + " error or unfinished statuses; mutation evidence is incomplete.";
+        }
+        if (mutation.mutationScore() == null) {
+            return "PIT produced no scorable mutations; the required mutation score is "
+                    + formatPercentage(run.minimumMutationScore) + ".";
+        }
+        return "PIT mutation score " + mutation.mutationScore() + "% is below the required "
+                + formatPercentage(run.minimumMutationScore) + ".";
+    }
+
     private QualityDelta qualityDelta(
             JavaQualityService.QualityReport before,
             JavaQualityService.QualityReport after
     ) {
-        Set<String> beforeKeys = before.findings().stream().map(this::qualityFindingKey).collect(java.util.stream.Collectors.toSet());
-        Set<String> afterKeys = after.findings().stream().map(this::qualityFindingKey).collect(java.util.stream.Collectors.toSet());
-        long resolved = beforeKeys.stream().filter(key -> !afterKeys.contains(key)).count();
-        long introduced = afterKeys.stream().filter(key -> !beforeKeys.contains(key)).count();
-        long newSevere = after.findings().stream()
-                .filter(finding -> finding.severity() == JavaQualityService.Severity.CRITICAL
-                        || finding.severity() == JavaQualityService.Severity.HIGH)
-                .filter(finding -> !beforeKeys.contains(qualityFindingKey(finding)))
-                .count();
+        Map<String, Long> beforeCounts = qualityFindingCounts(before.findings(), false);
+        Map<String, Long> afterCounts = qualityFindingCounts(after.findings(), false);
+        Map<String, Long> beforeSevereCounts = qualityFindingCounts(before.findings(), true);
+        Map<String, Long> afterSevereCounts = qualityFindingCounts(after.findings(), true);
+        long resolved = countExcess(beforeCounts, afterCounts);
+        long introduced = countExcess(afterCounts, beforeCounts);
+        long newSevere = countExcess(afterSevereCounts, beforeSevereCounts);
         return new QualityDelta(
                 before.metrics().qualityScore(),
                 after.metrics().qualityScore(),
@@ -851,8 +854,28 @@ public final class WorkflowRunService implements AutoCloseable {
         );
     }
 
+    private Map<String, Long> qualityFindingCounts(
+            List<JavaQualityService.Finding> findings,
+            boolean severeOnly
+    ) {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        findings.stream()
+                .filter(finding -> !severeOnly
+                        || finding.severity() == JavaQualityService.Severity.CRITICAL
+                        || finding.severity() == JavaQualityService.Severity.HIGH)
+                .map(this::qualityFindingKey)
+                .forEach(key -> counts.merge(key, 1L, Long::sum));
+        return counts;
+    }
+
+    private long countExcess(Map<String, Long> minuend, Map<String, Long> subtrahend) {
+        return minuend.entrySet().stream()
+                .mapToLong(entry -> Math.max(0L, entry.getValue() - subtrahend.getOrDefault(entry.getKey(), 0L)))
+                .sum();
+    }
+
     private String qualityFindingKey(JavaQualityService.Finding finding) {
-        return finding.id() + "|" + finding.relativePath() + "|" + finding.symbol() + "|" + finding.message();
+        return finding.id() + "|" + finding.relativePath() + "|" + finding.symbol();
     }
 
     private TestQualityScore testQualityScore(
@@ -947,6 +970,7 @@ public final class WorkflowRunService implements AutoCloseable {
                 0,
                 0,
                 0,
+                0,
                 List.of(),
                 List.of(),
                 List.of(),
@@ -969,6 +993,7 @@ public final class WorkflowRunService implements AutoCloseable {
                 0,
                 0,
                 1,
+                0,
                 0,
                 List.of(),
                 List.of(),
@@ -1555,6 +1580,7 @@ public final class WorkflowRunService implements AutoCloseable {
     public record AppliedRun(String runId, List<Path> changedRelativePaths) {
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record StoredRunState(
             int schemaVersion,
             String runId,
@@ -1568,7 +1594,6 @@ public final class WorkflowRunService implements AutoCloseable {
             StoredCoverage beforeCoverage,
             double minimumLineCoverage,
             double minimumMutationScore,
-            boolean mutationTestingEnabled,
             JavaQualityService.QualityReport qualityBefore,
             String createdAt,
             StoredValidation lastValidation,
@@ -1632,7 +1657,6 @@ public final class WorkflowRunService implements AutoCloseable {
         private final CoverageReportService.CoverageSnapshot beforeCoverage;
         private final double minimumLineCoverage;
         private final double minimumMutationScore;
-        private final boolean mutationTestingEnabled;
         private final JavaQualityService.QualityReport qualityBefore;
         private final Instant createdAt;
         private final ReentrantLock lock = new ReentrantLock();
@@ -1651,7 +1675,6 @@ public final class WorkflowRunService implements AutoCloseable {
                 CoverageReportService.CoverageSnapshot beforeCoverage,
                 double minimumLineCoverage,
                 double minimumMutationScore,
-                boolean mutationTestingEnabled,
                 JavaQualityService.QualityReport qualityBefore,
                 Instant createdAt
         ) {
@@ -1665,7 +1688,6 @@ public final class WorkflowRunService implements AutoCloseable {
             this.beforeCoverage = beforeCoverage;
             this.minimumLineCoverage = minimumLineCoverage;
             this.minimumMutationScore = minimumMutationScore;
-            this.mutationTestingEnabled = mutationTestingEnabled;
             this.qualityBefore = Objects.requireNonNull(qualityBefore, "qualityBefore");
             this.createdAt = createdAt;
         }

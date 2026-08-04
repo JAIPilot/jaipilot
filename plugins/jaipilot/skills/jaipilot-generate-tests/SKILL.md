@@ -22,7 +22,7 @@ mutation testing, source-quality checks, drift protection, and transactional app
    - `all`: use only for an explicit whole-project request.
 4. Run `jaipilot prepare-tests --project <root> --mode <mode> ...`. Pass requested
    `--minimum-line-coverage` and `--minimum-mutation-score`; default to 80 and 70 respectively.
-   Do not use `--skip-mutation-testing` merely to make a candidate pass.
+   PIT mutation testing is a required proof gate for every generated-test candidate.
 5. Read the JSON result. Work only inside `result.workspaceRoot`; never edit the live project while
    the run is open.
 6. Inspect the targets and existing tests. Add the smallest coherent tests under `src/test/java`.

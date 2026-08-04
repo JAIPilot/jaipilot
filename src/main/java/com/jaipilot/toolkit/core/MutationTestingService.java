@@ -81,14 +81,13 @@ public final class MutationTestingService {
         Duration elapsed = Duration.ofNanos(System.nanoTime() - started);
         int scorable = counts.scorable();
         Double mutationScore = scorable == 0 ? null : percentage(counts.killed(), scorable);
-        int covered = counts.killed() + counts.survived();
+        int covered = counts.killed() + counts.survived() + counts.timedOut();
         Double testStrength = covered == 0 ? null : percentage(counts.killed(), covered);
-        boolean goalMet = mutationScore == null
+        boolean scoreMet = mutationScore == null
                 ? minimumMutationScore == 0.0d
                 : mutationScore + 0.000_001d >= minimumMutationScore;
-        String incompleteReason = mutationScore == null
-                ? "PIT completed but generated no scorable mutations for the selected classes."
-                : null;
+        boolean goalMet = scoreMet && counts.errors() == 0;
+        String incompleteReason = mutationEvidenceNote(counts, mutationScore);
         return new MutationReport(
                 PITEST_VERSION,
                 true,
@@ -103,12 +102,28 @@ public final class MutationTestingService {
                 counts.timedOut(),
                 counts.errors(),
                 counts.equivalent(),
+                counts.nonViable(),
                 List.copyOf(counts.survivors()),
                 reportPaths.stream().map(path -> portable(root, path)).toList(),
                 executions.stream().map(Execution::command).toList(),
                 incompleteReason,
                 elapsed.toNanos()
         );
+    }
+
+    private String mutationEvidenceNote(MutationCounts counts, Double mutationScore) {
+        if (mutationScore == null) {
+            return "PIT completed but generated no scorable mutations for the selected classes.";
+        }
+        if (counts.errors() > 0) {
+            return "PIT returned " + counts.errors()
+                    + " error or unfinished statuses; mutation evidence is incomplete.";
+        }
+        if (counts.nonViable() > 0 || counts.equivalent() > 0) {
+            return "JAIPilot excluded " + counts.nonViable() + " non-viable and "
+                    + counts.equivalent() + " equivalent mutations from the actionable score.";
+        }
+        return null;
     }
 
     private List<Execution> runMaven(
@@ -130,7 +145,7 @@ public final class MutationTestingService {
             clearReportDirectory(moduleRoot, reportRoot, "target/jaipilot-pit");
             List<String> testGlobs = testGlobs(root, moduleRoot, entry.getValue(), changedTests);
             Path temporaryPom = moduleRoot.resolve(".jaipilot-pitest-" + UUID.randomUUID() + ".xml");
-            try {
+            try (TemporaryFile ignored = new TemporaryFile(temporaryPom)) {
                 writeMavenPom(pom, temporaryPom, entry.getValue(), testGlobs, reportRoot);
                 List<String> command = List.of(
                         buildExecutable(root, JavaProjectService.BuildTool.MAVEN),
@@ -145,12 +160,6 @@ public final class MutationTestingService {
                 executions.add(new Execution(command, findReports(reportRoot)));
             } catch (IOException exception) {
                 throw new IllegalStateException("Failed to configure targeted PIT mutation testing for " + moduleRoot, exception);
-            } finally {
-                try {
-                    Files.deleteIfExists(temporaryPom);
-                } catch (IOException exception) {
-                    throw new IllegalStateException("Failed to remove temporary PIT Maven configuration " + temporaryPom, exception);
-                }
             }
         }
         return List.copyOf(executions);
@@ -164,30 +173,26 @@ public final class MutationTestingService {
         List<Path> reportRoots = gradleReportRoots(root, targets);
         reportRoots.forEach(reportRoot -> clearReportDirectory(root, reportRoot, "build/reports/pitest"));
         List<String> testGlobs = testGlobs(root, null, targets, changedTests);
-        Path initScript = null;
         try {
-            initScript = Files.createTempFile("jaipilot-pitest-", ".gradle");
-            Files.writeString(initScript, gradleInitScript(targets, testGlobs), StandardCharsets.UTF_8);
-            List<String> command = List.of(
-                    buildExecutable(root, JavaProjectService.BuildTool.GRADLE),
-                    "--no-daemon",
-                    "--init-script",
-                    initScript.toAbsolutePath().normalize().toString(),
-                    "pitest"
-            );
-            execute(command, root);
-            List<Path> reports = reportRoots.stream().flatMap(path -> findReports(path).stream()).sorted().toList();
-            return new Execution(command, reports);
+            Path initScript = Files.createTempFile("jaipilot-pitest-", ".gradle");
+            try (TemporaryFile ignored = new TemporaryFile(initScript)) {
+                Files.writeString(initScript, gradleInitScript(targets, testGlobs), StandardCharsets.UTF_8);
+                List<String> command = List.of(
+                        buildExecutable(root, JavaProjectService.BuildTool.GRADLE),
+                        "--no-daemon",
+                        "--init-script",
+                        initScript.toAbsolutePath().normalize().toString(),
+                        "pitest"
+                );
+                execute(command, root);
+                List<Path> reports = reportRoots.stream()
+                        .flatMap(path -> findReports(path).stream())
+                        .sorted()
+                        .toList();
+                return new Execution(command, reports);
+            }
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to configure targeted PIT mutation testing for Gradle.", exception);
-        } finally {
-            if (initScript != null) {
-                try {
-                    Files.deleteIfExists(initScript);
-                } catch (IOException exception) {
-                    throw new IllegalStateException("Failed to remove temporary PIT Gradle configuration.", exception);
-                }
-            }
         }
     }
 
@@ -625,6 +630,7 @@ public final class MutationTestingService {
             int timedOut,
             int errors,
             int equivalent,
+            int nonViable,
             List<SurvivingMutation> survivingMutations,
             List<String> reportPaths,
             List<List<String>> commands,
@@ -644,10 +650,11 @@ public final class MutationTestingService {
             int timedOut,
             int errors,
             int equivalent,
+            int nonViable,
             List<SurvivingMutation> survivors
     ) {
         int scorable() {
-            return Math.max(0, total - equivalent);
+            return Math.max(0, total - equivalent - nonViable - errors);
         }
     }
 
@@ -659,6 +666,7 @@ public final class MutationTestingService {
         private int timedOut;
         private int errors;
         private int equivalent;
+        private int nonViable;
         private final List<SurvivingMutation> survivors = new ArrayList<>();
 
         private void add(String status, SurvivingMutation survivor) {
@@ -669,6 +677,7 @@ public final class MutationTestingService {
                 case "NO_COVERAGE" -> noCoverage++;
                 case "TIMED_OUT" -> timedOut++;
                 case "EQUIVALENT" -> equivalent++;
+                case "NON_VIABLE" -> nonViable++;
                 default -> errors++;
             }
             if (survivor != null && survivors.size() < MAX_SURVIVORS) {
@@ -678,12 +687,19 @@ public final class MutationTestingService {
 
         private MutationCounts freeze() {
             return new MutationCounts(
-                    total, killed, survived, noCoverage, timedOut, errors, equivalent,
+                    total, killed, survived, noCoverage, timedOut, errors, equivalent, nonViable,
                     survivors.stream().sorted(Comparator
                             .comparing(SurvivingMutation::mutatedClass)
                             .thenComparingInt(SurvivingMutation::line)
                             .thenComparing(SurvivingMutation::mutator)).toList()
             );
+        }
+    }
+
+    private record TemporaryFile(Path path) implements AutoCloseable {
+        @Override
+        public void close() throws IOException {
+            Files.deleteIfExists(path);
         }
     }
 }
