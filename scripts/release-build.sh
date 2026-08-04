@@ -8,8 +8,9 @@ export LC_ALL LANG
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 POM_FILE="$REPO_ROOT/pom.xml"
-PACKAGE_FILE="$REPO_ROOT/package.json"
-PLUGIN_FILES="$REPO_ROOT/plugin/jaipilot/.codex-plugin/plugin.json $REPO_ROOT/plugin/jaipilot/plugin.json $REPO_ROOT/plugin/jaipilot/.claude-plugin/plugin.json"
+PLUGIN_FILES="$REPO_ROOT/plugins/jaipilot/.codex-plugin/plugin.json $REPO_ROOT/plugins/jaipilot/plugin.json $REPO_ROOT/plugins/jaipilot/.claude-plugin/plugin.json"
+CLAUDE_MARKETPLACE_FILE="$REPO_ROOT/.claude-plugin/marketplace.json"
+PLUGIN_BOOTSTRAP_FILE="$REPO_ROOT/plugins/jaipilot/bin/jaipilot"
 VERSION=""
 PUSH_CHANGES=0
 
@@ -18,9 +19,9 @@ usage() {
 Usage: scripts/release-build.sh --version <version> [--push]
 
 Prepares a new JAIPilot release by:
-  1. Updating the Maven, npm, and cross-agent plugin versions.
-  2. Running the full Maven and npm verification gates.
-  3. Smoke-testing shell and npm installation for that version.
+  1. Updating the Maven and cross-agent plugin versions.
+  2. Running the full Java and plugin verification gates.
+  3. Smoke-testing checksum-verified plugin installation for that version.
   4. Creating a release commit (including current worktree changes) and annotated git tag.
 
 Options:
@@ -56,21 +57,23 @@ update_versions() {
   for plugin_file in $PLUGIN_FILES; do
     NEW_VERSION=$1 perl -0pi -e 's#"version"\s*:\s*"[^"]+"#"version": "$ENV{NEW_VERSION}"#' "$plugin_file"
   done
-  (
-    cd "$REPO_ROOT"
-    npm version "$1" --no-git-tag-version --allow-same-version --ignore-scripts >/dev/null
-  )
+  NEW_VERSION=$1 perl -0pi -e 's#"version"\s*:\s*"[^"]+"#"version": "$ENV{NEW_VERSION}"#' \
+    "$CLAUDE_MARKETPLACE_FILE"
+  NEW_VERSION=$1 perl -0pi -e 's#VERSION="[0-9]+\.[0-9]+\.[0-9]+"#VERSION="$ENV{NEW_VERSION}"#' \
+    "$PLUGIN_BOOTSTRAP_FILE"
 }
 
 ensure_version_applied() {
   expected=$1
   [ "$(current_version)" = "$expected" ] || die "Failed to update pom.xml to version $expected"
-  [ "$(node -p "require('$PACKAGE_FILE').version")" = "$expected" ] \
-    || die "Failed to update package.json to version $expected"
   for plugin_file in $PLUGIN_FILES; do
     grep -Fq "\"version\": \"$expected\"" "$plugin_file" \
       || die "Failed to update plugin version in $plugin_file"
   done
+  grep -Fq "\"version\": \"$expected\"" "$CLAUDE_MARKETPLACE_FILE" \
+    || die "Failed to update Claude marketplace version"
+  grep -Fq "VERSION=\"$expected\"" "$PLUGIN_BOOTSTRAP_FILE" \
+    || die "Failed to update plugin bootstrap version"
 }
 
 ensure_tag_absent() {
@@ -121,8 +124,7 @@ done
 require_command git
 require_command perl
 require_command grep
-require_command node
-require_command npm
+require_command python3
 
 validate_version "$VERSION"
 
@@ -134,16 +136,12 @@ CURRENT_VERSION=$(current_version)
 
 ensure_tag_absent "v$VERSION"
 
-if [ "$CURRENT_VERSION" != "$VERSION" ] \
-  || [ "$(node -p "require('$PACKAGE_FILE').version")" != "$VERSION" ]; then
-  update_versions "$VERSION"
-  ensure_version_applied "$VERSION"
-fi
+update_versions "$VERSION"
+ensure_version_applied "$VERSION"
 
 ./mvnw -B clean verify
-npm ci --ignore-scripts
+python3 ./scripts/validate-plugin.py
 ./scripts/smoke-test-install.sh --version "$VERSION"
-./scripts/smoke-test-npm.sh --version "$VERSION"
 
 commit_and_tag "$VERSION"
 

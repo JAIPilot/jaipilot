@@ -1,0 +1,20 @@
+{
+  "name": "jaipilot",
+  "version": "3.0.0",
+  "description": "Enterprise Java toolkit for high-coverage tests and verified OpenRewrite-first clean-code refactoring.",
+  "author": {
+    "name": "JAIPilot",
+    "url": "https://github.com/JAIPilot"
+  },
+  "homepage": "https://github.com/JAIPilot/jaipilot-cli#readme",
+  "repository": "https://github.com/JAIPilot/jaipilot-cli",
+  "license": "MIT",
+  "keywords": [
+    "java",
+    "junit",
+    "jacoco",
+    "openrewrite",
+    "refactoring",
+    "code-quality"
+  ]
+}

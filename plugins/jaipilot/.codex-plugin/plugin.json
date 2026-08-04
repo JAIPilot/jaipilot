@@ -1,0 +1,37 @@
+{
+  "name": "jaipilot",
+  "version": "3.0.0",
+  "description": "Enterprise Java toolkit for high-coverage tests and verified OpenRewrite-first clean-code refactoring.",
+  "author": {
+    "name": "JAIPilot",
+    "url": "https://github.com/JAIPilot"
+  },
+  "homepage": "https://github.com/JAIPilot/jaipilot-cli#readme",
+  "repository": "https://github.com/JAIPilot/jaipilot-cli",
+  "license": "MIT",
+  "keywords": [
+    "java",
+    "junit",
+    "jacoco",
+    "openrewrite",
+    "refactoring",
+    "code-quality"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "JAIPilot",
+    "shortDescription": "Enterprise Java tests and refactoring",
+    "longDescription": "Generate efficient high-coverage Java unit tests and perform OpenRewrite-first clean-code refactoring with isolated workspaces, real builds, fresh coverage, drift protection, and transactional apply.",
+    "developerName": "JAIPilot",
+    "category": "Productivity",
+    "capabilities": [],
+    "websiteURL": "https://github.com/JAIPilot/jaipilot-cli",
+    "defaultPrompt": [
+      "Generate high-coverage unit tests for this Java project.",
+      "Clean and refactor the changed Java classes safely.",
+      "Review this Java code and apply only verified improvements."
+    ],
+    "brandColor": "#2457D6",
+    "logo": "./assets/jaipilot-logo.svg"
+  }
+}

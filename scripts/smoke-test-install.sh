@@ -7,6 +7,8 @@ export LC_ALL LANG
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+INSTALLER="$REPO_ROOT/plugins/jaipilot/libexec/install.sh"
+PLUGIN_RUNNER="$REPO_ROOT/plugins/jaipilot/bin/jaipilot"
 DIST_DIR="$REPO_ROOT/target/distributions"
 SMOKE_DIR="$REPO_ROOT/target/smoke-install"
 VERSION=""
@@ -16,8 +18,7 @@ usage() {
   cat <<'EOF'
 Usage: scripts/smoke-test-install.sh [--version <version>] [--classifier <platform>]
 
-Smoke-tests the install script against a local release archive, then completes an
-MCP initialize and tools/list exchange through the installed launcher.
+Smoke-tests the plugin runner installation against a local release archive.
 EOF
 }
 
@@ -92,15 +93,15 @@ done
 RESOLVED_CLASSIFIER=$(resolve_classifier)
 
 if [ -n "$VERSION" ]; then
-  TAR_GZ="$DIST_DIR/jaipilot-mcp-$VERSION-$RESOLVED_CLASSIFIER.tar.gz"
+  TAR_GZ="$DIST_DIR/jaipilot-toolkit-$VERSION-$RESOLVED_CLASSIFIER.tar.gz"
 else
-  TAR_GZ=$(ls -1t "$DIST_DIR"/jaipilot-mcp-*-"$RESOLVED_CLASSIFIER".tar.gz 2>/dev/null | head -n 1)
+  TAR_GZ=$(ls -1t "$DIST_DIR"/jaipilot-toolkit-*-"$RESOLVED_CLASSIFIER".tar.gz 2>/dev/null | head -n 1)
 fi
 
 [ -n "${TAR_GZ:-}" ] || die "Could not find a JAIPilot tar.gz distribution under $DIST_DIR"
 [ -f "$TAR_GZ" ] || die "Missing distribution archive: $TAR_GZ"
 CHECKSUM_FILE="$TAR_GZ.sha256"
-INSTALL_VERSION=${VERSION:-$(basename "$TAR_GZ" | sed -n "s/^jaipilot-mcp-\\([0-9][0-9.]*\\)-$RESOLVED_CLASSIFIER\\.tar\\.gz$/\\1/p")}
+INSTALL_VERSION=${VERSION:-$(basename "$TAR_GZ" | sed -n "s/^jaipilot-toolkit-\\([0-9][0-9.]*\\)-$RESOLVED_CLASSIFIER\\.tar\\.gz$/\\1/p")}
 [ -n "${INSTALL_VERSION:-}" ] || die "Could not determine the distribution version from $TAR_GZ"
 
 printf '%s  %s\n' "$(compute_sha256 "$TAR_GZ")" "$(basename "$TAR_GZ")" > "$CHECKSUM_FILE"
@@ -108,14 +109,43 @@ printf '%s  %s\n' "$(compute_sha256 "$TAR_GZ")" "$(basename "$TAR_GZ")" > "$CHEC
 rm -rf "$SMOKE_DIR"
 mkdir -p "$SMOKE_DIR"
 
+if JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/incomplete-app" \
+  JAIPILOT_BOOTSTRAP_ARCHIVE_URL="file://$TAR_GZ" \
+  "$PLUGIN_RUNNER" version > "$SMOKE_DIR/incomplete-bootstrap.log" 2>&1; then
+  die "Plugin bootstrap accepted an archive override without its checksum"
+fi
+grep -Fq "archive and checksum overrides must be set together" \
+  "$SMOKE_DIR/incomplete-bootstrap.log" \
+  || die "Plugin bootstrap did not report incomplete archive overrides cleanly"
+
+JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/plugin-app" \
+JAIPILOT_BOOTSTRAP_ARCHIVE_URL="file://$TAR_GZ" \
+JAIPILOT_BOOTSTRAP_CHECKSUM_URL="file://$CHECKSUM_FILE" \
+  "$PLUGIN_RUNNER" version > "$SMOKE_DIR/plugin-version.json"
+grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/plugin-version.json" \
+  || die "Plugin bootstrap did not install and run version $INSTALL_VERSION"
+JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/plugin-app" \
+  "$PLUGIN_RUNNER" version > "$SMOKE_DIR/plugin-cached-version.json"
+grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/plugin-cached-version.json" \
+  || die "Plugin bootstrap did not reuse the cached version"
+
+for removed_option in --prefix --bin-dir --lib-dir --no-bin-link; do
+  option_name=${removed_option#--}
+  if "$INSTALLER" "$removed_option" retired \
+    > "$SMOKE_DIR/removed-$option_name.log" 2>&1; then
+    die "Installer still accepted removed option $removed_option"
+  fi
+  grep -Fq "Unknown option: $removed_option" "$SMOKE_DIR/removed-$option_name.log" \
+    || die "Installer did not reject removed option $removed_option cleanly"
+done
+
 mkdir -p "$SMOKE_DIR/security-app/victim"
 printf 'keep\n' > "$SMOKE_DIR/security-app/victim/marker"
 MALICIOUS_VERSION=$(printf '1.0.0\n../../../victim')
-if "$REPO_ROOT/install.sh" \
+if "$INSTALLER" \
   --version "$MALICIOUS_VERSION" \
   --archive-url "file://$TAR_GZ" \
   --checksum-url "file://$CHECKSUM_FILE" \
-  --bin-dir "$SMOKE_DIR/security-bin" \
   --app-dir "$SMOKE_DIR/security-app" \
   > "$SMOKE_DIR/invalid-version.log" 2>&1; then
   die "Installer accepted a path-traversal version"
@@ -126,12 +156,11 @@ grep -Fq "Version must look like 1.0.0" "$SMOKE_DIR/invalid-version.log" \
 
 mkdir -p "$SMOKE_DIR/lock-app/.install-lock"
 printf '%s\n' "$$" > "$SMOKE_DIR/lock-app/.install-lock/pid"
-if "$REPO_ROOT/install.sh" \
+if "$INSTALLER" \
   --version "$INSTALL_VERSION" \
   --archive-url "file://$TAR_GZ" \
   --checksum-url "file://$CHECKSUM_FILE" \
   --app-dir "$SMOKE_DIR/lock-app" \
-  --no-bin-link \
   > "$SMOKE_DIR/active-lock.log" 2>&1; then
   die "Installer ignored an active install lock"
 fi
@@ -140,43 +169,38 @@ grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/active-lock.log" \
 [ "$(cat "$SMOKE_DIR/lock-app/.install-lock/pid")" = "$$" ] \
   || die "Installer changed another process's active lock"
 
-"$REPO_ROOT/install.sh" \
+"$INSTALLER" \
   --version "$INSTALL_VERSION" \
   --archive-url "file://$TAR_GZ" \
   --checksum-url "file://$CHECKSUM_FILE" \
-  --bin-dir "$SMOKE_DIR/bin" \
   --app-dir "$SMOKE_DIR/app"
 
 [ -L "$SMOKE_DIR/app/current" ] || die "Install did not create the current symlink"
-[ -x "$SMOKE_DIR/app/bin/jaipilot-mcp" ] || die "Install did not create the stable app launcher"
+[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Install did not create the stable toolkit launcher"
 [ -x "$SMOKE_DIR/app/current/libexec/install.sh" ] || die "Distribution did not include the self-update installer"
-node "$REPO_ROOT/scripts/smoke-test-mcp.mjs" "$SMOKE_DIR/bin/jaipilot-mcp"
-
-EXTERNAL_LAUNCHER_SHA256=$(compute_sha256 "$SMOKE_DIR/bin/jaipilot-mcp")
+"$SMOKE_DIR/app/bin/jaipilot" version > "$SMOKE_DIR/version.json"
+grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/version.json" \
+  || die "Installed toolkit did not report version $INSTALL_VERSION"
+STABLE_RUNNER_SHA256=$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")
 "$SMOKE_DIR/app/current/libexec/install.sh" \
   --version "$INSTALL_VERSION" \
   --archive-url "file://$TAR_GZ" \
   --checksum-url "file://$CHECKSUM_FILE" \
-  --bin-dir "$SMOKE_DIR/ignored-bin" \
-  --app-dir "$SMOKE_DIR/app" \
-  --no-bin-link
+  --app-dir "$SMOKE_DIR/app"
 
-[ ! -e "$SMOKE_DIR/ignored-bin/jaipilot-mcp" ] || die "--no-bin-link created an external launcher"
-[ "$EXTERNAL_LAUNCHER_SHA256" = "$(compute_sha256 "$SMOKE_DIR/bin/jaipilot-mcp")" ] \
-  || die "--no-bin-link changed the existing external launcher"
+[ "$STABLE_RUNNER_SHA256" = "$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")" ] \
+  || die "Self-update changed the stable plugin runner unexpectedly"
 [ -L "$SMOKE_DIR/app/current" ] || die "Self-update did not preserve the current symlink"
-[ -x "$SMOKE_DIR/app/bin/jaipilot-mcp" ] || die "Self-update did not preserve the stable app launcher"
-node "$REPO_ROOT/scripts/smoke-test-mcp.mjs" "$SMOKE_DIR/app/bin/jaipilot-mcp"
-node "$REPO_ROOT/scripts/smoke-test-mcp.mjs" "$SMOKE_DIR/bin/jaipilot-mcp"
+[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Self-update did not preserve the toolkit launcher"
+"$SMOKE_DIR/app/bin/jaipilot" version > "$SMOKE_DIR/app-version.json"
 
 rm -f "$SMOKE_DIR/app/current"
 mkdir -p "$SMOKE_DIR/app/current"
-if "$REPO_ROOT/install.sh" \
+if "$INSTALLER" \
   --version "$INSTALL_VERSION" \
   --archive-url "file://$TAR_GZ" \
   --checksum-url "file://$CHECKSUM_FILE" \
   --app-dir "$SMOKE_DIR/app" \
-  --no-bin-link \
   > "$SMOKE_DIR/invalid-current.log" 2>&1; then
   die "Installer replaced a non-symlink current directory"
 fi

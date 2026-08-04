@@ -1,4 +1,0 @@
-interface:
-  display_name: "Generate Java Tests"
-  short_description: "Generate and validate Java tests safely"
-  default_prompt: "Use JAIPilot to generate verified unit tests for the requested Java target."

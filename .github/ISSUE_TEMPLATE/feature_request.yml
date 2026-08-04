@@ -29,6 +29,6 @@ body:
     id: context
     attributes:
       label: Additional context
-      description: Include sample MCP requests, agent prompts, projects, or screenshots if helpful.
+      description: Include sample agent prompts, runner output, projects, or screenshots if helpful.
     validations:
       required: false

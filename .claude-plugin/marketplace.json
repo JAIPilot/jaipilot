@@ -1,0 +1,25 @@
+{
+  "name": "jaipilot",
+  "owner": {
+    "name": "JAIPilot",
+    "url": "https://github.com/JAIPilot"
+  },
+  "metadata": {
+    "description": "Enterprise Java engineering tools for coding agents."
+  },
+  "plugins": [
+    {
+      "name": "jaipilot",
+      "source": "./plugins/jaipilot",
+      "description": "High-coverage Java tests and verified OpenRewrite-first refactoring.",
+      "version": "3.0.0",
+      "category": "development",
+      "tags": [
+        "java",
+        "testing",
+        "refactoring",
+        "code-quality"
+      ]
+    }
+  ]
+}

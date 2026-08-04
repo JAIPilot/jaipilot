@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "jaipilot": {
-      "command": "jaipilot-mcp",
-      "args": [],
-      "env": {}
-    }
-  }
-}

@@ -1,0 +1,43 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ -n "${JAIPILOT_TOOLKIT_EXECUTABLE:-}" ]; then
+  exec "$JAIPILOT_TOOLKIT_EXECUTABLE" "$@"
+fi
+
+PLUGIN_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+VERSION="3.0.0"
+
+if [ -n "${JAIPILOT_RUNTIME_HOME:-}" ]; then
+  APP_DIR=$JAIPILOT_RUNTIME_HOME
+elif [ -n "${XDG_DATA_HOME:-}" ]; then
+  APP_DIR="$XDG_DATA_HOME/jaipilot"
+else
+  APP_DIR="$HOME/.local/share/jaipilot"
+fi
+
+RUNNER="$APP_DIR/versions/$VERSION/bin/jaipilot"
+if [ ! -x "$RUNNER" ]; then
+  if [ -n "${JAIPILOT_BOOTSTRAP_ARCHIVE_URL:-}" ] \
+    || [ -n "${JAIPILOT_BOOTSTRAP_CHECKSUM_URL:-}" ]; then
+    [ -n "${JAIPILOT_BOOTSTRAP_ARCHIVE_URL:-}" ] \
+      && [ -n "${JAIPILOT_BOOTSTRAP_CHECKSUM_URL:-}" ] || {
+        echo "JAIPilot bootstrap archive and checksum overrides must be set together." >&2
+        exit 1
+      }
+    "$PLUGIN_ROOT/libexec/install.sh" \
+      --version "$VERSION" \
+      --app-dir "$APP_DIR" \
+      --archive-url "$JAIPILOT_BOOTSTRAP_ARCHIVE_URL" \
+      --checksum-url "$JAIPILOT_BOOTSTRAP_CHECKSUM_URL"
+  else
+    "$PLUGIN_ROOT/libexec/install.sh" --version "$VERSION" --app-dir "$APP_DIR"
+  fi
+fi
+
+[ -x "$RUNNER" ] || {
+  echo "JAIPilot $VERSION plugin runner was not installed at $RUNNER" >&2
+  exit 1
+}
+
+exec "$RUNNER" "$@"

@@ -1,0 +1,20 @@
+{
+  "name": "jaipilot",
+  "interface": {
+    "displayName": "JAIPilot"
+  },
+  "plugins": [
+    {
+      "name": "jaipilot",
+      "source": {
+        "source": "local",
+        "path": "./plugins/jaipilot"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -18,19 +18,11 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-
-      - name: Install npm development metadata
-        run: npm ci --ignore-scripts
-
       - name: Verify
         run: ./mvnw -B verify
 
+      - name: Validate agent plugins
+        run: python3 ./scripts/validate-plugin.py
+
       - name: Smoke test install script
         run: ./scripts/smoke-test-install.sh
-
-      - name: Smoke test npm installation
-        run: ./scripts/smoke-test-npm.sh

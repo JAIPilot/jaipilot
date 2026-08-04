@@ -1,8 +1,0 @@
-{
-  "name": "jaipilot",
-  "version": "2.0.0",
-  "description": "Verified local Java test generation and OpenRewrite cleanup through MCP and Agent Skills.",
-  "author": {
-    "name": "JAIPilot"
-  }
-}

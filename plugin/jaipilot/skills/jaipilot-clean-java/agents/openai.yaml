@@ -1,4 +1,0 @@
-interface:
-  display_name: "Clean Java Code"
-  short_description: "Clean Java code in an isolated workspace"
-  default_prompt: "Use JAIPilot and OpenRewrite to clean the requested Java code safely."

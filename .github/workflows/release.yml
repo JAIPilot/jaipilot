@@ -36,14 +36,6 @@ jobs:
           java-version: "21"
           cache: maven
 
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-
-      - name: Install npm development metadata
-        run: npm ci --ignore-scripts
-
       - name: Resolve version
         id: version
         run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
@@ -51,22 +43,22 @@ jobs:
       - name: Build release artifacts
         run: ./mvnw -B -ntp -Drevision=${{ steps.version.outputs.value }} verify
 
+      - name: Validate agent plugins
+        run: python3 ./scripts/validate-plugin.py
+
       - name: Generate release checksum
-        run: shasum -a 256 "target/distributions/jaipilot-mcp-${{ steps.version.outputs.value }}-${{ matrix.classifier }}.tar.gz" > "target/distributions/jaipilot-mcp-${{ steps.version.outputs.value }}-${{ matrix.classifier }}.tar.gz.sha256"
+        run: shasum -a 256 "target/distributions/jaipilot-toolkit-${{ steps.version.outputs.value }}-${{ matrix.classifier }}.tar.gz" > "target/distributions/jaipilot-toolkit-${{ steps.version.outputs.value }}-${{ matrix.classifier }}.tar.gz.sha256"
 
       - name: Smoke test install script
         run: ./scripts/smoke-test-install.sh --version "${{ steps.version.outputs.value }}" --classifier "${{ matrix.classifier }}"
-
-      - name: Smoke test npm installation
-        run: ./scripts/smoke-test-npm.sh --version "${{ steps.version.outputs.value }}" --classifier "${{ matrix.classifier }}"
 
       - name: Upload release assets
         uses: actions/upload-artifact@v6
         with:
           name: bundled-runtime-${{ matrix.classifier }}
           path: |
-            target/distributions/jaipilot-mcp-${{ steps.version.outputs.value }}-${{ matrix.classifier }}.tar.gz
-            target/distributions/jaipilot-mcp-${{ steps.version.outputs.value }}-${{ matrix.classifier }}.tar.gz.sha256
+            target/distributions/jaipilot-toolkit-${{ steps.version.outputs.value }}-${{ matrix.classifier }}.tar.gz
+            target/distributions/jaipilot-toolkit-${{ steps.version.outputs.value }}-${{ matrix.classifier }}.tar.gz.sha256
 
   publish:
     needs: build
@@ -87,39 +79,9 @@ jobs:
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          name: JAIPilot MCP ${{ github.ref_name }}
+          name: JAIPilot Enterprise Java Toolkit ${{ github.ref_name }}
           generate_release_notes: true
           files: |
             target/release-assets/*.tar.gz
             target/release-assets/*.sha256
-            install.sh
-
-  publish-npm:
-    needs: publish
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up Node for trusted publishing
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-          registry-url: "https://registry.npmjs.org"
-
-      - name: Use an OIDC-capable npm CLI
-        run: npm install --global "npm@>=11.5.1 <12"
-
-      - name: Verify release version
-        run: |
-          package_version=$(node -p "require('./package.json').version")
-          test "$package_version" = "${GITHUB_REF_NAME#v}"
-
-      - name: Publish verified npm package
-        run: |
-          npm ci --ignore-scripts
-          npm publish --access public
+            plugins/jaipilot/libexec/install.sh

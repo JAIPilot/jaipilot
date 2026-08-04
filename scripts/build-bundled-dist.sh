@@ -17,7 +17,7 @@ usage() {
   cat <<'EOF'
 Usage: scripts/build-bundled-dist.sh --version <version> [--classifier <platform>]
 
-Builds a platform-specific JAIPilot MCP distribution with a bundled Java runtime image and Agent Skills.
+Builds a platform-specific JAIPilot plugin toolkit with a bundled Java runtime and Agent Skills.
 EOF
 }
 
@@ -98,7 +98,7 @@ require_command jlink
 require_command tar
 require_command grep
 
-SHADOW_JAR="$TARGET_DIR/jaipilot-mcp-$VERSION-all.jar"
+SHADOW_JAR="$TARGET_DIR/jaipilot-toolkit-$VERSION-all.jar"
 [ -f "$SHADOW_JAR" ] || die "Missing shaded jar: $SHADOW_JAR. Run ./mvnw package first."
 
 PLATFORM_CLASSIFIER=$(resolve_classifier)
@@ -110,13 +110,13 @@ else
   JLINK_COMPRESSION="2"
 fi
 
-APP_NAME="jaipilot-mcp-$VERSION-$PLATFORM_CLASSIFIER"
+APP_NAME="jaipilot-toolkit-$VERSION-$PLATFORM_CLASSIFIER"
 APP_DIR="$STAGING_ROOT/$APP_NAME"
 RUNTIME_DIR="$TARGET_DIR/runtime-image-$PLATFORM_CLASSIFIER"
 ARCHIVE_PATH="$DIST_DIR/$APP_NAME.tar.gz"
 
 rm -rf "$APP_DIR" "$RUNTIME_DIR"
-mkdir -p "$APP_DIR/bin" "$APP_DIR/lib" "$APP_DIR/libexec" "$APP_DIR/plugin" "$DIST_DIR"
+mkdir -p "$APP_DIR/bin" "$APP_DIR/lib" "$APP_DIR/libexec" "$APP_DIR/plugins" "$DIST_DIR"
 
 jlink \
   --add-modules "$MODULES" \
@@ -127,12 +127,12 @@ jlink \
   --generate-cds-archive \
   --compress "$JLINK_COMPRESSION"
 
-cp "$REPO_ROOT/src/main/dist/bin/jaipilot-mcp" "$APP_DIR/bin/jaipilot-mcp"
-chmod +x "$APP_DIR/bin/jaipilot-mcp"
-cp "$SHADOW_JAR" "$APP_DIR/lib/jaipilot-mcp.jar"
-cp "$REPO_ROOT/install.sh" "$APP_DIR/libexec/install.sh"
+cp "$REPO_ROOT/src/main/dist/bin/jaipilot" "$APP_DIR/bin/jaipilot"
+chmod +x "$APP_DIR/bin/jaipilot"
+cp "$SHADOW_JAR" "$APP_DIR/lib/jaipilot-toolkit.jar"
+cp "$REPO_ROOT/plugins/jaipilot/libexec/install.sh" "$APP_DIR/libexec/install.sh"
 chmod +x "$APP_DIR/libexec/install.sh"
-cp -R "$REPO_ROOT/plugin/jaipilot" "$APP_DIR/plugin/jaipilot"
+cp -R "$REPO_ROOT/plugins/jaipilot" "$APP_DIR/plugins/jaipilot"
 cp -R "$RUNTIME_DIR" "$APP_DIR/runtime"
 
 rm -f "$ARCHIVE_PATH"
