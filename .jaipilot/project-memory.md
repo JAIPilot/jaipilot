@@ -72,6 +72,12 @@ same macOS x64 machine and clean v3.0.0 build were 0.557, 0.542, 0.540, 0.551, a
 median 0.546 seconds and nearest-rank p95 0.557 seconds. These measurements include process startup and
 project discovery, but exclude builds and host-agent work.
 
+After removing npm on the same machine and v3.0.0 build, five fresh plugin bootstraps from the same
+local checksum-verified archive were 2.646, 2.734, 2.671, 2.659, and 2.652 seconds: median 2.659
+seconds and nearest-rank p95 2.734 seconds. This isolates install/extract/start time from network
+download time. Five cached `version` launches were 0.243, 0.239, 0.247, 0.243, and 0.265 seconds:
+median 0.243 seconds and nearest-rank p95 0.265 seconds.
+
 ## Keep Fresh
 
 Update this file when runner operations, persistence rules, workflow gates, recipes, run
