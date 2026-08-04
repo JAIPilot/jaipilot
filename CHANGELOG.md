@@ -2,6 +2,23 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [3.1.1] - 2026-08-05
+
+### Changed
+
+- Made targeted PIT proof mandatory for test generation and for cleanup candidates that change
+  related tests; removed the mutation bypass.
+- Separated non-viable PIT mutants from execution errors and excluded non-actionable statuses from
+  transparent score denominators.
+- Stabilized quality finding identity so an improved complexity measurement is not misclassified as
+  a newly introduced severe finding.
+
+### Fixed
+
+- Preserved the original build or PIT failure when temporary mutation configuration cleanup also
+  fails.
+- Removed obsolete mutation-toggle state while retaining compatibility with v1 and v2 run metadata.
+
 ## [3.1.0] - 2026-08-05
 
 ### Added
@@ -67,6 +84,7 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 - Interactive CLI distribution, npm packaging, MCP transport, hosted dependencies, and Sonar
   scanner integration.
 
+[3.1.1]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.1.1
 [3.1.0]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.1.0
 [3.0.2]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.0.2
 [3.0.1]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.0.1

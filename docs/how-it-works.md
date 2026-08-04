@@ -55,8 +55,9 @@ target. A requested minimum line-coverage goal blocks apply until every target m
 
 JAIPilot then runs pinned, class-and-test-scoped PIT mutation testing without changing the project's
 build files. Mutation score, test strength, killed and surviving mutations, uncovered mutations,
-and elapsed time are returned as structured evidence. Test generation defaults to a 70% mutation
-gate; no scorable mutations cannot satisfy a positive target.
+non-viable and error statuses, and elapsed time are returned as structured evidence. Test generation
+always uses PIT with a default 70% mutation gate; no scorable mutations cannot satisfy a positive
+target. Cleanup also applies the 70% mutation gate whenever its candidate changes a related test.
 
 Validation also recomputes the selected-source quality report. New critical or high findings and an
 overall quality-score regression block apply. The result includes before/after findings, bug risks,

@@ -92,15 +92,13 @@ final class ToolkitRunStore {
             Path projectRoot,
             WorkflowRunService.TargetSelection selection,
             double minimumLineCoverage,
-            double minimumMutationScore,
-            boolean mutationTestingEnabled
+            double minimumMutationScore
     ) {
         return prepare(projectRoot, service -> service.prepareTestGeneration(
                 projectRoot,
                 selection,
                 minimumLineCoverage,
-                minimumMutationScore,
-                mutationTestingEnabled
+                minimumMutationScore
         ));
     }
 

@@ -34,8 +34,8 @@ regression gates, drift protection, and transactional apply.
    and directly relevant Java tests; never change builds, configuration, documentation, generated
    output, or unselected production files.
 9. Run `jaipilot validate --run <runId>`. Resolve any new critical/high finding or quality-score
-   regression. If tests changed, review PIT survivors and strengthen the tests. Repeat until
-   `readyToApply` is true.
+   regression. If tests changed, the required 70% PIT gate runs; review survivors and strengthen
+   the tests. Repeat until `readyToApply` is true.
 10. After reviewing the candidate and confirming the requested change, run
    `jaipilot apply --run <runId> --confirm`. Otherwise discard it.
 

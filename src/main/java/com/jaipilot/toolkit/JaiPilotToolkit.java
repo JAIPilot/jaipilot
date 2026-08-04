@@ -45,7 +45,6 @@ public final class JaiPilotToolkit {
             Test quality gates:
               --minimum-line-coverage <0-100>  Required fresh line coverage; defaults to 80
               --minimum-mutation-score <0-100> Required targeted PIT score; defaults to 70
-              --skip-mutation-testing          Explicitly disable PIT for this run
 
             Commands emit structured JSON. JAIPilot never invokes a model or uploads source.
             """;
@@ -112,15 +111,13 @@ public final class JaiPilotToolkit {
                         "class",
                         "coverage-threshold",
                         "minimum-line-coverage",
-                        "minimum-mutation-score",
-                        "skip-mutation-testing"
+                        "minimum-mutation-score"
                 );
                 yield store.prepareTests(
                         parsed.project(),
                         parsed.selection(true),
                         parsed.percentage("minimum-line-coverage", 80.0d),
-                        parsed.percentage("minimum-mutation-score", 70.0d),
-                        !parsed.flag("skip-mutation-testing")
+                        parsed.percentage("minimum-mutation-score", 70.0d)
                 );
             }
             case "prepare-cleanup" -> {
@@ -215,7 +212,7 @@ public final class JaiPilotToolkit {
 
     private static final class ParsedArguments {
 
-        private static final SetLike FLAGS = new SetLike(List.of("confirm", "skip-mutation-testing"));
+        private static final SetLike FLAGS = new SetLike(List.of("confirm"));
 
         private final String command;
         private final Map<String, List<String>> options;

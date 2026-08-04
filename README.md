@@ -57,23 +57,24 @@ Review PaymentService for code cleanup, but show me the candidate before apply.
 ## Workflow
 
 ```text
-inspect quality → prepare tests or cleanup → edit isolated candidate → validate scorecards → apply or discard
+inspect or quality → prepare-tests or prepare-cleanup → edit isolated candidate → validate → apply or discard
 ```
 
 Apply requires an immediately validated candidate and explicit confirmation. Preparing, editing,
-validating, and discarding never change the live source tree.
+validating, and discarding never change the live source tree; discard only removes the isolated
+candidate.
 
 Read [how JAIPilot works](docs/how-it-works.md) for the complete scope, evidence, concurrency, and
 transaction model.
 
 ## Verified on Spring Framework Petclinic
 
-The v3.1 workflow was tested against the canonical Spring Framework Petclinic repository:
+The v3.1.1 workflow was tested against the canonical Spring Framework Petclinic repository:
 
 | Check | Result |
 | --- | --- |
 | Baseline | 75 tests passed; zero failures, errors, or skips |
-| Quality analysis | 43 files in 0.259 s median analyzer time; deterministic 97.9 score |
+| Quality analysis | 43 files in 0.215 s median analyzer time; deterministic 97.9 score |
 | `Owner` test generation | 55% → 95% line; 30% → 100% branch coverage |
 | Mutation proof | 14/14 mutations killed; 100% mutation score and test strength |
 | Test score | 98.8 `EXCELLENT`; 100% evidence completeness |

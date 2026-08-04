@@ -12,7 +12,7 @@
 - Full build/test/package: `./mvnw -B verify`
 - Unit tests: `./mvnw -B test`
 - One test class: `./mvnw -Dtest=ClassName test`
-- Agent-runner smoke: `java -jar target/jaipilot-toolkit-3.1.0-all.jar inspect --project .`
+- Agent-runner smoke: `java -jar target/jaipilot-toolkit-3.1.1-all.jar inspect --project .`
 - Installer smoke: `./scripts/smoke-test-install.sh`
 - Plugin validation: `python3 ./scripts/validate-plugin.py`
 

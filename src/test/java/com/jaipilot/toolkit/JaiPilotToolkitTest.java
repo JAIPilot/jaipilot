@@ -1,6 +1,7 @@
 package com.jaipilot.toolkit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,6 +22,7 @@ class JaiPilotToolkitTest {
         assertTrue(result.stdout().contains("prepare-cleanup"));
         assertTrue(result.stdout().contains("jaipilot quality"));
         assertTrue(result.stdout().contains("--minimum-mutation-score"));
+        assertFalse(result.stdout().contains("skip-mutation"));
         assertTrue(result.stdout().contains("apply --run <uuid> --confirm"));
         assertEquals("", result.stderr());
     }

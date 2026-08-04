@@ -82,16 +82,24 @@ class MutationTestingServiceTest {
                     <mutator>Equivalent</mutator>
                     <description>equivalent</description>
                   </mutation>
+                  <mutation detected="true" status="NON_VIABLE">
+                    <mutatedClass>com.example.OrderService</mutatedClass>
+                    <mutatedMethod>id</mutatedMethod>
+                    <lineNumber>7</lineNumber>
+                    <mutator>BrokenMutator</mutator>
+                    <description>could not load</description>
+                  </mutation>
                 </mutations>
                 """);
 
         MutationTestingService.MutationCounts counts = service().readReports(List.of(report));
 
-        assertEquals(4, counts.total());
+        assertEquals(5, counts.total());
         assertEquals(1, counts.killed());
         assertEquals(1, counts.survived());
         assertEquals(1, counts.noCoverage());
         assertEquals(1, counts.equivalent());
+        assertEquals(1, counts.nonViable());
         assertEquals(3, counts.scorable());
         assertEquals(2, counts.survivors().size());
     }
