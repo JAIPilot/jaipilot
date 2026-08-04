@@ -2,6 +2,16 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [3.0.2] - 2026-08-04
+
+### Changed
+
+- Restored the established JAIPilot logo across the repository and plugin.
+- Simplified the product identity to **JAIPilot Java Enterprise Toolkit**.
+- Focused public copy on high-quality Java unit testing and code cleanup.
+- Removed the experimental hero, social-preview artwork, brand guide, and setup-oriented README
+  sections.
+
 ## [3.0.1] - 2026-08-04
 
 ### Changed
@@ -36,5 +46,6 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 - Interactive CLI distribution, npm packaging, MCP transport, hosted dependencies, and Sonar
   scanner integration.
 
+[3.0.2]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.0.2
 [3.0.1]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.0.1
 [3.0.0]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.0.0

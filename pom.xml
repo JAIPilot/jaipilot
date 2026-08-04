@@ -9,8 +9,8 @@
     <version>${revision}</version>
     <packaging>jar</packaging>
 
-    <name>JAIPilot Proof-Driven Java Toolkit</name>
-    <description>Local proof-driven workflows for Java test generation, OpenRewrite-first cleanup, and drift-safe apply.</description>
+    <name>JAIPilot Java Enterprise Toolkit</name>
+    <description>High-quality Java unit testing and code cleanup for Codex and Claude Code.</description>
     <url>https://github.com/JAIPilot/jaipilot</url>
 
     <licenses>
@@ -29,7 +29,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <revision>3.0.1</revision>
+        <revision>3.0.2</revision>
         <maven.compiler.release>17</maven.compiler.release>
         <junit.version>5.11.4</junit.version>
         <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>

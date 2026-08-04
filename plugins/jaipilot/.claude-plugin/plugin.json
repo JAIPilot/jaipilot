@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "3.0.1",
-  "description": "Proof-driven Java tests and OpenRewrite-first cleanup for Codex and Claude Code.",
+  "version": "3.0.2",
+  "description": "JAIPilot Java Enterprise Toolkit for high-quality unit testing and code cleanup.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"

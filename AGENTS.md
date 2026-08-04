@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-- JAIPilot is a Java 17+ proof-driven Java toolkit delivered as portable Agent Skills plus a deterministic internal agent runner.
+- JAIPilot is a Java 17+ Java Enterprise Toolkit delivered as portable Agent Skills plus a deterministic internal agent runner.
 - It provides isolated high-coverage Java unit-test generation and OpenRewrite-first clean-code refactoring for Codex, Claude Code, and provider-neutral coding agents.
 - Do not add another transport layer, a user command shell, a custom backend, a hosted generation service, or nested model invocation.
 - Treat `AGENTS.md`, `.jaipilot/project-memory.md`, and `plugins/jaipilot/skills/` as durable context.
@@ -12,7 +12,7 @@
 - Full build/test/package: `./mvnw -B verify`
 - Unit tests: `./mvnw -B test`
 - One test class: `./mvnw -Dtest=ClassName test`
-- Agent-runner smoke: `java -jar target/jaipilot-toolkit-3.0.1-all.jar inspect --project .`
+- Agent-runner smoke: `java -jar target/jaipilot-toolkit-3.0.2-all.jar inspect --project .`
 - Installer smoke: `./scripts/smoke-test-install.sh`
 - Plugin validation: `python3 ./scripts/validate-plugin.py`
 

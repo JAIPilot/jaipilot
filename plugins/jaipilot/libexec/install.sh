@@ -352,7 +352,7 @@ EOF
 chmod +x "$APP_DIR/bin/jaipilot"
 
 {
-  echo "Installed JAIPilot Proof-Driven Java Toolkit"
+  echo "Installed JAIPilot Java Enterprise Toolkit"
   echo "  Version: $RESOLVED_VERSION"
   echo "  Archive: $ARCHIVE_URL"
   echo "  SHA-256: $ACTUAL_SHA256"
