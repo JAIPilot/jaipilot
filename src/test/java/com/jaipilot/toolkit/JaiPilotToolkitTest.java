@@ -19,6 +19,8 @@ class JaiPilotToolkitTest {
         assertEquals(0, result.status());
         assertTrue(result.stdout().contains("prepare-tests"));
         assertTrue(result.stdout().contains("prepare-cleanup"));
+        assertTrue(result.stdout().contains("jaipilot quality"));
+        assertTrue(result.stdout().contains("--minimum-mutation-score"));
         assertTrue(result.stdout().contains("apply --run <uuid> --confirm"));
         assertEquals("", result.stderr());
     }

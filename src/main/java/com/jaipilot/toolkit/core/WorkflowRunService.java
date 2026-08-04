@@ -38,6 +38,8 @@ public final class WorkflowRunService implements AutoCloseable {
     private final BuildGate buildGate;
     private final CoverageGate coverageGate;
     private final RewriteGate rewriteGate;
+    private final QualityGate qualityGate;
+    private final MutationGate mutationGate;
     private final Map<String, ActiveRun> runs = new ConcurrentHashMap<>();
     private final Map<Path, String> activeProjectRuns = new ConcurrentHashMap<>();
     private final Semaphore activeRunSlots = new Semaphore(MAX_ACTIVE_RUNS);
@@ -53,6 +55,8 @@ public final class WorkflowRunService implements AutoCloseable {
                 coverageReportService,
                 null,
                 null,
+                null,
+                null,
                 null
         );
     }
@@ -64,6 +68,28 @@ public final class WorkflowRunService implements AutoCloseable {
             BuildGate buildGate,
             CoverageGate coverageGate,
             RewriteGate rewriteGate
+    ) {
+        this(
+                fileService,
+                projectService,
+                coverageReportService,
+                buildGate,
+                coverageGate,
+                rewriteGate,
+                null,
+                (root, targets, tests, minimum) -> skippedMutationReport(minimum)
+        );
+    }
+
+    WorkflowRunService(
+            ProjectFileService fileService,
+            JavaProjectService projectService,
+            CoverageReportService coverageReportService,
+            BuildGate buildGate,
+            CoverageGate coverageGate,
+            RewriteGate rewriteGate,
+            QualityGate qualityGate,
+            MutationGate mutationGate
     ) {
         this.fileService = Objects.requireNonNull(fileService, "fileService");
         this.projectService = Objects.requireNonNull(projectService, "projectService");
@@ -78,6 +104,12 @@ public final class WorkflowRunService implements AutoCloseable {
         this.rewriteGate = rewriteGate != null
                 ? rewriteGate
                 : new OpenRewriteCleanupService(projectService)::clean;
+        this.qualityGate = qualityGate != null
+                ? qualityGate
+                : new JavaQualityService()::analyze;
+        this.mutationGate = mutationGate != null
+                ? mutationGate
+                : new MutationTestingService(projectService, fileService)::run;
     }
 
     public ProjectInspection inspect(Path requestedRoot) {
@@ -104,24 +136,63 @@ public final class WorkflowRunService implements AutoCloseable {
         );
     }
 
+    public QualityInspection inspectQuality(Path requestedRoot, TargetSelection selection) {
+        Path root = resolveRoot(requestedRoot);
+        TargetSelection normalized = Objects.requireNonNull(selection, "selection")
+                .normalizedFor(WorkflowKind.CLEAN_JAVA);
+        List<JavaProjectService.JavaClassDescriptor> targets = selectTargets(root, normalized, null);
+        if (targets.isEmpty()) {
+            throw new IllegalStateException("No Java production classes matched the requested quality scope.");
+        }
+        JavaQualityService.QualityReport quality = qualityGate.analyze(
+                root,
+                targets.stream().map(JavaProjectService.JavaClassDescriptor::cutPath).toList()
+        );
+        return new QualityInspection(
+                root,
+                targets.stream().map(JavaProjectService.JavaClassDescriptor::fullyQualifiedName).toList(),
+                quality
+        );
+    }
+
     public PreparedRun prepareTestGeneration(
             Path requestedRoot,
             TargetSelection selection,
             double minimumLineCoverage
     ) {
+        return prepareTestGeneration(requestedRoot, selection, minimumLineCoverage, 70.0d, true);
+    }
+
+    public PreparedRun prepareTestGeneration(
+            Path requestedRoot,
+            TargetSelection selection,
+            double minimumLineCoverage,
+            double minimumMutationScore,
+            boolean mutationTestingEnabled
+    ) {
         validateCoveragePercentage(minimumLineCoverage, "minimumLineCoverage");
-        return prepare(requestedRoot, WorkflowKind.GENERATE_TESTS, selection, minimumLineCoverage);
+        validateCoveragePercentage(minimumMutationScore, "minimumMutationScore");
+        return prepare(
+                requestedRoot,
+                WorkflowKind.GENERATE_TESTS,
+                selection,
+                minimumLineCoverage,
+                minimumMutationScore,
+                mutationTestingEnabled
+        );
     }
 
     public PreparedRun prepareCodeCleanup(Path requestedRoot, TargetSelection selection) {
-        return prepare(requestedRoot, WorkflowKind.CLEAN_JAVA, selection, 0.0d);
+        return prepare(requestedRoot, WorkflowKind.CLEAN_JAVA, selection, 0.0d, 0.0d, true);
     }
 
     private PreparedRun prepare(
             Path requestedRoot,
             WorkflowKind kind,
             TargetSelection selection,
-            double minimumLineCoverage
+            double minimumLineCoverage,
+            double minimumMutationScore,
+            boolean mutationTestingEnabled
     ) {
         pruneExpiredRuns();
         Path root = resolveRoot(requestedRoot);
@@ -142,6 +213,11 @@ public final class WorkflowRunService implements AutoCloseable {
                 throw new IllegalStateException("No Java production classes matched the requested target selection.");
             }
 
+            JavaQualityService.QualityReport qualityBefore = qualityGate.analyze(
+                    root,
+                    targets.stream().map(JavaProjectService.JavaClassDescriptor::cutPath).toList()
+            );
+
             Map<Path, ProjectFileService.FileFingerprint> projectBaseline = fileService.snapshotWorkspaceFiles(root);
             sandbox = Files.createTempDirectory("jaipilot-" + kind.slug() + "-");
             fileService.copyProjectWorkspace(root, sandbox);
@@ -157,6 +233,9 @@ public final class WorkflowRunService implements AutoCloseable {
                 rewriteChanges = changedRelativePaths(sandbox, sandboxBaseline, afterRewrite);
                 validateScope(kind, sandbox, relativeTargetPaths(root, targets), sandboxBaseline, afterRewrite, rewriteChanges);
             }
+            JavaQualityService.QualityReport qualityAfterRewrite = kind == WorkflowKind.CLEAN_JAVA
+                    ? qualityGate.analyze(sandbox, rebaseTargets(root, sandbox, targets))
+                    : qualityBefore;
 
             ActiveRun run = new ActiveRun(
                     runId,
@@ -168,9 +247,18 @@ public final class WorkflowRunService implements AutoCloseable {
                     sandboxBaseline,
                     beforeCoverage,
                     minimumLineCoverage,
+                    minimumMutationScore,
+                    mutationTestingEnabled,
+                    qualityBefore,
                     Instant.now()
             );
-            PreparedRun result = preparedView(run, baselineElapsed, rewriteElapsed, rewriteChanges);
+            PreparedRun result = preparedView(
+                    run,
+                    baselineElapsed,
+                    rewriteElapsed,
+                    rewriteChanges,
+                    qualityAfterRewrite
+            );
             runs.put(runId, run);
             return result;
         } catch (IOException exception) {
@@ -211,7 +299,7 @@ public final class WorkflowRunService implements AutoCloseable {
         run.lock.lock();
         try {
             return new StoredRunState(
-                    1,
+                    2,
                     run.id,
                     run.kind.name(),
                     run.status.name(),
@@ -228,6 +316,9 @@ public final class WorkflowRunService implements AutoCloseable {
                     storeSnapshot(run.sandboxRoot, run.sandboxBaseline),
                     storeCoverage(run.projectRoot, run.beforeCoverage),
                     run.minimumLineCoverage,
+                    run.minimumMutationScore,
+                    run.mutationTestingEnabled,
+                    run.qualityBefore,
                     run.createdAt.toString(),
                     storeValidation(run.lastValidation),
                     run.validatedSnapshot == null
@@ -242,7 +333,7 @@ public final class WorkflowRunService implements AutoCloseable {
     /** Restores one trusted, locally persisted toolkit run into this service instance. */
     public void restoreRun(StoredRunState state) {
         Objects.requireNonNull(state, "state");
-        if (state.schemaVersion() != 1) {
+        if (state.schemaVersion() != 1 && state.schemaVersion() != 2) {
             throw new IllegalArgumentException("Unsupported JAIPilot run-state schema: " + state.schemaVersion());
         }
         validateStoredRunId(state.runId());
@@ -256,6 +347,9 @@ public final class WorkflowRunService implements AutoCloseable {
             throw new IllegalStateException("Stored JAIPilot run is not open: " + status);
         }
         validateCoveragePercentage(state.minimumLineCoverage(), "stored minimumLineCoverage");
+        if (state.schemaVersion() >= 2) {
+            validateCoveragePercentage(state.minimumMutationScore(), "stored minimumMutationScore");
+        }
         Path projectRoot = realDirectory(state.projectRoot(), "stored projectRoot");
         Path sandboxRoot = realDirectory(state.workspaceRoot(), "stored workspaceRoot");
         if (state.targets() == null) {
@@ -274,6 +368,12 @@ public final class WorkflowRunService implements AutoCloseable {
         if (targets.isEmpty()) {
             throw new IllegalArgumentException("Stored JAIPilot run has no targets.");
         }
+        JavaQualityService.QualityReport qualityBefore = state.qualityBefore() != null
+                ? state.qualityBefore()
+                : qualityGate.analyze(
+                        projectRoot,
+                        targets.stream().map(JavaProjectService.JavaClassDescriptor::cutPath).toList()
+                );
 
         reserve(projectRoot, state.runId());
         try {
@@ -287,6 +387,9 @@ public final class WorkflowRunService implements AutoCloseable {
                     restoreSnapshot(sandboxRoot, state.workspaceBaseline()),
                     restoreCoverage(projectRoot, state.beforeCoverage()),
                     state.minimumLineCoverage(),
+                    state.schemaVersion() >= 2 ? state.minimumMutationScore() : 0.0d,
+                    state.schemaVersion() >= 2 && state.mutationTestingEnabled(),
+                    qualityBefore,
                     createdAt
             );
             run.status = status;
@@ -339,6 +442,11 @@ public final class WorkflowRunService implements AutoCloseable {
                         List.of(),
                         null,
                         Map.of(),
+                        true,
+                        run.qualityBefore,
+                        qualityDelta(run.qualityBefore, run.qualityBefore),
+                        null,
+                        null,
                         Duration.ZERO
                 );
                 run.lastValidation = result;
@@ -357,50 +465,114 @@ public final class WorkflowRunService implements AutoCloseable {
                     afterCoverage = coverageReportService.readProjectSnapshot(run.sandboxRoot).orElse(null);
                 }
             }
-            Duration verificationElapsed = Duration.ofNanos(System.nanoTime() - started);
-
-            Map<Path, ProjectFileService.FileFingerprint> verified = fileService.snapshotWorkspaceFiles(run.sandboxRoot);
-            List<Path> buildDrift = changedRelativePaths(run.sandboxRoot, candidate, verified);
-            if (!buildDrift.isEmpty()) {
-                throw new IllegalStateException(
-                        "The clean build changed files outside excluded build output: " + buildDrift
-                );
-            }
-
             List<String> missingTestReports = List.of();
+            List<Path> changedTests = changes.stream()
+                    .filter(WorkflowRunService::isTestJava)
+                    .map(run.sandboxRoot::resolve)
+                    .toList();
             if (run.kind == WorkflowKind.GENERATE_TESTS) {
-                List<Path> changedTests = changes.stream()
-                        .filter(WorkflowRunService::isTestJava)
-                        .map(run.sandboxRoot::resolve)
-                        .toList();
                 missingTestReports = testReportService.findMissingReports(run.sandboxRoot, changedTests);
             }
             Map<String, CoverageChange> coverage = coverageChanges(run, afterCoverage);
             List<String> warnings = new ArrayList<>();
+            List<String> failures = new ArrayList<>();
             if (run.kind == WorkflowKind.GENERATE_TESTS && afterCoverage == null) {
                 warnings.add("JaCoCo coverage is unavailable; build and test-execution gates still passed.");
             }
-            List<String> failures = missingTestReports.isEmpty()
-                    ? List.of()
-                    : List.of("The clean build did not execute these changed tests: " + missingTestReports);
+            if (!missingTestReports.isEmpty()) {
+                failures.add("The clean build did not execute these changed tests: " + missingTestReports);
+            }
             boolean qualityGoalMet = coverage.isEmpty() || coverage.values().stream()
                     .allMatch(value -> value.afterLineCoverage() >= run.minimumLineCoverage);
             if (!qualityGoalMet) {
                 warnings.add("One or more targets remain below the requested line-coverage goal of "
                         + formatPercentage(run.minimumLineCoverage) + ".");
             }
+
+            JavaQualityService.QualityReport quality = qualityGate.analyze(
+                    run.sandboxRoot,
+                    rebaseTargets(run.projectRoot, run.sandboxRoot, run.targets)
+            );
+            QualityDelta qualityChange = qualityDelta(run.qualityBefore, quality);
+            boolean sourceQualityGoalMet = quality.parseFailures().isEmpty()
+                    && qualityChange.newCriticalOrHighFindings() == 0
+                    && qualityChange.qualityScoreAfter() + 0.1d >= qualityChange.qualityScoreBefore();
+            if (!quality.parseFailures().isEmpty()) {
+                failures.add("JAIPilot could not parse selected Java sources for quality analysis: "
+                        + quality.parseFailures());
+            }
+            if (qualityChange.newCriticalOrHighFindings() > 0) {
+                failures.add("The candidate introduced " + qualityChange.newCriticalOrHighFindings()
+                        + " new critical/high quality findings.");
+            }
+            if (qualityChange.qualityScoreAfter() + 0.1d < qualityChange.qualityScoreBefore()) {
+                failures.add("The candidate regressed the JAIPilot quality score from "
+                        + qualityChange.qualityScoreBefore() + " to " + qualityChange.qualityScoreAfter() + ".");
+            }
+
+            MutationTestingService.MutationReport mutation = null;
+            boolean mutationGoalMet = true;
+            boolean shouldRunMutation = run.mutationTestingEnabled
+                    && (run.kind == WorkflowKind.GENERATE_TESTS || !changedTests.isEmpty());
+            if (shouldRunMutation) {
+                try {
+                    mutation = mutationGate.run(
+                            run.sandboxRoot,
+                            mutationTargets(run),
+                            changedTests,
+                            run.minimumMutationScore
+                    );
+                    mutationGoalMet = mutation.goalMet();
+                    if (!mutationGoalMet) {
+                        failures.add(mutation.mutationScore() == null
+                                ? "PIT produced no scorable mutations; the required mutation score is "
+                                        + formatPercentage(run.minimumMutationScore) + "."
+                                : "PIT mutation score " + mutation.mutationScore()
+                                        + "% is below the required "
+                                        + formatPercentage(run.minimumMutationScore) + ".");
+                    } else if (mutation.survived() > 0 || mutation.noCoverage() > 0) {
+                        warnings.add("PIT found " + mutation.survived() + " surviving and "
+                                + mutation.noCoverage() + " uncovered mutations; review the mutation evidence.");
+                    }
+                    if (mutation.incompleteReason() != null) {
+                        warnings.add(mutation.incompleteReason());
+                    }
+                } catch (RuntimeException exception) {
+                    mutationGoalMet = false;
+                    mutation = failedMutationReport(run.minimumMutationScore, rootMessage(exception));
+                    failures.add("PIT mutation testing did not complete: " + rootMessage(exception));
+                }
+            }
+
+            TestQualityScore testQuality = run.kind == WorkflowKind.GENERATE_TESTS || !changedTests.isEmpty()
+                    ? testQualityScore(coverage, changedTests.size(), missingTestReports, mutation)
+                    : null;
+
+            Map<Path, ProjectFileService.FileFingerprint> verified = fileService.snapshotWorkspaceFiles(run.sandboxRoot);
+            List<Path> buildDrift = changedRelativePaths(run.sandboxRoot, candidate, verified);
+            if (!buildDrift.isEmpty()) {
+                throw new IllegalStateException(
+                        "The validation tools changed files outside excluded build output: " + buildDrift
+                );
+            }
+            Duration verificationElapsed = Duration.ofNanos(System.nanoTime() - started);
             boolean valid = failures.isEmpty();
-            boolean readyToApply = valid && qualityGoalMet;
+            boolean readyToApply = valid && qualityGoalMet && sourceQualityGoalMet && mutationGoalMet;
             ValidationResult result = new ValidationResult(
                     run.id,
                     valid,
                     readyToApply,
                     changes,
                     List.copyOf(warnings),
-                    failures,
+                    List.copyOf(failures),
                     missingTestReports,
                     qualityGoalMet,
                     coverage,
+                    sourceQualityGoalMet,
+                    quality,
+                    qualityChange,
+                    mutation,
+                    testQuality,
                     verificationElapsed
             );
             run.lastValidation = result;
@@ -509,7 +681,8 @@ public final class WorkflowRunService implements AutoCloseable {
             ActiveRun run,
             Duration baselineElapsed,
             Duration rewriteElapsed,
-            List<Path> rewriteChanges
+            List<Path> rewriteChanges,
+            JavaQualityService.QualityReport qualityAfterRewrite
     ) {
         List<TargetInfo> targetInfo = run.targets.stream().map(target -> {
             CoverageReportService.ClassCoverage coverage = run.beforeCoverage == null
@@ -532,6 +705,8 @@ public final class WorkflowRunService implements AutoCloseable {
                 run.sandboxRoot,
                 targetInfo,
                 rewriteChanges,
+                run.qualityBefore,
+                qualityAfterRewrite,
                 prompt(run, targetInfo, rewriteChanges),
                 baselineElapsed,
                 rewriteElapsed,
@@ -607,6 +782,200 @@ public final class WorkflowRunService implements AutoCloseable {
             ));
         }
         return Map.copyOf(changes);
+    }
+
+    private List<MutationTestingService.MutationTarget> mutationTargets(ActiveRun run) {
+        List<MutationTestingService.MutationTarget> targets = new ArrayList<>();
+        for (JavaProjectService.JavaClassDescriptor target : run.targets) {
+            Path sandboxModule = run.sandboxRoot.resolve(
+                    run.projectRoot.relativize(target.moduleRoot())
+            ).normalize();
+            Path sandboxSource = run.sandboxRoot.resolve(
+                    run.projectRoot.relativize(target.cutPath())
+            ).normalize();
+            JavaProjectService.JavaClassDescriptor sandboxTarget = new JavaProjectService.JavaClassDescriptor(
+                    run.sandboxRoot,
+                    sandboxModule,
+                    sandboxSource,
+                    target.packageName(),
+                    target.className(),
+                    target.fullyQualifiedName()
+            );
+            List<String> likelyTests = projectService.findLikelyTests(sandboxTarget).stream()
+                    .map(JavaProjectService.JavaTestDescriptor::fullyQualifiedName)
+                    .toList();
+            targets.add(new MutationTestingService.MutationTarget(
+                    sandboxModule,
+                    target.fullyQualifiedName(),
+                    likelyTests
+            ));
+        }
+        return List.copyOf(targets);
+    }
+
+    private QualityDelta qualityDelta(
+            JavaQualityService.QualityReport before,
+            JavaQualityService.QualityReport after
+    ) {
+        Set<String> beforeKeys = before.findings().stream().map(this::qualityFindingKey).collect(java.util.stream.Collectors.toSet());
+        Set<String> afterKeys = after.findings().stream().map(this::qualityFindingKey).collect(java.util.stream.Collectors.toSet());
+        long resolved = beforeKeys.stream().filter(key -> !afterKeys.contains(key)).count();
+        long introduced = afterKeys.stream().filter(key -> !beforeKeys.contains(key)).count();
+        long newSevere = after.findings().stream()
+                .filter(finding -> finding.severity() == JavaQualityService.Severity.CRITICAL
+                        || finding.severity() == JavaQualityService.Severity.HIGH)
+                .filter(finding -> !beforeKeys.contains(qualityFindingKey(finding)))
+                .count();
+        return new QualityDelta(
+                before.metrics().qualityScore(),
+                after.metrics().qualityScore(),
+                before.metrics().reliabilityScore(),
+                after.metrics().reliabilityScore(),
+                before.metrics().maintainabilityScore(),
+                after.metrics().maintainabilityScore(),
+                before.metrics().findingCount(),
+                after.metrics().findingCount(),
+                before.metrics().bugRiskCount(),
+                after.metrics().bugRiskCount(),
+                before.metrics().codeSmellCount(),
+                after.metrics().codeSmellCount(),
+                before.metrics().remediationDebtMinutes(),
+                after.metrics().remediationDebtMinutes(),
+                before.metrics().duplicationPercent(),
+                after.metrics().duplicationPercent(),
+                before.metrics().maximumCyclomaticComplexity(),
+                after.metrics().maximumCyclomaticComplexity(),
+                safeInt(resolved),
+                safeInt(introduced),
+                safeInt(newSevere)
+        );
+    }
+
+    private String qualityFindingKey(JavaQualityService.Finding finding) {
+        return finding.id() + "|" + finding.relativePath() + "|" + finding.symbol() + "|" + finding.message();
+    }
+
+    private TestQualityScore testQualityScore(
+            Map<String, CoverageChange> coverage,
+            int changedTestFileCount,
+            List<String> missingTestReports,
+            MutationTestingService.MutationReport mutation
+    ) {
+        Double lineCoverage = coverage.isEmpty() ? null : round(coverage.values().stream()
+                .mapToDouble(CoverageChange::afterLineCoverage).average().orElse(0.0d));
+        Double branchCoverage = coverage.isEmpty() ? null : round(coverage.values().stream()
+                .mapToDouble(CoverageChange::afterBranchCoverage).average().orElse(0.0d));
+        Double mutationScore = mutation == null ? null : mutation.mutationScore();
+        Double testStrength = mutation == null ? null : mutation.testStrength();
+        double executionScore = missingTestReports.isEmpty() ? 100.0d : 0.0d;
+        double score = value(lineCoverage) * 0.25d
+                + value(branchCoverage) * 0.20d
+                + value(mutationScore) * 0.35d
+                + value(testStrength) * 0.15d
+                + executionScore * 0.05d;
+        double completeness = 5.0d
+                + (lineCoverage == null ? 0.0d : 25.0d)
+                + (branchCoverage == null ? 0.0d : 20.0d)
+                + (mutationScore == null ? 0.0d : 35.0d)
+                + (testStrength == null ? 0.0d : 15.0d);
+        double roundedScore = round(score);
+        return new TestQualityScore(
+                roundedScore,
+                grade(roundedScore),
+                round(completeness),
+                lineCoverage,
+                branchCoverage,
+                mutationScore,
+                testStrength,
+                executionScore,
+                missingTestReports.isEmpty(),
+                changedTestFileCount,
+                Math.max(0, changedTestFileCount - missingTestReports.size())
+        );
+    }
+
+    private String grade(double score) {
+        if (score >= 90.0d) {
+            return "EXCELLENT";
+        }
+        if (score >= 80.0d) {
+            return "STRONG";
+        }
+        if (score >= 70.0d) {
+            return "GOOD";
+        }
+        if (score >= 50.0d) {
+            return "NEEDS_WORK";
+        }
+        return "WEAK";
+    }
+
+    private double value(Double value) {
+        return value == null ? 0.0d : value;
+    }
+
+    private double round(double value) {
+        return Math.round(value * 10.0d) / 10.0d;
+    }
+
+    private int safeInt(long value) {
+        return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
+    }
+
+    private String rootMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current.getMessage() == null || current.getMessage().isBlank()
+                ? current.getClass().getSimpleName()
+                : current.getMessage();
+    }
+
+    private static MutationTestingService.MutationReport skippedMutationReport(double minimum) {
+        return new MutationTestingService.MutationReport(
+                MutationTestingService.PITEST_VERSION,
+                false,
+                minimum,
+                null,
+                null,
+                true,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                List.of(),
+                List.of(),
+                List.of(),
+                "Mutation execution was replaced by the test harness.",
+                0L
+        );
+    }
+
+    private static MutationTestingService.MutationReport failedMutationReport(double minimum, String reason) {
+        return new MutationTestingService.MutationReport(
+                MutationTestingService.PITEST_VERSION,
+                false,
+                minimum,
+                null,
+                null,
+                false,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                List.of(),
+                List.of(),
+                List.of(),
+                reason,
+                0L
+        );
     }
 
     private void validateScope(
@@ -869,6 +1238,11 @@ public final class WorkflowRunService implements AutoCloseable {
                 validation.missingTestReports(),
                 validation.coverageGoalMet(),
                 validation.coverage(),
+                validation.qualityGoalMet(),
+                validation.quality(),
+                validation.qualityDelta(),
+                validation.mutation(),
+                validation.testQuality(),
                 validation.verificationElapsed().toMillis()
         );
     }
@@ -887,6 +1261,11 @@ public final class WorkflowRunService implements AutoCloseable {
                 List.copyOf(validation.missingTestReports()),
                 validation.coverageGoalMet(),
                 Map.copyOf(validation.coverage()),
+                validation.quality() == null || validation.qualityGoalMet(),
+                validation.quality(),
+                validation.qualityDelta(),
+                validation.mutation(),
+                validation.testQuality(),
                 Duration.ofMillis(validation.verificationElapsedMillis())
         );
     }
@@ -957,6 +1336,21 @@ public final class WorkflowRunService implements AutoCloseable {
     @FunctionalInterface
     interface RewriteGate {
         OpenRewriteCleanupService.RewriteResult clean(Path projectRoot, List<Path> targets);
+    }
+
+    @FunctionalInterface
+    interface QualityGate {
+        JavaQualityService.QualityReport analyze(Path projectRoot, List<Path> targets);
+    }
+
+    @FunctionalInterface
+    interface MutationGate {
+        MutationTestingService.MutationReport run(
+                Path projectRoot,
+                List<MutationTestingService.MutationTarget> targets,
+                List<Path> changedTests,
+                double minimumMutationScore
+        );
     }
 
     public enum WorkflowKind {
@@ -1049,6 +1443,13 @@ public final class WorkflowRunService implements AutoCloseable {
     ) {
     }
 
+    public record QualityInspection(
+            Path projectRoot,
+            List<String> targets,
+            JavaQualityService.QualityReport quality
+    ) {
+    }
+
     public record TargetInfo(
             String fullyQualifiedName,
             Path relativePath,
@@ -1064,6 +1465,8 @@ public final class WorkflowRunService implements AutoCloseable {
             Path workspaceRoot,
             List<TargetInfo> targets,
             List<Path> openRewriteChanges,
+            JavaQualityService.QualityReport qualityBefore,
+            JavaQualityService.QualityReport qualityAfterOpenRewrite,
             String agentInstructions,
             Duration baselineElapsed,
             Duration openRewriteElapsed,
@@ -1079,6 +1482,46 @@ public final class WorkflowRunService implements AutoCloseable {
     ) {
     }
 
+    public record QualityDelta(
+            double qualityScoreBefore,
+            double qualityScoreAfter,
+            double reliabilityScoreBefore,
+            double reliabilityScoreAfter,
+            double maintainabilityScoreBefore,
+            double maintainabilityScoreAfter,
+            int findingsBefore,
+            int findingsAfter,
+            int bugRisksBefore,
+            int bugRisksAfter,
+            int codeSmellsBefore,
+            int codeSmellsAfter,
+            int remediationDebtMinutesBefore,
+            int remediationDebtMinutesAfter,
+            double duplicationPercentBefore,
+            double duplicationPercentAfter,
+            int maximumCyclomaticComplexityBefore,
+            int maximumCyclomaticComplexityAfter,
+            int resolvedFindings,
+            int introducedFindings,
+            int newCriticalOrHighFindings
+    ) {
+    }
+
+    public record TestQualityScore(
+            double score,
+            String grade,
+            double evidenceCompletenessPercent,
+            Double lineCoverage,
+            Double branchCoverage,
+            Double mutationScore,
+            Double testStrength,
+            double changedTestExecutionScore,
+            boolean everyChangedTestExecuted,
+            int changedTestFileCount,
+            int executedChangedTestFileCount
+    ) {
+    }
+
     public record ValidationResult(
             String runId,
             boolean valid,
@@ -1089,6 +1532,11 @@ public final class WorkflowRunService implements AutoCloseable {
             List<String> missingTestReports,
             Boolean coverageGoalMet,
             Map<String, CoverageChange> coverage,
+            boolean qualityGoalMet,
+            JavaQualityService.QualityReport quality,
+            QualityDelta qualityDelta,
+            MutationTestingService.MutationReport mutation,
+            TestQualityScore testQuality,
             Duration verificationElapsed
     ) {
     }
@@ -1119,6 +1567,9 @@ public final class WorkflowRunService implements AutoCloseable {
             List<StoredFingerprint> workspaceBaseline,
             StoredCoverage beforeCoverage,
             double minimumLineCoverage,
+            double minimumMutationScore,
+            boolean mutationTestingEnabled,
+            JavaQualityService.QualityReport qualityBefore,
             String createdAt,
             StoredValidation lastValidation,
             List<StoredFingerprint> validatedSnapshot
@@ -1160,6 +1611,11 @@ public final class WorkflowRunService implements AutoCloseable {
             List<String> missingTestReports,
             Boolean coverageGoalMet,
             Map<String, CoverageChange> coverage,
+            boolean qualityGoalMet,
+            JavaQualityService.QualityReport quality,
+            QualityDelta qualityDelta,
+            MutationTestingService.MutationReport mutation,
+            TestQualityScore testQuality,
             long verificationElapsedMillis
     ) {
     }
@@ -1175,6 +1631,9 @@ public final class WorkflowRunService implements AutoCloseable {
         private final Map<Path, ProjectFileService.FileFingerprint> sandboxBaseline;
         private final CoverageReportService.CoverageSnapshot beforeCoverage;
         private final double minimumLineCoverage;
+        private final double minimumMutationScore;
+        private final boolean mutationTestingEnabled;
+        private final JavaQualityService.QualityReport qualityBefore;
         private final Instant createdAt;
         private final ReentrantLock lock = new ReentrantLock();
         private RunStatus status = RunStatus.PREPARED;
@@ -1191,6 +1650,9 @@ public final class WorkflowRunService implements AutoCloseable {
                 Map<Path, ProjectFileService.FileFingerprint> sandboxBaseline,
                 CoverageReportService.CoverageSnapshot beforeCoverage,
                 double minimumLineCoverage,
+                double minimumMutationScore,
+                boolean mutationTestingEnabled,
+                JavaQualityService.QualityReport qualityBefore,
                 Instant createdAt
         ) {
             this.id = id;
@@ -1202,6 +1664,9 @@ public final class WorkflowRunService implements AutoCloseable {
             this.sandboxBaseline = Map.copyOf(sandboxBaseline);
             this.beforeCoverage = beforeCoverage;
             this.minimumLineCoverage = minimumLineCoverage;
+            this.minimumMutationScore = minimumMutationScore;
+            this.mutationTestingEnabled = mutationTestingEnabled;
+            this.qualityBefore = Objects.requireNonNull(qualityBefore, "qualityBefore");
             this.createdAt = createdAt;
         }
     }

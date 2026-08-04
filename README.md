@@ -21,16 +21,23 @@ focused capabilities: high-quality Java unit testing and safe code cleanup.
 - Generate focused JUnit tests for selected, changed, under-covered, or all production classes.
 - Use the project's real Maven or Gradle build.
 - Prove that every changed test executed.
-- Measure fresh JaCoCo line and branch coverage.
-- Block apply when a requested coverage target is not met.
+- Measure fresh JaCoCo line and branch coverage plus targeted PIT mutation strength.
+- Block apply when requested coverage or mutation targets are not met.
+- Report a transparent test-quality score with evidence completeness and raw inputs.
 
 ### Java code cleanup
 
+- Detect bug risks, code smells, modernization opportunities, complexity, duplication, and
+  performance hazards with file-and-line remediation guidance.
 - Run pinned, exactly scoped OpenRewrite cleanup first.
 - Let the coding agent review and refine the candidate.
 - Keep production edits limited to selected Java files and related tests.
-- Verify behavior with a clean build and test execution evidence.
+- Track reliability, maintainability, complexity, duplication, debt, and overall quality scores.
+- Reject new severe findings or quality regressions, then verify behavior with the real build.
 - Reject candidate drift, live-worktree drift, deletion, and unsafe paths.
+
+Every score includes its underlying counts and timings. See [quality metrics](docs/quality-metrics.md)
+for the formulas, gates, and interpretation boundaries.
 
 ## Agent Skills
 
@@ -41,15 +48,16 @@ focused capabilities: high-quality Java unit testing and safe code cleanup.
 
 ```text
 Generate high-quality unit tests for OrderService and reach 90% line coverage.
+Strengthen PaymentServiceTest until it reaches an 80% mutation score.
 Generate tests for the Java classes changed on this branch.
-Clean the changed Java classes and apply only the verified result.
+Find and fix bug risks, complexity, duplication, and code smells in the changed Java classes.
 Review PaymentService for code cleanup, but show me the candidate before apply.
 ```
 
 ## Workflow
 
 ```text
-inspect → prepare tests or cleanup → edit isolated candidate → validate → apply or discard
+inspect quality → prepare tests or cleanup → edit isolated candidate → validate scorecards → apply or discard
 ```
 
 Apply requires an immediately validated candidate and explicit confirmation. Preparing, editing,
@@ -60,15 +68,16 @@ transaction model.
 
 ## Verified on Spring Framework Petclinic
 
-The released v3 workflow was tested against a clean Spring Framework Petclinic revision:
+The v3.1 workflow was tested against the canonical Spring Framework Petclinic repository:
 
 | Check | Result |
 | --- | --- |
-| Baseline | 75 tests passed; 85.69% aggregate line coverage |
-| `Owner` test generation | 55% → 95% line coverage; 30% → 100% branch coverage |
-| Coverage gate | Correctly blocked apply at 72.5% against an 80% requirement |
-| Code cleanup | Exactly one selected class plus four related tests; 79 tests passed |
-| Drift safety | Rejected a post-validation edit and identified the exact file |
+| Baseline | 75 tests passed; zero failures, errors, or skips |
+| Quality analysis | 43 files in 0.259 s median analyzer time; deterministic 97.9 score |
+| `Owner` test generation | 55% → 95% line; 30% → 100% branch coverage |
+| Mutation proof | 14/14 mutations killed; 100% mutation score and test strength |
+| Test score | 98.8 `EXCELLENT`; 100% evidence completeness |
+| Code cleanup | Quality 99.8 → 100.0; debt 5 → 0; exactly one selected file |
 
 See the [full reproducible evaluation](docs/evaluations/spring-framework-petclinic.md).
 

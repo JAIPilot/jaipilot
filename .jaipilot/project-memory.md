@@ -18,23 +18,29 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
 ## Primary Toolkit Surface
 
 - `jaipilot inspect`: read build, project, coverage, and active-run metadata.
+- `jaipilot quality`: report deterministic findings, method complexity, duplication, debt, and scores.
 - `jaipilot prepare-tests`: clean-baseline and isolate named, changed, all, or fresh-coverage targets.
 - `jaipilot prepare-cleanup`: clean-baseline, isolate, and run exact-scoped OpenRewrite first.
 - `jaipilot status`: inspect persisted run state.
-- `jaipilot validate`: enforce scope, build, execution, coverage, and drift gates.
+- `jaipilot validate`: enforce scope, build, execution, coverage, mutation, quality, and drift gates.
 - `jaipilot apply --confirm`: apply only an immediately validated unchanged candidate transactionally.
 - `jaipilot discard`: remove an abandoned candidate.
 
 ## Workflow Invariants
 
-- Default test coverage target is 80%.
+- Default test line-coverage target is 80%; default targeted PIT mutation target is 70%.
 - Maven and Gradle wrappers are preferred only when both launcher and wrapper metadata are valid.
 - Fresh coverage invalidates recognized XML first, runs the clean suite, and never falls back to
   stale or partial reports after failure.
 - Test generation may change only `src/test/java/**/*.java`; changed tests require newly generated
   non-zero Surefire, Failsafe, or Gradle XML execution evidence.
-- Cleanup runs pinned OpenRewrite `CodeCleanup` and `CommonStaticAnalysis` recipes in one exactly
-  scoped sandbox pass, then allows contextual review of selected production Java and related tests.
+- Cleanup runs a pinned OpenRewrite bundle in one exactly scoped sandbox pass, then allows contextual
+  review of selected production Java and related tests.
+- Source quality reports bug risks, code smells, modernization, complexity, duplication, performance,
+  remediation debt, and 0–100 component/overall scores. Validation blocks new severe findings and
+  overall score regressions.
+- Test validation runs class-and-test-scoped PIT with bounded parallelism and reports mutation score,
+  test strength, survivors, evidence completeness, and a composite test-quality score.
 - Validation rejects deletion, symbolic paths, invalid scope, build-time source drift, and missing
   execution evidence. Apply rejects post-validation candidate drift and live-worktree drift.
 - Direct runs persist beneath `JAIPILOT_STATE_HOME`, `XDG_STATE_HOME/jaipilot`, or the user's local
@@ -77,6 +83,17 @@ local checksum-verified archive were 2.646, 2.734, 2.671, 2.659, and 2.652 secon
 seconds and nearest-rank p95 2.734 seconds. This isolates install/extract/start time from network
 download time. Five cached `version` launches were 0.243, 0.239, 0.247, 0.243, and 0.265 seconds:
 median 0.243 seconds and nearest-rank p95 0.265 seconds.
+
+On 2026-08-05, five v3.1.0 full-source quality runs over the canonical Spring Framework Petclinic
+revision `f2b1c6d` analyzed the same 43 files, 1,452 LOC, 172 methods, and seven findings every time.
+Analyzer times were 0.253, 0.243, 0.264, 0.285, and 0.259 seconds: median 0.259 seconds and p95
+0.285 seconds. Complete runner times were 0.96, 0.82, 0.85, 0.87, and 0.84 seconds: median 0.85
+seconds and p95 0.96 seconds.
+
+The v3.1.0 Petclinic `Owner` journey prepared in 19.90 seconds and validated in 32.69 seconds wall
+time. Targeted PIT used 12.74 seconds, killed 14/14 mutations, and produced a 98.8 test-quality score
+with complete evidence. The `CallMonitoringAspect` cleanup prepared in 30.08 seconds and validated
+in 18.95 seconds wall time, resolving one smell and moving quality 99.8 → 100.0.
 
 ## Keep Fresh
 

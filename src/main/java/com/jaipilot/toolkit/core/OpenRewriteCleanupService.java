@@ -132,6 +132,19 @@ public final class OpenRewriteCleanupService {
                 recipeList:
                   - org.openrewrite.staticanalysis.CodeCleanup
                   - org.openrewrite.staticanalysis.CommonStaticAnalysis
+                  - org.openrewrite.staticanalysis.JavaApiBestPractices
+                  - org.openrewrite.staticanalysis.AvoidBoxedBooleanExpressions
+                  - org.openrewrite.staticanalysis.BufferedWriterCreationRecipes
+                  - org.openrewrite.staticanalysis.CombineSemanticallyEqualCatchBlocks
+                  - org.openrewrite.staticanalysis.CompareEnumsWithEqualityOperator
+                  - org.openrewrite.staticanalysis.InterruptedExceptionHandling
+                  - org.openrewrite.staticanalysis.MergeIdenticalBranches
+                  - org.openrewrite.staticanalysis.RemoveDuplicateConditions
+                  - org.openrewrite.staticanalysis.ReplaceOptionalIsPresentWithIfPresent
+                  - org.openrewrite.staticanalysis.ReplaceWeekYearWithYear
+                  - org.openrewrite.staticanalysis.SillyEqualsCheck
+                  - org.openrewrite.staticanalysis.UseForEachRemoveInsteadOfSetRemoveAll
+                  - org.openrewrite.staticanalysis.UseTryWithResources
                 """.formatted(TARGETED_RECIPE, yamlSingleQuoted(filePattern));
     }
 

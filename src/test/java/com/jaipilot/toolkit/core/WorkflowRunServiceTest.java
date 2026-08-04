@@ -89,6 +89,10 @@ class WorkflowRunServiceTest {
         WorkflowRunService.ValidationResult validation = restored.validate(run.runId());
         assertTrue(validation.readyToApply());
         WorkflowRunService.StoredRunState validated = restored.exportRun(run.runId());
+        validated = mapper.readValue(
+                mapper.writeValueAsBytes(validated),
+                WorkflowRunService.StoredRunState.class
+        );
         assertEquals(WorkflowRunService.RunStatus.VALIDATED.name(), validated.status());
         assertNotNull(validated.validatedSnapshot());
 
@@ -324,6 +328,62 @@ class WorkflowRunServiceTest {
     }
 
     @Test
+    void mutationGoalBlocksApplyAndFeedsTheTransparentTestScore() throws Exception {
+        service.close();
+        createProject(true);
+        service = new WorkflowRunService(
+                fileService,
+                projectService,
+                coverageService,
+                this::successfulBuild,
+                root -> coverage(root, 100.0d),
+                (root, targets) -> successfulRewrite(),
+                null,
+                (root, targets, tests, minimum) -> mutationReport(minimum, 50.0d, 60.0d, false)
+        );
+        WorkflowRunService.PreparedRun run = service.prepareTestGeneration(
+                tempDir,
+                WorkflowRunService.TargetSelection.classes(List.of("OrderService")),
+                80.0d,
+                70.0d,
+                true
+        );
+        writeTest(run.workspaceRoot(), "OrderServiceTest", "class OrderServiceTest {}\n");
+        writeExecutedReport(run.workspaceRoot(), "com.example.OrderServiceTest");
+
+        WorkflowRunService.ValidationResult validation = service.validate(run.runId());
+
+        assertFalse(validation.valid());
+        assertFalse(validation.readyToApply());
+        assertTrue(validation.failures().get(0).contains("below the required 70"));
+        assertEquals(76.5d, validation.testQuality().score());
+        assertEquals("GOOD", validation.testQuality().grade());
+        assertEquals(100.0d, validation.testQuality().evidenceCompletenessPercent());
+        assertEquals(1, validation.testQuality().changedTestFileCount());
+        assertEquals(1, validation.testQuality().executedChangedTestFileCount());
+    }
+
+    @Test
+    void newSevereQualityFindingBlocksCleanupApply() throws Exception {
+        WorkflowRunService.PreparedRun run = service.prepareCodeCleanup(
+                tempDir,
+                WorkflowRunService.TargetSelection.classes(List.of("OrderService"))
+        );
+        Files.writeString(
+                run.workspaceRoot().resolve("src/main/java/com/example/OrderService.java"),
+                "package com.example; class OrderService { public static Object shared; }\n"
+        );
+
+        WorkflowRunService.ValidationResult validation = service.validate(run.runId());
+
+        assertFalse(validation.valid());
+        assertFalse(validation.readyToApply());
+        assertFalse(validation.qualityGoalMet());
+        assertEquals(1, validation.qualityDelta().newCriticalOrHighFindings());
+        assertTrue(validation.failures().stream().anyMatch(message -> message.contains("critical/high")));
+    }
+
+    @Test
     void invalidSelectionsFailBeforeCreatingWorkspace() {
         assertThrows(
                 IllegalArgumentException.class,
@@ -369,6 +429,34 @@ class WorkflowRunServiceTest {
 
     private OpenRewriteCleanupService.RewriteResult successfulRewrite() {
         return new OpenRewriteCleanupService.RewriteResult(List.of("fixture-rewrite"), Duration.ofMillis(1));
+    }
+
+    private MutationTestingService.MutationReport mutationReport(
+            double minimum,
+            double mutationScore,
+            double testStrength,
+            boolean goalMet
+    ) {
+        return new MutationTestingService.MutationReport(
+                MutationTestingService.PITEST_VERSION,
+                true,
+                minimum,
+                mutationScore,
+                testStrength,
+                goalMet,
+                10,
+                5,
+                3,
+                2,
+                0,
+                0,
+                0,
+                List.of(),
+                List.of("target/jaipilot-pit/mutations.xml"),
+                List.of(List.of("pitest")),
+                null,
+                Duration.ofMillis(10).toNanos()
+        );
     }
 
     private WorkflowRunService.PreparedRun prepareTests() {

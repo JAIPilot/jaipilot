@@ -1,110 +1,84 @@
 # Spring Framework Petclinic evaluation
 
-This evaluation exercises JAIPilot's complete test-generation and Java-cleanup journeys against a
-real Java repository. It is evidence for these exact revision and environment boundaries, not a
-claim about every project or machine.
+This evaluation exercises JAIPilot's quality analysis, test generation, mutation testing, cleanup,
+validation, and transactional apply against the canonical Spring Framework Petclinic repository.
+The results apply to the exact revision and environment below.
 
 ## Boundaries
 
 | Item | Value |
 | --- | --- |
-| Date | 2026-08-04 |
-| JAIPilot | v3.0.0 bundled macOS x64 runner |
-| Project | `skrcode/spring-framework-petclinic` |
-| Project revision | `ef714bf289f5ee323487f34f15b153e7da5f980a` |
+| Date | 2026-08-05 |
+| JAIPilot | v3.1.0 candidate, bundled macOS x64 runner |
+| Project | `spring-petclinic/spring-framework-petclinic` |
+| Project revision | `f2b1c6df3a89f4d0294c7402b48ea351af2c92ca` |
 | Host | macOS x64 |
 | Java | Temurin 25.0.3 |
-| Build | Project Maven wrapper; warm dependency cache |
-| Coverage | Project-configured JaCoCo 0.8.14 |
-| Isolation | Clean detached Git worktrees; existing user checkout untouched |
+| Build | Project Maven 3.8.4 wrapper |
+| Coverage | Project-configured JaCoCo 0.8.15 |
+| Isolation | Disposable clones and separate JAIPilot state directories |
 
-## Baseline
+The cold `./mvnw -B clean verify` completed in 43.06 seconds including dependency resolution. All 75
+tests passed with zero failures, errors, or skips.
 
-```bash
-./mvnw -B clean verify
-```
+## Quality analysis
 
-- 75 tests, zero failures, zero errors, zero skipped.
-- 85.69% aggregate line coverage.
-- 20.28 seconds wall time.
-- 43 production classes discovered by JAIPilot.
+Five identical full-production-source runs analyzed 43 files, 1,452 code lines, and 172 methods.
+Every run returned the same seven findings and 97.9 overall quality score.
 
-## Unit-test generation
+| Boundary | Raw seconds | Median | p95 |
+| --- | --- | --- | --- |
+| Analyzer only | 0.253, 0.243, 0.264, 0.285, 0.259 | 0.259 s | 0.285 s |
+| JVM startup, discovery, analysis, JSON | 0.96, 0.82, 0.85, 0.87, 0.84 | 0.85 s | 0.96 s |
 
-Target: `org.springframework.samples.petclinic.model.Owner` with an 80% minimum line-coverage gate.
+The report contained no critical/high findings or bug risks: six code smells, one modernization
+opportunity, 0.6% duplication, 66 minutes of estimated debt, maximum cyclomatic complexity 14, and
+maximum cognitive complexity 21.
 
-```bash
-jaipilot prepare-tests \
-  --project <clean-worktree> \
-  --mode classes \
-  --class org.springframework.samples.petclinic.model.Owner \
-  --minimum-line-coverage 80
-```
+## Unit-test and mutation journey
 
-Prepare completed in 18.02 seconds, including a 17.21-second clean baseline. JAIPilot reported
-`Owner` at 55% line and 30% branch coverage and returned one isolated target plus its likely tests.
+Target: `org.springframework.samples.petclinic.model.Owner`, with 80% line-coverage and 70% mutation
+gates.
 
-Five focused tests were added to the existing `OwnerTests` for contact properties, bidirectional
-pet association, case-insensitive lookup, persisted-versus-new filtering, missing lookup, and the
-diagnostic string representation.
+Preparation took 19.90 seconds wall time, including an 18.65-second clean baseline. JAIPilot found
+55% line and 30% branch coverage, created an isolated candidate, and reported a 100.0 source-quality
+score for the selected class.
 
-The first full validation reached 72.5% line and 100% branch coverage. JAIPilot passed the build
-and scope checks but correctly returned `readyToApply: false` because the 80% target was unmet.
-After the final useful assertion, validation reported:
+Five focused tests were added to the existing `OwnerTests` for contact properties, bidirectional pet
+association, case-insensitive lookup, persisted-versus-new filtering, missing lookup, and diagnostic
+state. Validation produced:
 
-- 95% target line coverage;
-- 100% target branch coverage;
-- no missing execution reports;
-- one changed test file;
-- `readyToApply: true`.
+- 95% line and 100% branch coverage;
+- 14 PIT mutations, all killed, with 100% mutation score and 100% test strength;
+- a 98.8 `EXCELLENT` test-quality score with 100% evidence completeness;
+- proof that the one changed test file executed;
+- no warnings, failures, source-quality regressions, or missing reports.
 
-Transactional apply changed exactly `OwnerTests.java` in the disposable worktree.
+Validation took 31.86 seconds internally and 32.69 seconds wall time; targeted PIT accounted for
+12.74 seconds. Transactional apply changed exactly `OwnerTests.java` and removed the isolated
+workspace and run state.
 
-## Java cleanup
+## Cleanup journey
 
-Target: `org.springframework.samples.petclinic.util.CallMonitoringAspect`, initially at 0% line and
-branch coverage.
+Target: `org.springframework.samples.petclinic.util.CallMonitoringAspect` in a second clean checkout.
 
-```bash
-jaipilot prepare-cleanup \
-  --project <second-clean-worktree> \
-  --mode classes \
-  --class org.springframework.samples.petclinic.util.CallMonitoringAspect
-```
+Preparation took 30.08 seconds wall time: 18.21 seconds for the clean baseline and 10.70 seconds for
+the pinned, exact-scoped OpenRewrite pass. OpenRewrite changed only the target class by removing
+redundant primitive initializers and adding braces. Contextual review then removed the reported
+redundant `else` after a terminal branch.
 
-Prepare completed in 28.90 seconds: 15.76 seconds for the clean baseline and 12.43 seconds for
-OpenRewrite. The exact-scoped recipe pass changed only the selected class by removing redundant
-primitive zero initializers and adding braces to its `if/else`. Agent review retained those fixes,
-removed an unnecessary `else` after `return`, and added four deterministic tests covering enabled,
-disabled, exceptional, and reset behavior.
+Validation reran the real build and completed in 18.14 seconds internally, reporting:
 
-Validation reported `readyToApply: true`, no warnings, and exactly two changed paths: the selected
-production class and its related test. The fresh reports contained:
+- overall quality 99.8 → 100.0 and maintainability 99.4 → 100.0;
+- code smells 1 → 0 and remediation debt 5 → 0 minutes;
+- one resolved finding, zero introduced findings, and zero new critical/high findings;
+- no warnings or failures and `readyToApply: true`.
 
-- 79 suite tests, zero failures or errors;
-- 100% line coverage for `CallMonitoringAspect` (22/22 lines);
-- 100% branch coverage for `CallMonitoringAspect` (4/4 branches).
+Transactional apply changed exactly `CallMonitoringAspect.java` and removed the isolated workspace.
 
-Transactional apply changed exactly those two paths in the disposable worktree.
+## Interpretation
 
-## Safety and recovery
-
-After successful cleanup validation, a one-line test-file edit intentionally changed the candidate.
-Apply was rejected in 0.48 seconds with the exact drifted path. Removing the probe and revalidating
-restored `readyToApply: true`; apply then succeeded.
-
-Both disposable worktrees and their local run state were removed after the audit. The original
-Petclinic checkout and JAIPilot repository were unchanged.
-
-## Product gaps observed
-
-The core workflows, coverage gate, build verification, scope controls, drift rejection, recovery,
-and transactional apply behaved correctly. Two reporting gaps remain:
-
-1. Cleanup validation returned an empty JSON `coverage` object even though its fresh JaCoCo report
-   showed 100% target line and branch coverage.
-2. Validation proves changed-test execution from XML reports but does not expose the executed-test
-   counts in its JSON result; the counts above were read from the generated reports.
-
-These are evidence-presentation gaps, not silent validation bypasses. They should be addressed
-before using cleanup coverage or test counts as first-class automation outputs.
+This proves the complete local workflow on one real revision; it is not a universal superiority
+claim. JAIPilot's analyzer is syntactic and remediation-oriented. It does not replace formal
+interprocedural security analysis, centralized governance, compliance controls, portfolios, or
+historical dashboards.

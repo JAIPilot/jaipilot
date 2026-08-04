@@ -1,4 +1,4 @@
 interface:
   display_name: "High-Quality Java Unit Tests"
-  short_description: "Generate high-quality verified Java tests"
-  default_prompt: "Use $jaipilot-generate-tests to add high-quality unit tests and verify them with the project's real build and fresh coverage."
+  short_description: "Generate tests proven by coverage and PIT"
+  default_prompt: "Use $jaipilot-generate-tests to add high-quality Java unit tests, kill targeted PIT mutations, and report the complete test-quality scorecard."
