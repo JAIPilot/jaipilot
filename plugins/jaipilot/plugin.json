@@ -1,13 +1,13 @@
 {
   "name": "jaipilot",
-  "version": "3.0.0",
-  "description": "Enterprise Java toolkit for high-coverage tests and verified OpenRewrite-first clean-code refactoring.",
+  "version": "3.0.1",
+  "description": "Proof-driven Java tests and OpenRewrite-first cleanup for Codex and Claude Code.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
   },
-  "homepage": "https://github.com/JAIPilot/jaipilot-cli#readme",
-  "repository": "https://github.com/JAIPilot/jaipilot-cli",
+  "homepage": "https://github.com/JAIPilot/jaipilot#readme",
+  "repository": "https://github.com/JAIPilot/jaipilot",
   "license": "MIT",
   "skills": "./skills/"
 }

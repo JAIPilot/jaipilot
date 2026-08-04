@@ -1,25 +1,45 @@
 name: Bug report
-description: Report a reproducible problem in JAIPilot
-title: "[Bug]: "
+description: Report a reproducible JAIPilot workflow failure
+title: "bug: "
 labels:
   - bug
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve JAIPilot. Remove secrets and proprietary source before submitting.
+        For undisclosed vulnerabilities, use the private process in `SECURITY.md` instead.
   - type: textarea
     id: summary
     attributes:
-      label: Summary
-      description: What happened, and why is it a bug?
+      label: What happened?
+      description: Describe the observed behavior and its user impact.
+    validations:
+      required: true
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Workflow
+      options:
+        - Generate Java tests
+        - Clean or refactor Java
+        - Validate candidate
+        - Apply or discard
+        - Plugin installation or update
+        - Project inspection
+        - Other
     validations:
       required: true
   - type: textarea
-    id: steps
+    id: reproduction
     attributes:
-      label: Steps to reproduce
-      description: Share the smallest sequence of steps that reproduces the issue.
+      label: Minimal reproduction
+      description: Share the smallest project shape, request, and sequence that reproduces the issue.
       placeholder: |
-        1. Install the JAIPilot plugin in Codex or Claude Code.
-        2. Ask for tests or cleanup, or run `jaipilot prepare-tests` / `prepare-cleanup` with ...
-        3. See ...
+        1. Install JAIPilot v3.0.1 in Codex or Claude Code.
+        2. Open a clean Maven project with ...
+        3. Ask "..."
+        4. Validation returns ...
     validations:
       required: true
   - type: textarea
@@ -28,47 +48,40 @@ body:
       label: Expected behavior
     validations:
       required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual behavior
-    validations:
-      required: true
   - type: input
     id: version
     attributes:
       label: JAIPilot version
-      placeholder: 0.1.0
+      placeholder: v3.0.1
     validations:
       required: true
   - type: input
-    id: java
+    id: host
     attributes:
-      label: Java version
-      placeholder: 17
+      label: Host tool and version
+      placeholder: Codex / Claude Code / another Agent Skills host
     validations:
       required: true
   - type: input
-    id: maven
+    id: environment
     attributes:
-      label: Maven version
-      placeholder: 3.9.x
-    validations:
-      required: true
-  - type: input
-    id: os
-    attributes:
-      label: Operating system
-      placeholder: macOS 15 / Ubuntu 24.04 / Windows 11
+      label: Environment
+      placeholder: macOS 15 x64, Temurin 21, Maven 3.9.11
     validations:
       required: true
   - type: textarea
-    id: logs
+    id: output
     attributes:
-      label: Relevant logs or output
+      label: Structured result and diagnostics
+      description: Paste sanitized JAIPilot JSON and relevant stderr or build output.
       render: shell
     validations:
       required: false
-  - type: markdown
+  - type: checkboxes
+    id: checks
     attributes:
-      value: For undisclosed security issues, use the process in `SECURITY.md` instead of filing a public issue.
+      label: Preflight
+      options:
+        - label: The project build succeeds without JAIPilot.
+        - label: I searched existing issues and discussions for this problem.
+          required: true

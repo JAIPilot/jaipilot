@@ -1,4 +1,4 @@
 interface:
-  display_name: "Clean and Refactor Java"
-  short_description: "Verified OpenRewrite-first Java cleanup"
-  default_prompt: "Use $jaipilot-clean-java to review and safely refactor the requested Java code."
+  display_name: "Clean & Prove Java Changes"
+  short_description: "OpenRewrite-first cleanup with build proof"
+  default_prompt: "Use $jaipilot-clean-java to clean the requested Java code and apply only a build-verified, drift-safe candidate."

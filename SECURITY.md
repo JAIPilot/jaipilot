@@ -1,25 +1,32 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions
 
-Security fixes are expected to land in:
+Security fixes are expected to land in the latest released version and the `main` branch. Older
+releases may not receive fixes.
 
-- the latest released version
-- the `main` branch
+## Report a vulnerability privately
 
-Older versions may not receive fixes.
+Do not open a public issue for an undisclosed vulnerability.
 
-## Reporting a Vulnerability
+Use [GitHub private vulnerability reporting](https://github.com/JAIPilot/jaipilot/security/advisories/new)
+to contact the maintainers. Include:
 
-Do not open a public GitHub issue for undisclosed vulnerabilities.
+- a clear description of the issue and affected JAIPilot versions;
+- impact and realistic attack preconditions;
+- minimal reproduction steps or a proof of concept;
+- relevant operating system, filesystem, build-tool, and repository conditions;
+- a suggested mitigation, if known.
 
-Use GitHub's private vulnerability reporting for this repository if it is enabled. If private reporting is not available, contact the maintainer directly before sharing details publicly.
+Remove third-party secrets and proprietary source from the report. The maintainers will acknowledge
+the report after triage and coordinate disclosure and remediation when the issue is confirmed.
 
-Please include:
+## Security boundaries
 
-- a clear description of the issue
-- impact and affected environments
-- reproduction steps or a proof of concept
-- any suggested mitigation, if known
+JAIPilot is local and backend-free, but it intentionally executes the target project's Maven or
+Gradle build and pinned OpenRewrite tooling. Treat repository build scripts, wrappers, plugins, and
+dependencies as executable code. Review untrusted projects before running them.
 
-You should receive an acknowledgement after the report is reviewed.
+JAIPilot's scope, symlink, deletion, drift, and transactional-write controls protect the apply
+boundary. They are not a sandbox for malicious build scripts and do not replace operating-system
+isolation for untrusted repositories.

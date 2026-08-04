@@ -79,7 +79,7 @@ jobs:
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          name: JAIPilot Enterprise Java Toolkit ${{ github.ref_name }}
+          name: JAIPilot ${{ github.ref_name }} — Proof-Driven Java Engineering
           generate_release_notes: true
           files: |
             target/release-assets/*.tar.gz

@@ -1,6 +1,10 @@
 # Contributing
 
-Thanks for contributing to the JAIPilot enterprise Java toolkit.
+Thanks for contributing to JAIPilot's proof-driven Java engineering workflow.
+
+Before participating, read the [community code of conduct](CODE_OF_CONDUCT.md). For usage questions
+and early ideas, start with [GitHub Discussions](https://github.com/JAIPilot/jaipilot/discussions).
+Use issues for reproducible defects and proposals with concrete acceptance evidence.
 
 ## Development setup
 
@@ -18,7 +22,7 @@ current-platform bundled distribution.
 
 ```bash
 ./mvnw -B test
-java -jar target/jaipilot-toolkit-3.0.0-all.jar inspect --project .
+java -jar target/jaipilot-toolkit-3.0.1-all.jar inspect --project .
 ./scripts/smoke-test-install.sh
 ```
 
@@ -33,6 +37,7 @@ verification, the bundled runtime, first plugin launch, and cached launch.
 - Update README, skills, manifests, and project memory when their contract changes.
 - Include repeatable before/after evidence for performance-sensitive changes.
 - Do not commit `target/`, temporary workspaces, or local configuration.
+- Explain the user-visible outcome, verification evidence, safety impact, and explicit boundaries.
 
 Before opening a pull request:
 
@@ -56,3 +61,5 @@ tool/version, operating system, command or tool arguments, stderr diagnostics, a
 when possible.
 
 Follow [SECURITY.md](SECURITY.md) for vulnerabilities; do not disclose them in a public issue.
+
+For support channel guidance, see [SUPPORT.md](SUPPORT.md).

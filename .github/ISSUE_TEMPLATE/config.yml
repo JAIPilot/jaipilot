@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Questions and ideas
+    url: https://github.com/JAIPilot/jaipilot/discussions
+    about: Ask for help, share a workflow, or explore an idea with the community.
   - name: Security policy
-    url: https://github.com/JAIPilot/jaipilot-cli/blob/main/SECURITY.md
+    url: https://github.com/JAIPilot/jaipilot/blob/main/SECURITY.md
     about: Please follow the private reporting guidance for security issues.
