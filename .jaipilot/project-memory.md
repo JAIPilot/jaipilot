@@ -108,6 +108,13 @@ seconds median / 11.40 seconds p95. Five cleanup journeys prepared in 25.37 seco
 seconds p95 and validated in 16.33 seconds median / 16.82 seconds p95. Final test and cleanup
 candidates were transactionally applied in disposable clones with exactly one allowlisted file each.
 
+GitHub dependency scanning then identified seven Jackson Databind 2.18.3 advisories, including two
+high-severity alerts. v3.1.2 moves the pinned dependency to the patched 2.18.9 line; do not publish
+another release while known high-severity dependency alerts have an available compatible fix.
+Five v3.1.2 Petclinic full-source quality runs retained the same scope, findings, and 97.9 score;
+analyzer time was 0.217 seconds median / 0.221 seconds p95 and complete runner time was 0.71 seconds
+median / 0.73 seconds p95.
+
 ## Keep Fresh
 
 Update this file when runner operations, persistence rules, workflow gates, recipes, run

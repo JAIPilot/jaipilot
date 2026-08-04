@@ -69,12 +69,12 @@ transaction model.
 
 ## Verified on Spring Framework Petclinic
 
-The v3.1.1 workflow was tested against the canonical Spring Framework Petclinic repository:
+The v3.1.2 workflow was tested against the canonical Spring Framework Petclinic repository:
 
 | Check | Result |
 | --- | --- |
 | Baseline | 75 tests passed; zero failures, errors, or skips |
-| Quality analysis | 43 files in 0.215 s median analyzer time; deterministic 97.9 score |
+| Quality analysis | 43 files in 0.217 s median analyzer time; deterministic 97.9 score |
 | `Owner` test generation | 55% → 95% line; 30% → 100% branch coverage |
 | Mutation proof | 14/14 mutations killed; 100% mutation score and test strength |
 | Test score | 98.8 `EXCELLENT`; 100% evidence completeness |

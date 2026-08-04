@@ -29,7 +29,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <revision>3.1.1</revision>
+        <revision>3.1.2</revision>
         <maven.compiler.release>17</maven.compiler.release>
         <junit.version>5.11.4</junit.version>
         <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>
@@ -39,6 +39,7 @@
         <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
         <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
         <jacoco.maven.plugin.version>0.8.15</jacoco.maven.plugin.version>
+        <jackson.version>2.18.9</jackson.version>
         <javaparser.version>3.28.2</javaparser.version>
     </properties>
 
@@ -46,7 +47,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.18.3</version>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
