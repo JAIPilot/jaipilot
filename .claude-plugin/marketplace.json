@@ -5,14 +5,14 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Proof-driven Java engineering for coding agents."
+    "description": "Java Enterprise Toolkit for high-quality unit testing and code cleanup."
   },
   "plugins": [
     {
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
-      "description": "Generate tests, clean Java, and prove every change before apply.",
-      "version": "3.0.1",
+      "description": "High-quality Java unit testing and code cleanup for coding agents.",
+      "version": "3.0.2",
       "category": "development",
       "tags": [
         "java",

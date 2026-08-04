@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "3.0.1",
-  "description": "Proof-driven Java tests and OpenRewrite-first cleanup for Codex and Claude Code.",
+  "version": "3.0.2",
+  "description": "JAIPilot Java Enterprise Toolkit for high-quality unit testing and code cleanup.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -20,18 +20,18 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "Prove Java tests and refactors",
-    "longDescription": "Generate focused Java tests and clean code through isolated candidates, OpenRewrite-first remediation, real builds, fresh coverage, drift protection, and transactional apply.",
+    "shortDescription": "High-quality Java tests and cleanup",
+    "longDescription": "Generate high-quality Java unit tests and clean Java code with real builds, fresh coverage, OpenRewrite, drift protection, and safe apply.",
     "developerName": "JAIPilot",
     "category": "Productivity",
     "capabilities": [],
     "websiteURL": "https://github.com/JAIPilot/jaipilot",
     "defaultPrompt": [
-      "Generate focused Java tests and prove them with the real build and fresh coverage.",
-      "Clean the changed Java classes with OpenRewrite first, then apply only a verified candidate.",
-      "Review this Java code and show me the execution evidence before applying improvements."
+      "Generate high-quality unit tests for this Java project.",
+      "Clean up the changed Java classes and verify the result.",
+      "Review this Java code and apply only validated improvements."
     ],
-    "brandColor": "#0E2344",
+    "brandColor": "#2457D6",
     "logo": "./assets/jaipilot-logo.svg"
   }
 }

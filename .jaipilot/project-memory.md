@@ -1,6 +1,6 @@
 # JAIPilot Project Memory
 
-This is the durable implementation memory for the JAIPilot proof-driven Java toolkit. Keep evolving
+This is the durable implementation memory for the JAIPilot Java Enterprise Toolkit. Keep evolving
 facts here, stable repository rules in `AGENTS.md`, and reusable agent procedures in
 `plugins/jaipilot/skills/`.
 

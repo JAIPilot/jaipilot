@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for contributing to JAIPilot's proof-driven Java engineering workflow.
+Thanks for contributing to the JAIPilot Java Enterprise Toolkit.
 
 Before participating, read the [community code of conduct](CODE_OF_CONDUCT.md). For usage questions
 and early ideas, start with [GitHub Discussions](https://github.com/JAIPilot/jaipilot/discussions).
@@ -22,7 +22,7 @@ current-platform bundled distribution.
 
 ```bash
 ./mvnw -B test
-java -jar target/jaipilot-toolkit-3.0.1-all.jar inspect --project .
+java -jar target/jaipilot-toolkit-3.0.2-all.jar inspect --project .
 ./scripts/smoke-test-install.sh
 ```
 
