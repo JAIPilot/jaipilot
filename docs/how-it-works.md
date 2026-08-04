@@ -7,13 +7,15 @@ selection, isolation, verification evidence, drift detection, and apply.
 ## The transaction
 
 ```text
-inspect → prepare-tests | prepare-cleanup → validate → apply | discard
+inspect | quality → prepare-tests | prepare-cleanup → validate → apply | discard
 ```
 
 ### 1. Inspect
 
 JAIPilot resolves the real project root, Maven or Gradle build, valid wrapper, production classes,
 changed production files, JaCoCo configuration, cached coverage metadata, and active-run state.
+The `quality` operation analyzes an explicit class, changed classes, or an explicitly requested full
+scope and returns deterministic findings, method metrics, duplication evidence, debt, and scores.
 
 ### 2. Prepare
 
@@ -27,9 +29,11 @@ Test generation supports four deterministic target modes:
 - `coverage` for classes below a threshold from a newly generated JaCoCo report;
 - `all` only when a whole-project operation is explicitly requested.
 
-Cleanup supports `classes`, `changed`, and explicit `all`. It first runs pinned OpenRewrite
-`CodeCleanup` and `CommonStaticAnalysis` recipes with an exact-source precondition. Temporary build
-configuration exists only in the workspace and is removed before the agent receives it.
+Cleanup supports `classes`, `changed`, and explicit `all`. It first runs a pinned OpenRewrite bundle
+for cleanup, common static analysis, API practices, interruption handling, resource safety,
+equivalent branches, redundant conditions, and targeted modernization. An exact-source precondition
+limits every recipe to selected files. Temporary build configuration exists only in the workspace
+and is removed before the agent receives it.
 
 ### 3. Improve
 
@@ -48,6 +52,18 @@ in newly generated Surefire, Failsafe, or Gradle XML reports.
 
 When JaCoCo is configured, test generation reports before/after line and branch coverage for every
 target. A requested minimum line-coverage goal blocks apply until every target meets it.
+
+JAIPilot then runs pinned, class-and-test-scoped PIT mutation testing without changing the project's
+build files. Mutation score, test strength, killed and surviving mutations, uncovered mutations,
+and elapsed time are returned as structured evidence. Test generation defaults to a 70% mutation
+gate; no scorable mutations cannot satisfy a positive target.
+
+Validation also recomputes the selected-source quality report. New critical or high findings and an
+overall quality-score regression block apply. The result includes before/after findings, bug risks,
+code smells, remediation debt, duplication, and complexity. The test-quality score combines coverage,
+mutation evidence, and changed-test execution while reporting evidence completeness separately.
+
+The exact formulas and scope boundaries are documented in [quality metrics](quality-metrics.md).
 
 ### 5. Apply or discard
 

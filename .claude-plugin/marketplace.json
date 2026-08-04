@@ -5,20 +5,21 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Java Enterprise Toolkit for high-quality unit testing and code cleanup."
+    "description": "Java Enterprise Toolkit for mutation-tested unit tests and scored code cleanup."
   },
   "plugins": [
     {
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
-      "description": "High-quality Java unit testing and code cleanup for coding agents.",
-      "version": "3.0.2",
+      "description": "Generate proven Java tests and remediate code quality with transparent scorecards.",
+      "version": "3.1.0",
       "category": "development",
       "tags": [
         "java",
         "testing",
         "refactoring",
-        "code-quality"
+        "code-quality",
+        "mutation-testing"
       ]
     }
   ]

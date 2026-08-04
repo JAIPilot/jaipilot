@@ -48,6 +48,9 @@ class OpenRewriteCleanupServiceTest {
                 + OpenRewriteCleanupService.STATIC_ANALYSIS_VERSION));
         assertTrue(yaml.get().contains("org.openrewrite.staticanalysis.CodeCleanup"));
         assertTrue(yaml.get().contains("org.openrewrite.staticanalysis.CommonStaticAnalysis"));
+        assertTrue(yaml.get().contains("org.openrewrite.staticanalysis.InterruptedExceptionHandling"));
+        assertTrue(yaml.get().contains("org.openrewrite.staticanalysis.MergeIdenticalBranches"));
+        assertTrue(yaml.get().contains("org.openrewrite.staticanalysis.UseTryWithResources"));
         assertTrue(yaml.get().contains("OrderService.java;src/main/java/com/example/Customer''s.java"));
         assertFalse(Files.exists(configPath.get()));
     }

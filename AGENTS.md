@@ -12,7 +12,7 @@
 - Full build/test/package: `./mvnw -B verify`
 - Unit tests: `./mvnw -B test`
 - One test class: `./mvnw -Dtest=ClassName test`
-- Agent-runner smoke: `java -jar target/jaipilot-toolkit-3.0.2-all.jar inspect --project .`
+- Agent-runner smoke: `java -jar target/jaipilot-toolkit-3.1.0-all.jar inspect --project .`
 - Installer smoke: `./scripts/smoke-test-install.sh`
 - Plugin validation: `python3 ./scripts/validate-plugin.py`
 
@@ -37,7 +37,8 @@
 - Test generation may edit only Java under `src/test/java`.
 - Cleanup runs pinned, exactly scoped OpenRewrite recipes first; the agent may edit only selected production Java and related Java tests.
 - Reject deletion, path traversal, symbolic paths, out-of-scope changes, build-generated source drift, candidate drift, and live-worktree drift.
-- Require changed-test execution evidence. Use fresh JaCoCo as the coverage source of truth where configured.
+- Require changed-test execution evidence. Use fresh JaCoCo as the coverage source of truth where configured and targeted PIT for mutation evidence.
+- Reject new critical/high source findings and overall quality-score regressions. Keep score formulas and raw evidence public and versioned.
 - Apply only an immediately validated snapshot and write it transactionally with rollback.
 - Keep active work bounded to four runs globally, one per project, with two-hour expiry and per-run serialization.
 - Persist direct-command run state locally with owner-only permissions, atomic metadata writes, per-run file locks, and a brief registry lock for reservations.

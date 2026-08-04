@@ -2,6 +2,27 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [3.1.0] - 2026-08-05
+
+### Added
+
+- Deterministic Java findings for bug risks, code smells, modernization, complexity, duplication,
+  and performance hazards, with file, line, remediation, effort, and quick-fix metadata.
+- Reliability, maintainability, complexity, duplication, overall quality, remediation-debt, and
+  evidence-completeness scorecards with documented formulas.
+- Pinned, target-scoped PIT mutation testing for Maven and Gradle, including survivor evidence,
+  mutation score, test strength, and a default 70% test-generation gate.
+- Composite test-quality scoring from line coverage, branch coverage, mutation score, test strength,
+  and changed-test execution.
+
+### Changed
+
+- Expanded exact-scoped OpenRewrite cleanup with API, resource-safety, interruption, redundant
+  branch, condition, and modernization recipes.
+- Validation now rejects new critical/high findings and overall source-quality regressions.
+- Quality analysis uses deterministic ordering and at most four parallel workers; PIT is bounded to
+  selected classes/tests and at most four workers.
+
 ## [3.0.2] - 2026-08-04
 
 ### Changed
@@ -46,6 +67,7 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 - Interactive CLI distribution, npm packaging, MCP transport, hosted dependencies, and Sonar
   scanner integration.
 
+[3.1.0]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.1.0
 [3.0.2]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.0.2
 [3.0.1]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.0.1
 [3.0.0]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.0.0

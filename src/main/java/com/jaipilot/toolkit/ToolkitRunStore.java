@@ -80,15 +80,27 @@ final class ToolkitRunStore {
         );
     }
 
+    WorkflowRunService.QualityInspection quality(
+            Path requestedRoot,
+            WorkflowRunService.TargetSelection selection
+    ) {
+        pruneExpired();
+        return new WorkflowRunService().inspectQuality(requestedRoot, selection);
+    }
+
     WorkflowRunService.PreparedRun prepareTests(
             Path projectRoot,
             WorkflowRunService.TargetSelection selection,
-            double minimumLineCoverage
+            double minimumLineCoverage,
+            double minimumMutationScore,
+            boolean mutationTestingEnabled
     ) {
         return prepare(projectRoot, service -> service.prepareTestGeneration(
                 projectRoot,
                 selection,
-                minimumLineCoverage
+                minimumLineCoverage,
+                minimumMutationScore,
+                mutationTestingEnabled
         ));
     }
 

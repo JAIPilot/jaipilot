@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "3.0.2",
-  "description": "JAIPilot Java Enterprise Toolkit for high-quality unit testing and code cleanup.",
+  "version": "3.1.0",
+  "description": "Java Enterprise Toolkit for unit tests proven by coverage and mutation testing, plus scored code cleanup.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -13,6 +13,8 @@
     "java",
     "junit",
     "jacoco",
+    "pitest",
+    "mutation-testing",
     "openrewrite",
     "refactoring",
     "code-quality"
@@ -20,16 +22,16 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "High-quality Java tests and cleanup",
-    "longDescription": "Generate high-quality Java unit tests and clean Java code with real builds, fresh coverage, OpenRewrite, drift protection, and safe apply.",
+    "shortDescription": "Java tests, mutation proof, and cleanup",
+    "longDescription": "Generate Java unit tests proven by coverage and PIT, then clean and refactor Java with transparent quality scorecards and real-build validation.",
     "developerName": "JAIPilot",
     "category": "Productivity",
     "capabilities": [],
     "websiteURL": "https://github.com/JAIPilot/jaipilot",
     "defaultPrompt": [
-      "Generate high-quality unit tests for this Java project.",
-      "Clean up the changed Java classes and verify the result.",
-      "Review this Java code and apply only validated improvements."
+      "Generate Java tests and prove them with coverage and PIT.",
+      "Fix smells, complexity, and duplication in changed Java.",
+      "Score this Java code and apply only validated improvements."
     ],
     "brandColor": "#2457D6",
     "logo": "./assets/jaipilot-logo.svg"
