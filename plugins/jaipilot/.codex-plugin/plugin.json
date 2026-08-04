@@ -1,13 +1,13 @@
 {
   "name": "jaipilot",
-  "version": "3.0.0",
-  "description": "Enterprise Java toolkit for high-coverage tests and verified OpenRewrite-first clean-code refactoring.",
+  "version": "3.0.1",
+  "description": "Proof-driven Java tests and OpenRewrite-first cleanup for Codex and Claude Code.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
   },
-  "homepage": "https://github.com/JAIPilot/jaipilot-cli#readme",
-  "repository": "https://github.com/JAIPilot/jaipilot-cli",
+  "homepage": "https://github.com/JAIPilot/jaipilot#readme",
+  "repository": "https://github.com/JAIPilot/jaipilot",
   "license": "MIT",
   "keywords": [
     "java",
@@ -20,18 +20,18 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "Enterprise Java tests and refactoring",
-    "longDescription": "Generate efficient high-coverage Java unit tests and perform OpenRewrite-first clean-code refactoring with isolated workspaces, real builds, fresh coverage, drift protection, and transactional apply.",
+    "shortDescription": "Prove Java tests and refactors",
+    "longDescription": "Generate focused Java tests and clean code through isolated candidates, OpenRewrite-first remediation, real builds, fresh coverage, drift protection, and transactional apply.",
     "developerName": "JAIPilot",
     "category": "Productivity",
     "capabilities": [],
-    "websiteURL": "https://github.com/JAIPilot/jaipilot-cli",
+    "websiteURL": "https://github.com/JAIPilot/jaipilot",
     "defaultPrompt": [
-      "Generate high-coverage unit tests for this Java project.",
-      "Clean and refactor the changed Java classes safely.",
-      "Review this Java code and apply only verified improvements."
+      "Generate focused Java tests and prove them with the real build and fresh coverage.",
+      "Clean the changed Java classes with OpenRewrite first, then apply only a verified candidate.",
+      "Review this Java code and show me the execution evidence before applying improvements."
     ],
-    "brandColor": "#2457D6",
+    "brandColor": "#0E2344",
     "logo": "./assets/jaipilot-logo.svg"
   }
 }

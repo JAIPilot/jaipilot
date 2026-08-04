@@ -1,4 +1,4 @@
 interface:
-  display_name: "Generate High-Coverage Java Tests"
-  short_description: "Generate verified high-coverage Java tests"
-  default_prompt: "Use $jaipilot-generate-tests to add efficient, verified unit tests for this Java code."
+  display_name: "Generate & Prove Java Tests"
+  short_description: "Generate tests with build and coverage proof"
+  default_prompt: "Use $jaipilot-generate-tests to add focused Java tests and prove them with execution evidence and fresh coverage."

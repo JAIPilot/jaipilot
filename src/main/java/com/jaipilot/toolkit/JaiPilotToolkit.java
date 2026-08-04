@@ -18,11 +18,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Agent-facing command entry point for the JAIPilot enterprise Java toolkit. */
+/** Agent-facing command entry point for the JAIPilot proof-driven Java toolkit. */
 public final class JaiPilotToolkit {
 
     private static final String USAGE = """
-            JAIPilot enterprise Java toolkit
+            JAIPilot proof-driven Java toolkit
 
             Usage:
               jaipilot inspect [--project <path>]

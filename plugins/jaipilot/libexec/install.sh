@@ -5,7 +5,7 @@ LC_ALL=C
 LANG=C
 export LC_ALL LANG
 
-REPO="JAIPilot/jaipilot-cli"
+REPO="JAIPilot/jaipilot"
 APP_DIR=""
 VERSION=""
 RESOLVED_VERSION=""
@@ -352,7 +352,7 @@ EOF
 chmod +x "$APP_DIR/bin/jaipilot"
 
 {
-  echo "Installed JAIPilot Enterprise Java Toolkit"
+  echo "Installed JAIPilot Proof-Driven Java Toolkit"
   echo "  Version: $RESOLVED_VERSION"
   echo "  Archive: $ARCHIVE_URL"
   echo "  SHA-256: $ACTUAL_SHA256"

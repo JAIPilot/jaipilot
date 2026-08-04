@@ -1,14 +1,17 @@
 # JAIPilot
 
-JAIPilot is the local-first enterprise Java toolkit for Codex and Claude Code. Its Agent Skills
-coordinate high-coverage unit-test generation and OpenRewrite-first clean-code refactoring while
-the bundled deterministic runner owns project discovery, isolation, real-build verification,
-execution evidence, coverage, drift checks, and transactional apply.
+**Generate tests. Clean Java. Prove every change.**
 
-The plugin invokes `bin/jaipilot`. On first use, that pinned launcher uses the plugin-local installer
-to retrieve the matching GitHub release, verify its published checksum, and cache the bundled Java
-runtime. Node.js and npm are not required. Set `JAIPILOT_TOOLKIT_EXECUTABLE` to an existing runner
-for offline or managed setups.
+JAIPilot is the proof-driven Java engineering plugin for Codex and Claude Code. Its Agent Skills
+guide contextual test generation and OpenRewrite-first cleanup while a deterministic local runner
+owns project discovery, isolation, real-build verification, execution evidence, fresh coverage,
+drift detection, and transactional apply.
 
-JAIPilot does not upload source, invoke a nested model, or provide a hosted backend. Codex or Claude
-Code performs contextual reasoning and edits inside the isolated workspace.
+The pinned `bin/jaipilot` launcher downloads the matching GitHub release on first use, verifies its
+published SHA-256 checksum, and caches a private bundled runtime. Node.js and npm are not required.
+Set `JAIPILOT_TOOLKIT_EXECUTABLE` to an approved runner for managed or offline environments.
+
+JAIPilot has no hosted backend, never uploads source, and does not invoke another model. Codex or
+Claude Code performs contextual reasoning and edits only inside the isolated workspace.
+
+Learn more at <https://github.com/JAIPilot/jaipilot>.

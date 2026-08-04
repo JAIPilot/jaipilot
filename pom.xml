@@ -9,9 +9,9 @@
     <version>${revision}</version>
     <packaging>jar</packaging>
 
-    <name>JAIPilot Enterprise Java Toolkit</name>
-    <description>Local Agent Skills and deterministic tooling for high-coverage Java tests and verified OpenRewrite-first refactoring.</description>
-    <url>https://github.com/JAIPilot/jaipilot-cli</url>
+    <name>JAIPilot Proof-Driven Java Toolkit</name>
+    <description>Local proof-driven workflows for Java test generation, OpenRewrite-first cleanup, and drift-safe apply.</description>
+    <url>https://github.com/JAIPilot/jaipilot</url>
 
     <licenses>
         <license>
@@ -22,14 +22,14 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:https://github.com/JAIPilot/jaipilot-cli.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/JAIPilot/jaipilot-cli.git</developerConnection>
-        <url>https://github.com/JAIPilot/jaipilot-cli</url>
+        <connection>scm:git:https://github.com/JAIPilot/jaipilot.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/JAIPilot/jaipilot.git</developerConnection>
+        <url>https://github.com/JAIPilot/jaipilot</url>
     </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <revision>3.0.0</revision>
+        <revision>3.0.1</revision>
         <maven.compiler.release>17</maven.compiler.release>
         <junit.version>5.11.4</junit.version>
         <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>

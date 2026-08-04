@@ -1,34 +1,41 @@
-name: Feature request
-description: Suggest an improvement to JAIPilot
-title: "[Feature]: "
+name: Product proposal
+description: Propose a measurable JAIPilot workflow improvement
+title: "proposal: "
 labels:
   - enhancement
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Problem
-      description: What workflow or pain point should this solve?
+      label: Engineering problem
+      description: What Java workflow is painful today, for whom, and how often?
     validations:
       required: true
   - type: textarea
-    id: proposal
+    id: outcome
     attributes:
-      label: Proposed solution
-      description: Describe the change you want to see.
+      label: Desired outcome
+      description: Describe the user-visible result without prescribing implementation first.
     validations:
       required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Acceptance evidence
+      description: What repository, command, metric, or failure case would prove the improvement?
+      placeholder: Identical revision and build boundaries; expected accepted fix, coverage, elapsed time, or recovery result.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and privacy constraints
+      description: Note implications for scope, determinism, build proof, cancellation, recovery, or local-only operation.
+    validations:
+      required: false
   - type: textarea
     id: alternatives
     attributes:
       label: Alternatives considered
-      description: Describe any alternatives or current workarounds.
-    validations:
-      required: false
-  - type: textarea
-    id: context
-    attributes:
-      label: Additional context
-      description: Include sample agent prompts, runner output, projects, or screenshots if helpful.
     validations:
       required: false

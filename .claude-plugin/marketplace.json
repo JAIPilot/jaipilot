@@ -5,14 +5,14 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Enterprise Java engineering tools for coding agents."
+    "description": "Proof-driven Java engineering for coding agents."
   },
   "plugins": [
     {
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
-      "description": "High-coverage Java tests and verified OpenRewrite-first refactoring.",
-      "version": "3.0.0",
+      "description": "Generate tests, clean Java, and prove every change before apply.",
+      "version": "3.0.1",
       "category": "development",
       "tags": [
         "java",

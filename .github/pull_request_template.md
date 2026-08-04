@@ -1,15 +1,27 @@
-## Summary
+## Outcome
 
-Describe the change and why it is needed.
+What user-visible result does this change deliver?
 
-## Testing
+## Why
 
+What problem or product gap does it address? Include the root cause for fixes.
+
+## Evidence
+
+- [ ] Focused tests passed
+- [ ] `git diff --check`
 - [ ] `./mvnw -B verify`
-- [ ] `python3 ./scripts/validate-plugin.py`
-- [ ] installer smoke test, if distribution changed
-- [ ] performance evidence, if a hot path changed
-- [ ] documentation updated, if needed
+- [ ] Plugin and skill validators, when those surfaces changed
+- [ ] `./scripts/smoke-test-install.sh`, when distribution changed
+- [ ] Same-boundary raw timings, median, and p95, when a hot path changed
 
-## Notes
+Summarize relevant test counts, coverage, fixture/revision, or failure-recovery evidence here.
 
-Add any reviewer context, tradeoffs, or follow-up work.
+## Safety and scope
+
+Describe effects on source allowlists, clean-build proof, execution evidence, privacy, determinism,
+cancellation, recovery, drift detection, and transactional apply. Write “no change” where applicable.
+
+## Reviewer notes
+
+Call out intentional tradeoffs, boundaries, or follow-up work.
