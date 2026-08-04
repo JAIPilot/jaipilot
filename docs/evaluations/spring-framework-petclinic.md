@@ -9,7 +9,7 @@ The results apply to the exact revision and environment below.
 | Item | Value |
 | --- | --- |
 | Date | 2026-08-05 |
-| JAIPilot | v3.1.1 candidate, bundled macOS x64 runner |
+| JAIPilot | v3.1.2 candidate, bundled macOS x64 runner |
 | Project | `spring-petclinic/spring-framework-petclinic` |
 | Project revision | `f2b1c6df3a89f4d0294c7402b48ea351af2c92ca` |
 | Host | macOS x64 |
@@ -28,8 +28,8 @@ Every run returned the same seven findings and 97.9 overall quality score.
 
 | Boundary | Raw seconds | Median | p95 |
 | --- | --- | --- | --- |
-| Analyzer only | 0.261, 0.215, 0.212, 0.215, 0.216 | 0.215 s | 0.261 s |
-| JVM startup, discovery, analysis, JSON | 0.77, 0.70, 0.70, 0.70, 0.70 | 0.70 s | 0.77 s |
+| Analyzer only | 0.217, 0.221, 0.221, 0.212, 0.217 | 0.217 s | 0.221 s |
+| JVM startup, discovery, analysis, JSON | 0.73, 0.73, 0.71, 0.70, 0.70 | 0.71 s | 0.73 s |
 
 The report contained no critical/high findings or bug risks: six code smells, one modernization
 opportunity, 0.6% duplication, 66 minutes of estimated debt, maximum cyclomatic complexity 14, and

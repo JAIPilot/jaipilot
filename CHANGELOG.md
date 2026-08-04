@@ -2,6 +2,13 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [3.1.2] - 2026-08-05
+
+### Security
+
+- Updated Jackson Databind from 2.18.3 to 2.18.9, the patched line for all seven open GitHub
+  dependency alerts on v3.1.1, including two high-severity polymorphic-deserialization bypasses.
+
 ## [3.1.1] - 2026-08-05
 
 ### Changed
@@ -84,6 +91,7 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 - Interactive CLI distribution, npm packaging, MCP transport, hosted dependencies, and Sonar
   scanner integration.
 
+[3.1.2]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.1.2
 [3.1.1]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.1.1
 [3.1.0]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.1.0
 [3.0.2]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.0.2
