@@ -10,6 +10,7 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
   documentation, runtime, and distribution metadata.
 - Added prominent Codex and Claude Code installation instructions to the README.
 - Added an exact dark-mode variant of the established JAIPilot logo for GitHub and Codex.
+- Added a concise, evidence-backed enterprise value summary to the README.
 
 ## [3.1.2] - 2026-08-05
 

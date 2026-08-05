@@ -18,6 +18,12 @@
 JAIPilot is the Java Enterprise Toolkit Harness for Codex and Claude Code. It gives coding agents two
 focused capabilities: high-quality Java unit testing and safe code cleanup.
 
+> **Built for enterprise Java teams:** keep source local, constrain agent edits, and require
+> real-build evidence before apply. In a reproducible Spring Framework Petclinic evaluation,
+> JAIPilot raised line coverage **55% → 95%**, branch coverage **30% → 100%**, killed **14/14 PIT
+> mutations**, and reduced cleanup debt **5 → 0 minutes**. [See the full
+> evaluation](docs/evaluations/spring-framework-petclinic.md).
+
 ## Install
 
 ### Codex
