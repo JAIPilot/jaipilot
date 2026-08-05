@@ -34,6 +34,7 @@
       "Score this Java code and apply only validated improvements."
     ],
     "brandColor": "#2457D6",
-    "logo": "./assets/jaipilot-logo.svg"
+    "logo": "./assets/jaipilot-logo.svg",
+    "logoDark": "./assets/jaipilot-logo-dark.svg"
   }
 }

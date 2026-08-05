@@ -8,6 +8,8 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 
 - Refined the product identity to **JAIPilot Java Enterprise Toolkit Harness** across plugin,
   documentation, runtime, and distribution metadata.
+- Added prominent Codex and Claude Code installation instructions to the README.
+- Added an exact dark-mode variant of the established JAIPilot logo for GitHub and Codex.
 
 ## [3.1.2] - 2026-08-05
 

@@ -1,8 +1,12 @@
 <div align="center">
-  <img src="docs/assets/jaipilot-logo.svg" alt="JAIPilot logo" width="140" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/jaipilot-logo-dark.svg" />
+    <img src="docs/assets/jaipilot-logo.svg" alt="JAIPilot logo" width="140" />
+  </picture>
   <h1>JAIPilot</h1>
   <p><strong>Java Enterprise Toolkit Harness for Codex and Claude Code.</strong></p>
   <p>High-quality Java unit testing and code cleanup.</p>
+  <p><a href="#install"><strong>Install JAIPilot</strong></a></p>
   <p>
     <a href="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml"><img src="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
     <a href="https://github.com/JAIPilot/jaipilot/releases"><img src="https://img.shields.io/github/v/release/JAIPilot/jaipilot?display_name=tag&sort=semver" alt="Latest release" /></a>
@@ -13,6 +17,27 @@
 
 JAIPilot is the Java Enterprise Toolkit Harness for Codex and Claude Code. It gives coding agents two
 focused capabilities: high-quality Java unit testing and safe code cleanup.
+
+## Install
+
+### Codex
+
+```bash
+codex plugin marketplace add JAIPilot/jaipilot
+codex plugin add jaipilot@jaipilot
+```
+
+### Claude Code
+
+Run these commands inside Claude Code:
+
+```text
+/plugin marketplace add JAIPilot/jaipilot
+/plugin install jaipilot@jaipilot
+```
+
+The plugin downloads its private Java runtime on first use. It does not require npm or a globally
+installed JDK.
 
 ## Core tools
 
