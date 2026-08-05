@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for contributing to the JAIPilot Java Enterprise Toolkit.
+Thanks for contributing to the JAIPilot Java Enterprise Toolkit Harness.
 
 Before participating, read the [community code of conduct](CODE_OF_CONDUCT.md). For usage questions
 and early ideas, start with [GitHub Discussions](https://github.com/JAIPilot/jaipilot/discussions).
@@ -26,7 +26,7 @@ java -jar target/jaipilot-toolkit-3.1.2-all.jar inspect --project .
 ./scripts/smoke-test-install.sh
 ```
 
-The direct smoke checks structured toolkit discovery. The installer smoke exercises checksum
+The direct smoke checks structured toolkit-harness discovery. The installer smoke exercises checksum
 verification, the bundled runtime, first plugin launch, and cached launch.
 
 ## Pull requests

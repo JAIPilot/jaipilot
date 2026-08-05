@@ -1,9 +1,9 @@
 # JAIPilot
 
-**Java Enterprise Toolkit for Codex and Claude Code.**
+**Java Enterprise Toolkit Harness for Codex and Claude Code.**
 
 JAIPilot provides high-quality Java unit testing and code cleanup. Its Agent Skills guide focused
-test generation and OpenRewrite-first remediation while the toolkit proves changes with the real
+test generation and OpenRewrite-first remediation while the toolkit harness proves changes with the real
 build, JaCoCo coverage, PIT mutation testing, enterprise quality scorecards, drift detection, and
 safe apply.
 

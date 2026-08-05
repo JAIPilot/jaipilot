@@ -5,7 +5,7 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Java Enterprise Toolkit for mutation-tested unit tests and scored code cleanup."
+    "description": "Java Enterprise Toolkit Harness for mutation-tested unit tests and scored code cleanup."
   },
   "plugins": [
     {

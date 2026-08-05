@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/assets/jaipilot-logo.svg" alt="JAIPilot logo" width="140" />
   <h1>JAIPilot</h1>
-  <p><strong>Java Enterprise Toolkit for Codex and Claude Code.</strong></p>
+  <p><strong>Java Enterprise Toolkit Harness for Codex and Claude Code.</strong></p>
   <p>High-quality Java unit testing and code cleanup.</p>
   <p>
     <a href="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml"><img src="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
@@ -11,7 +11,7 @@
   </p>
 </div>
 
-JAIPilot is the Java Enterprise Toolkit for Codex and Claude Code. It gives coding agents two
+JAIPilot is the Java Enterprise Toolkit Harness for Codex and Claude Code. It gives coding agents two
 focused capabilities: high-quality Java unit testing and safe code cleanup.
 
 ## Core tools

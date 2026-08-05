@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-- JAIPilot is a Java 17+ Java Enterprise Toolkit delivered as portable Agent Skills plus a deterministic internal agent runner.
+- JAIPilot is a Java 17+ Java Enterprise Toolkit Harness delivered as portable Agent Skills plus a deterministic internal agent runner.
 - It provides isolated high-coverage Java unit-test generation and OpenRewrite-first clean-code refactoring for Codex, Claude Code, and provider-neutral coding agents.
 - Do not add another transport layer, a user command shell, a custom backend, a hosted generation service, or nested model invocation.
 - Treat `AGENTS.md`, `.jaipilot/project-memory.md`, and `plugins/jaipilot/skills/` as durable context.
@@ -24,14 +24,14 @@
 - `plugins/jaipilot` shared Codex, Claude, and generic plugin manifests, Agent Skills, assets, and pinned bootstrap.
 - `.agents/plugins/marketplace.json` and `.claude-plugin/marketplace.json` publish the shared plugin.
 - `src/main/dist/bin/jaipilot` bundled internal agent-runner launcher.
-- `scripts/build-bundled-dist.sh` builds a platform release with the toolkit, runtime, installer, and plugin.
+- `scripts/build-bundled-dist.sh` builds a platform release with the toolkit harness, runtime, installer, and plugin.
 - `plugins/jaipilot/libexec/install.sh` performs checksum-verified, versioned, atomic installation.
 - `.jaipilot/project-memory.md` evolving implementation decisions and known facts.
 
 ## Protocol And Architecture Invariants
 
 - Emit structured JSON from the internal `jaipilot` runner; send diagnostics and installer receipts to stderr.
-- Keep the toolkit provider-neutral. The connected coding agent owns reasoning and edits; JAIPilot must not shell out to Codex, Claude, or another model tool.
+- Keep the toolkit harness provider-neutral. The connected coding agent owns reasoning and edits; JAIPilot must not shell out to Codex, Claude, or another model tool.
 - Keep prepare, edit, and validate isolated from live source. The internal runner's confirmed apply operation is the only live merge path.
 - Require a clean live baseline before creating a candidate.
 - Test generation may edit only Java under `src/test/java`.

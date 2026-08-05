@@ -288,7 +288,7 @@ public final class WorkflowRunService implements AutoCloseable {
     /**
      * Exports an active workflow without exposing mutable in-memory state.
      *
-     * <p>The skills-first toolkit uses this representation to continue a run across short-lived
+     * <p>The skills-first toolkit harness uses this representation to continue a run across short-lived
      * agent command invocations.</p>
      */
     public StoredRunState exportRun(String runId) {
@@ -326,7 +326,7 @@ public final class WorkflowRunService implements AutoCloseable {
         }
     }
 
-    /** Restores one trusted, locally persisted toolkit run into this service instance. */
+    /** Restores one trusted, locally persisted toolkit-harness run into this service instance. */
     public void restoreRun(StoredRunState state) {
         Objects.requireNonNull(state, "state");
         if (state.schemaVersion() < 1 || state.schemaVersion() > 3) {

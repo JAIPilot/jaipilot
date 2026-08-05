@@ -17,7 +17,7 @@ usage() {
   cat <<'EOF'
 Usage: scripts/build-bundled-dist.sh --version <version> [--classifier <platform>]
 
-Builds a platform-specific JAIPilot plugin toolkit with a bundled Java runtime and Agent Skills.
+Builds a platform-specific JAIPilot plugin toolkit harness with a bundled Java runtime and Agent Skills.
 EOF
 }
 

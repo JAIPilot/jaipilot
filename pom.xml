@@ -9,8 +9,8 @@
     <version>${revision}</version>
     <packaging>jar</packaging>
 
-    <name>JAIPilot Java Enterprise Toolkit</name>
-    <description>High-quality Java unit testing and code cleanup for Codex and Claude Code.</description>
+    <name>JAIPilot Java Enterprise Toolkit Harness</name>
+    <description>Java Enterprise Toolkit Harness for high-quality unit testing and code cleanup in Codex and Claude Code.</description>
     <url>https://github.com/JAIPilot/jaipilot</url>
 
     <licenses>

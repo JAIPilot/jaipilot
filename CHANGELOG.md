@@ -2,6 +2,13 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## Unreleased
+
+### Changed
+
+- Refined the product identity to **JAIPilot Java Enterprise Toolkit Harness** across plugin,
+  documentation, runtime, and distribution metadata.
+
 ## [3.1.2] - 2026-08-05
 
 ### Security
@@ -52,7 +59,8 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 ### Changed
 
 - Restored the established JAIPilot logo across the repository and plugin.
-- Simplified the product identity to **JAIPilot Java Enterprise Toolkit**.
+- Simplified the product identity; that branding was later refined to
+  **JAIPilot Java Enterprise Toolkit Harness**.
 - Focused public copy on high-quality Java unit testing and code cleanup.
 - Removed the experimental hero, social-preview artwork, brand guide, and setup-oriented README
   sections.

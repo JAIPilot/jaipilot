@@ -176,11 +176,11 @@ grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/active-lock.log" \
   --app-dir "$SMOKE_DIR/app"
 
 [ -L "$SMOKE_DIR/app/current" ] || die "Install did not create the current symlink"
-[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Install did not create the stable toolkit launcher"
+[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Install did not create the stable toolkit-harness launcher"
 [ -x "$SMOKE_DIR/app/current/libexec/install.sh" ] || die "Distribution did not include the self-update installer"
 "$SMOKE_DIR/app/bin/jaipilot" version > "$SMOKE_DIR/version.json"
 grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/version.json" \
-  || die "Installed toolkit did not report version $INSTALL_VERSION"
+  || die "Installed toolkit harness did not report version $INSTALL_VERSION"
 STABLE_RUNNER_SHA256=$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")
 "$SMOKE_DIR/app/current/libexec/install.sh" \
   --version "$INSTALL_VERSION" \
@@ -191,7 +191,7 @@ STABLE_RUNNER_SHA256=$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")
 [ "$STABLE_RUNNER_SHA256" = "$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")" ] \
   || die "Self-update changed the stable plugin runner unexpectedly"
 [ -L "$SMOKE_DIR/app/current" ] || die "Self-update did not preserve the current symlink"
-[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Self-update did not preserve the toolkit launcher"
+[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Self-update did not preserve the toolkit-harness launcher"
 "$SMOKE_DIR/app/bin/jaipilot" version > "$SMOKE_DIR/app-version.json"
 
 rm -f "$SMOKE_DIR/app/current"

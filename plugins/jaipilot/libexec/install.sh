@@ -320,8 +320,8 @@ EXTRACTED_DIR=$(find "$TMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n 1)
 [ -x "$EXTRACTED_DIR/runtime/bin/java" ] || die "Downloaded archive is missing the bundled Java runtime."
 [ -f "$EXTRACTED_DIR/plugins/jaipilot/.codex-plugin/plugin.json" ] \
   || die "Downloaded archive is missing the JAIPilot plugin."
-[ ! -L "$EXTRACTED_DIR/lib/jaipilot-toolkit.jar" ] || die "Downloaded toolkit jar must not be a symbolic link."
-[ ! -L "$EXTRACTED_DIR/bin/jaipilot" ] || die "Downloaded toolkit launcher must not be a symbolic link."
+[ ! -L "$EXTRACTED_DIR/lib/jaipilot-toolkit.jar" ] || die "Downloaded toolkit-harness JAR must not be a symbolic link."
+[ ! -L "$EXTRACTED_DIR/bin/jaipilot" ] || die "Downloaded toolkit-harness launcher must not be a symbolic link."
 
 mkdir -p "$APP_DIR/bin" "$APP_DIR/versions"
 
@@ -352,7 +352,7 @@ EOF
 chmod +x "$APP_DIR/bin/jaipilot"
 
 {
-  echo "Installed JAIPilot Java Enterprise Toolkit"
+  echo "Installed JAIPilot Java Enterprise Toolkit Harness"
   echo "  Version: $RESOLVED_VERSION"
   echo "  Archive: $ARCHIVE_URL"
   echo "  SHA-256: $ACTUAL_SHA256"

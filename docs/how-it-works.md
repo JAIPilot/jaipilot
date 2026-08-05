@@ -86,5 +86,5 @@ JAIPilot temporary-workspace pattern.
 ## Local and provider-neutral
 
 JAIPilot has no hosted backend and never uploads project source. It does not invoke Codex, Claude,
-or another model itself. The host supplies the reasoning environment; the toolkit supplies local,
+or another model itself. The host supplies the reasoning environment; the toolkit harness supplies local,
 deterministic orchestration and proof.

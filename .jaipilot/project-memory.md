@@ -1,13 +1,13 @@
 # JAIPilot Project Memory
 
-This is the durable implementation memory for the JAIPilot Java Enterprise Toolkit. Keep evolving
+This is the durable implementation memory for the JAIPilot Java Enterprise Toolkit Harness. Keep evolving
 facts here, stable repository rules in `AGENTS.md`, and reusable agent procedures in
 `plugins/jaipilot/skills/`.
 
 ## Current Direction
 
 - Version 3 is skills-first: Codex and Claude Code install one shared plugin containing Agent Skills,
-  a pinned local bootstrap, and deterministic toolkit code.
+  a pinned local bootstrap, and deterministic toolkit-harness code.
 - `jaipilot` is a short-lived, structured-JSON internal agent runner. It persists locked workflow metadata
   locally so prepare, edit, validate, and apply can span separate host command invocations.
 - There is no extra transport layer, user command shell, custom backend, hosted generation API,
@@ -15,7 +15,7 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
 - Codex or Claude owns reasoning and source edits. JAIPilot owns deterministic discovery, target
   selection, isolation, OpenRewrite, validation evidence, drift protection, and transactional apply.
 
-## Primary Toolkit Surface
+## Primary Toolkit Harness Surface
 
 - `jaipilot inspect`: read build, project, coverage, and active-run metadata.
 - `jaipilot quality`: report deterministic findings, method complexity, duplication, debt, and scores.
@@ -62,7 +62,7 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
 ## Packaging and Delivery
 
 - Maven artifact: `com.jaipilot:jaipilot-toolkit`.
-- Published archives contain a jlink runtime, shaded toolkit, runner, installer, and
+- Published archives contain a jlink runtime, shaded toolkit harness, runner, installer, and
   `plugins/jaipilot`.
 - The plugin-local bootstrap requires no package manager. First launch checksum-verifies and caches
   the matching pinned GitHub archive.
