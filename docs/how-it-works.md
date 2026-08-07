@@ -104,5 +104,30 @@ Only one run may be active for a project, with at most four active runs across a
 expire after two hours. JAIPilot removes an expired workspace only when its path matches the expected
 temporary-workspace pattern.
 
+## Local impact dashboard
+
+Every normal toolkit invocation idempotently ensures that one dashboard process is running. It
+prefers `127.0.0.1:7433`; when that bind reports a port conflict, it binds an operating-system-selected
+free loopback port and atomically records the chosen URL. A cross-process lock prevents concurrent
+agents from starting duplicate dashboards. `jaipilot dashboard` returns the current URL, selected
+port, process ID, start time, and whether fallback selection was needed. Set
+`JAIPILOT_DASHBOARD_PORT` to choose a different preferred port.
+
+The HTTP server uses the bundled Java runtime, has no web framework or external assets, binds only
+to IPv4 loopback, accepts only read requests, and applies restrictive browser security headers. A
+dashboard failure is reported on stderr without corrupting command JSON on stdout or preventing the
+agent from completing a proof workflow. `JAIPILOT_DASHBOARD_DISABLED=1` is an operational escape
+hatch for environments that prohibit local listeners.
+
+Usage and outcome summaries live beneath the same private state root in `metrics/summary.json`.
+Atomic writes plus a file lock make concurrent runner and dashboard access deterministic. The store
+keeps bounded recent activity, aggregate command counts, one-way hashes for distinct-project counts,
+and pending validation evidence. Administrative help, version, and dashboard-status checks are not
+counted as product usage. The store never records project paths, class names, source, agent prompts,
+or failure messages. Pending coverage, quality, finding, debt, mutation, and test-execution gains
+become cumulative impact only after transactional apply; discard removes the pending evidence. If
+the metrics summary is corrupt, the next write preserves it with a `summary.corrupt-*` name and
+starts a fresh summary instead of blocking the Java workflow or silently deleting evidence.
+
 JAIPilot has no hosted backend and does not call Codex, Claude, or another model. Your coding tool
 provides the reasoning; JAIPilot provides local, repeatable checks and safe application.

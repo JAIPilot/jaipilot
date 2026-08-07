@@ -105,6 +105,28 @@ silent complexity and regressions for a human reviewer to unwind later.
 Every score includes its underlying counts and timings. See [quality metrics](docs/quality-metrics.md)
 for the formulas, gates, and interpretation boundaries.
 
+## Local impact dashboard
+
+JAIPilot starts a private impact dashboard automatically on the first toolkit invocation and keeps
+it available at `http://127.0.0.1:7433/`. If that port is already occupied, JAIPilot selects a free
+loopback port automatically. Run `jaipilot dashboard` to retrieve the active URL as structured JSON.
+
+The dashboard refreshes live and shows:
+
+- local workflow invocation counts, success rate, projects seen, command mix, and recent activity;
+- applied coverage and quality-score change, resolved findings, removed remediation debt, killed
+  mutations, executed changed tests, and transactionally applied files;
+- the latest changed-code quality, test-quality, coverage, mutation, and proof evidence;
+- prepared, validated, applied, and safely discarded workflow counts.
+
+Improvement totals are credited only after a validated candidate is applied; attempted or discarded
+work never inflates them. Metrics and one-way project identifiers stay in JAIPilot's owner-private
+local state. The dashboard binds only to IPv4 loopback, exposes read-only endpoints, and sends no
+telemetry or source, paths, or usage data anywhere.
+
+See the [local dashboard startup evaluation](docs/evaluations/local-dashboard-startup.md) for raw
+cold-start, steady-state, and real `inspect` timings.
+
 ## Agent Skills
 
 - `jaipilot-generate-tests`

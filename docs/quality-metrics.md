@@ -80,5 +80,21 @@ mutation, and new-code findings as not applicable.
 
 The source analyzer is fast, local, syntactic, and remediation-oriented. It does not claim formal
 interprocedural taint analysis, vulnerability certification, centralized policy governance,
-portfolios, compliance reporting, or historical dashboards. Compare revisions only with identical
-scope and build conditions, and keep the raw evidence alongside every score.
+portfolios, compliance reporting, or centralized historical dashboards. Compare revisions only with
+identical scope and build conditions, and keep the raw evidence alongside every score.
+
+## Dashboard aggregation
+
+The local dashboard does not invent an aggregate “better code” score. It presents raw cumulative
+outcomes from applied JAIPilot transactions and the latest independently scored evidence:
+
+- coverage change is the sum of per-target after-minus-before line-coverage percentage points;
+- quality change is the sum of selected-source after-minus-before quality-score points;
+- resolved findings and removed remediation minutes come directly from validation deltas;
+- killed mutations and execution-proven changed tests come from the applied candidate's final
+  mutation and test-execution evidence;
+- changed-code proof counts distinguish attempted proofs from passed proofs.
+
+Validation can run repeatedly while an agent improves a candidate. Only the latest apply-ready
+validation for that run is credited, and only once, when apply succeeds. Failed commands, failed
+proofs, and discarded candidates remain visible in usage/activity statistics but add no improvement.

@@ -38,6 +38,7 @@ public final class JaiPilotToolkit {
               jaipilot validate --run <uuid>
               jaipilot apply --run <uuid> --confirm
               jaipilot discard --run <uuid>
+              jaipilot dashboard
               jaipilot version
 
             Selection:
@@ -64,7 +65,18 @@ public final class JaiPilotToolkit {
     }
 
     public static void main(String[] args) {
-        int status = run(args, System.in, System.out, System.err);
+        ObjectMapper mapper = mapper();
+        Path stateRoot = ToolkitRunStore.defaultRoot();
+        if (args.length > 0 && "dashboard-serve".equals(args[0])) {
+            int dashboardStatus = DashboardServer.serve(mapper, stateRoot, System.err);
+            if (dashboardStatus != 0) {
+                System.exit(dashboardStatus);
+            }
+            return;
+        }
+        boolean dashboardRequest = args.length > 0 && "dashboard".equals(args[0]);
+        DashboardServer.ensureRunning(mapper, stateRoot, System.err, dashboardRequest);
+        int status = run(args, System.in, System.out, System.err, stateRoot, mapper);
         if (status != 0) {
             System.exit(status);
         }
@@ -85,22 +97,78 @@ public final class JaiPilotToolkit {
             PrintStream stderr,
             Path stateRoot
     ) {
-        ObjectMapper mapper = mapper();
+        return run(args, stdin, stdout, stderr, stateRoot, mapper());
+    }
+
+    private static int run(
+            String[] args,
+            InputStream stdin,
+            PrintStream stdout,
+            PrintStream stderr,
+            Path stateRoot,
+            ObjectMapper mapper
+    ) {
+        Instant startedAt = Instant.now();
+        String command = metricCommand(args);
+        Object result = null;
+        int status = 1;
         try {
-            Object result = execute(args, mapper, stdin, stderr, stateRoot);
-            return writeResult(mapper, stdout, result);
+            result = execute(args, mapper, stdin, stderr, stateRoot);
+            status = writeResult(mapper, stdout, result);
+            return status;
         } catch (IllegalArgumentException exception) {
             writeError(mapper, stdout, "invalid_request", exception.getMessage());
             stderr.println("jaipilot: " + exception.getMessage());
-            return 2;
+            status = 2;
+            return status;
         } catch (RuntimeException exception) {
             writeError(mapper, stdout, "workflow_failed", rootMessage(exception));
             stderr.println("jaipilot: " + rootMessage(exception));
-            return 1;
+            status = 1;
+            return status;
         } catch (IOException exception) {
             stderr.println("jaipilot: failed to write command output: " + exception.getMessage());
-            return 1;
+            status = 1;
+            return status;
+        } finally {
+            recordMetrics(
+                    mapper,
+                    stateRoot,
+                    stderr,
+                    command,
+                    status,
+                    result,
+                    Duration.between(startedAt, Instant.now())
+            );
         }
+    }
+
+    private static void recordMetrics(
+            ObjectMapper mapper,
+            Path stateRoot,
+            PrintStream stderr,
+            String command,
+            int status,
+            Object result,
+            Duration elapsed
+    ) {
+        try {
+            new UsageMetricsStore(mapper, stateRoot).record(command, status, result, elapsed);
+        } catch (RuntimeException exception) {
+            stderr.println("jaipilot: usage metrics could not be recorded: " + rootMessage(exception));
+        }
+    }
+
+    private static String metricCommand(String[] args) {
+        if (args.length == 0 || "--help".equals(args[0]) || "-h".equals(args[0])) {
+            return "help";
+        }
+        return switch (args[0]) {
+            case "help", "version", "dashboard", "inspect", "diff-gate", "prove-diff", "hook-stop",
+                    "quality", "prepare-tests", "prepare-cleanup", "status", "validate", "apply", "discard" ->
+                    args[0];
+            default -> "unknown";
+        };
     }
 
     private static int writeResult(ObjectMapper mapper, PrintStream stdout, Object result) throws IOException {
@@ -142,6 +210,10 @@ public final class JaiPilotToolkit {
         if ("version".equals(parsed.command())) {
             parsed.rejectOptions();
             return Map.of("version", implementationVersion());
+        }
+        if ("dashboard".equals(parsed.command())) {
+            parsed.rejectOptions();
+            return DashboardServer.currentStatus(mapper, stateRoot);
         }
 
         ToolkitRunStore store = new ToolkitRunStore(
