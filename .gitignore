@@ -11,5 +11,6 @@ node_modules/
 github-app/.env
 .codex/
 
-# Local Codex instructions; keep repository guidance in AGENTS.md portable.
+# Local agent instructions.
 AGENTS.override.md
+/AGENTS.md
