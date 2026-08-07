@@ -4,6 +4,17 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 
 ## Unreleased
 
+### Added
+
+- Added a portable Codex and Claude Code Stop hook that detects each new committed or working-tree
+  Java production diff and continues the agent into an evidence-backed review.
+- Added merge-base-aware changed-code discovery, exact diff fingerprints, isolated final proof, and
+  local proof receipts invalidated by relevant Java or build changes.
+- Added fail-closed Git inspection errors, type-change/symlink detection, and protocol-only hook
+  responses with phase diagnostics isolated on stderr.
+- Added the `jaipilot-review-diff` Agent Skill and default gates for clean build, per-class line and
+  branch coverage, targeted PIT mutation strength, source quality, and severe findings.
+
 ### Changed
 
 - Refined the product identity to **JAIPilot Java Enterprise Toolkit Harness** across plugin,

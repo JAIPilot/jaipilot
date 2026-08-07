@@ -1,0 +1,17 @@
+{
+  "description": "Require fresh JAIPilot proof for each changed Java production diff.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/jaipilot\" hook-stop --project .",
+            "timeout": 60,
+            "statusMessage": "Checking changed Java proof"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -62,6 +62,20 @@ were actually available, so consumers can distinguish a low score from incomplet
 also include changed and executed test-file counts. Grades are `EXCELLENT` (90+), `STRONG` (80+),
 `GOOD` (70+), `NEEDS_WORK` (50+), and `WEAK` (below 50).
 
+The automatic diff proof uses the same evidence weights, with the final 5% representing a fresh
+clean full-suite build rather than changed-test-file execution. It scores only executable lines,
+branches, and PIT mutations located on added or modified lines; whole-class coverage remains in the
+report as context. Its defaults are 90% changed-line coverage, 85% changed-branch coverage, and 80%
+changed-line mutation score. A component with no executable changed element is reported as not
+applicable instead of being assigned a fabricated percentage.
+
+New-code quality compares stable rule, path, symbol, and severity identity with the Git baseline.
+Existing findings remain visible in the whole-file report but do not become new debt. New or
+severity-escalated critical/high findings subtract 20 points each, medium findings subtract 3, and
+low findings subtract 1 from a 100-point new-code score. The default requires 90 and zero new or
+escalated critical/high findings. Deletion-only diffs require the clean build but report coverage,
+mutation, and new-code findings as not applicable.
+
 ## Interpretation boundary
 
 The source analyzer is fast, local, syntactic, and remediation-oriented. It does not claim formal

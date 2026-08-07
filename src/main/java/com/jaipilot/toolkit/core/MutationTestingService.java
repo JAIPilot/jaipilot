@@ -18,7 +18,9 @@ import java.util.Set;
 import java.util.UUID;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
@@ -26,6 +28,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 /** Runs pinned, target-scoped PIT mutation testing without changing the project's build files. */
 public final class MutationTestingService {
@@ -65,8 +69,20 @@ public final class MutationTestingService {
             List<Path> changedTests,
             double minimumMutationScore
     ) {
+        return run(projectRoot, targets, changedTests, minimumMutationScore, Map.of());
+    }
+
+    /** Runs PIT for selected classes but scores only mutations on the supplied changed lines. */
+    public MutationReport run(
+            Path projectRoot,
+            List<MutationTarget> targets,
+            List<Path> changedTests,
+            double minimumMutationScore,
+            Map<String, Set<Integer>> includedLinesByClass
+    ) {
         Path root = projectRoot.toAbsolutePath().normalize();
         validatePercentage(minimumMutationScore);
+        Map<String, Set<Integer>> includedLines = normalizeIncludedLines(includedLinesByClass);
         List<MutationTarget> normalizedTargets = normalizeTargets(root, targets);
         if (normalizedTargets.isEmpty()) {
             throw new IllegalArgumentException("At least one mutation target is required.");
@@ -77,7 +93,7 @@ public final class MutationTestingService {
             case GRADLE -> List.of(runGradle(root, normalizedTargets, changedTests));
         };
         List<Path> reportPaths = executions.stream().flatMap(execution -> execution.reports().stream()).sorted().toList();
-        MutationCounts counts = readReports(reportPaths);
+        MutationCounts counts = readReports(reportPaths, includedLines);
         Duration elapsed = Duration.ofNanos(System.nanoTime() - started);
         int scorable = counts.scorable();
         Double mutationScore = scorable == 0 ? null : percentage(counts.killed(), scorable);
@@ -230,11 +246,10 @@ public final class MutationTestingService {
             Path temporaryPom,
             List<MutationTarget> targets,
             List<String> testGlobs,
-            Path reportRoot
+        Path reportRoot
     ) throws IOException {
         try {
-            DocumentBuilderFactory factory = secureDocumentBuilderFactory();
-            Document document = factory.newDocumentBuilder().parse(sourcePom.toFile());
+            Document document = parseXml(sourcePom);
             Element project = document.getDocumentElement();
             String namespace = project.getNamespaceURI();
             Element build = child(document, project, namespace, "build");
@@ -278,10 +293,7 @@ public final class MutationTestingService {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             transformer.transform(new DOMSource(document), new StreamResult(temporaryPom.toFile()));
-        } catch (Exception exception) {
-            if (exception instanceof IOException ioException) {
-                throw ioException;
-            }
+        } catch (ParserConfigurationException | SAXException | TransformerException exception) {
             throw new IOException("Failed to create temporary PIT Maven model.", exception);
         }
     }
@@ -386,10 +398,14 @@ public final class MutationTestingService {
     }
 
     MutationCounts readReports(List<Path> reports) {
+        return readReports(reports, Map.of());
+    }
+
+    MutationCounts readReports(List<Path> reports, Map<String, Set<Integer>> includedLines) {
         MutableMutationCounts counts = new MutableMutationCounts();
         for (Path report : reports) {
             try {
-                Document document = secureDocumentBuilderFactory().newDocumentBuilder().parse(report.toFile());
+                Document document = parseXml(report);
                 NodeList mutations = document.getElementsByTagName("mutation");
                 for (int index = 0; index < mutations.getLength(); index++) {
                     Element mutation = (Element) mutations.item(index);
@@ -397,13 +413,53 @@ public final class MutationTestingService {
                     if (status.isBlank()) {
                         status = text(mutation, "status").toUpperCase(Locale.ROOT);
                     }
+                    if (!includedMutation(mutation, includedLines)) {
+                        continue;
+                    }
                     counts.add(status, survivor(mutation, status));
                 }
-            } catch (Exception exception) {
+            } catch (IOException | ParserConfigurationException | SAXException exception) {
                 throw new IllegalStateException("Failed to parse PIT mutation report " + report, exception);
             }
         }
         return counts.freeze();
+    }
+
+    private Document parseXml(Path path) throws IOException, ParserConfigurationException, SAXException {
+        var builder = secureDocumentBuilderFactory().newDocumentBuilder();
+        builder.setErrorHandler(new DefaultHandler());
+        return builder.parse(path.toFile());
+    }
+
+    private boolean includedMutation(Element mutation, Map<String, Set<Integer>> includedLines) {
+        if (includedLines.isEmpty()) {
+            return true;
+        }
+        String className = text(mutation, "mutatedClass");
+        Set<Integer> lines = includedLines.get(className);
+        if (lines == null) {
+            int innerClass = className.indexOf('$');
+            lines = includedLines.get(innerClass < 0 ? className : className.substring(0, innerClass));
+        }
+        return lines != null && lines.contains(parseInteger(text(mutation, "lineNumber")));
+    }
+
+    Map<String, Set<Integer>> normalizeIncludedLines(Map<String, Set<Integer>> includedLines) {
+        if (includedLines == null || includedLines.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Set<Integer>> normalized = new LinkedHashMap<>();
+        includedLines.forEach((className, lines) -> {
+            if (className == null || className.isBlank() || lines == null) {
+                throw new IllegalArgumentException("Changed mutation lines require a class name and line set.");
+            }
+            Set<Integer> positive = lines.stream()
+                    .filter(Objects::nonNull)
+                    .filter(line -> line > 0)
+                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            normalized.put(className.trim(), positive);
+        });
+        return Map.copyOf(normalized);
     }
 
     private SurvivingMutation survivor(Element mutation, String status) {
@@ -421,7 +477,7 @@ public final class MutationTestingService {
         );
     }
 
-    private DocumentBuilderFactory secureDocumentBuilderFactory() throws Exception {
+    private DocumentBuilderFactory secureDocumentBuilderFactory() throws ParserConfigurationException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);

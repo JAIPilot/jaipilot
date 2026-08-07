@@ -1,90 +1,108 @@
 # How JAIPilot works
 
-JAIPilot is a local control plane for Java changes proposed by a connected coding agent. The agent
-owns contextual reasoning and edits. JAIPilot owns deterministic project discovery, target
-selection, isolation, verification evidence, drift detection, and apply.
+JAIPilot helps a coding agent change Java code safely. The agent decides what to change and edits the
+code. JAIPilot finds the right files, keeps work isolated, runs the checks, and applies an approved
+result.
 
-## The transaction
+Everything runs on your machine. JAIPilot does not upload your source code.
+
+## The basic workflow
 
 ```text
-inspect | quality → prepare-tests | prepare-cleanup → validate → apply | discard
+inspect or quality → prepare tests or cleanup → edit → validate → apply or discard
 ```
 
-### 1. Inspect
+### 1. Check the project
 
-JAIPilot resolves the real project root, Maven or Gradle build, valid wrapper, production classes,
-changed production files, JaCoCo configuration, cached coverage metadata, and active-run state.
-The `quality` operation analyzes an explicit class, changed classes, or an explicitly requested full
-scope and returns deterministic findings, method metrics, duplication evidence, debt, and scores.
+`inspect` finds the project root, build tool, production classes, changed files, coverage setup, and
+active JAIPilot runs.
 
-### 2. Prepare
+`quality` checks one class, the changed classes, or the whole project when requested. It reports
+issues, complex methods, duplication, cleanup effort, and quality scores.
 
-Every run begins with a clean build of the live project. JAIPilot snapshots the live source,
-creates an isolated workspace, records exact targets, and returns that workspace to the agent.
+### 2. Create a safe workspace
 
-Test generation supports four deterministic target modes:
+JAIPilot runs a clean build, copies the source into an isolated workspace, and records which files
+the agent may change. The live project stays untouched.
 
-- `classes` for explicit classes or production source paths;
-- `changed` for production classes changed in the live repository;
-- `coverage` for classes below a threshold from a newly generated JaCoCo report;
-- `all` only when a whole-project operation is explicitly requested.
+For test generation, you can target:
 
-Cleanup supports `classes`, `changed`, and explicit `all`. It first runs a pinned OpenRewrite bundle
-for cleanup, common static analysis, API practices, interruption handling, resource safety,
-equivalent branches, redundant conditions, and targeted modernization. An exact-source precondition
-limits every recipe to selected files. Temporary build configuration exists only in the workspace
-and is removed before the agent receives it.
+- named classes or source files;
+- classes changed in the repository;
+- classes below a coverage target, using a fresh JaCoCo report; or
+- the whole project, when explicitly requested.
 
-### 3. Improve
+For cleanup, you can target named classes, changed classes, or the whole project. JAIPilot first runs
+a fixed, versioned set of OpenRewrite fixes on only those files. Any temporary build setup stays in
+the isolated workspace.
 
-The connected Codex or Claude Code agent works only inside the returned workspace.
+### 3. Let the agent edit
 
-- Test runs may change Java files only beneath `src/test/java`.
-- Cleanup runs may change selected production Java plus directly related Java tests.
-- Build files, documentation, generated output, unrelated production source, deletions, and
-  symbolic paths are outside the write scope.
+The connected Codex or Claude Code agent edits only the isolated workspace.
 
-### 4. Prove
+- Test runs may change Java files only under `src/test/java`.
+- Cleanup runs may change the selected production files and their related Java tests.
+- Build files, documentation, generated output, unrelated production files, deletions, and symbolic
+  links are not allowed.
 
-Validation snapshots the candidate, enforces scope, runs a clean build, and takes a second snapshot
-to reject source written by build steps. Changed tests must appear with non-zero execution counts
-in newly generated Surefire, Failsafe, or Gradle XML reports.
+### 4. Validate the result
 
-When JaCoCo is configured, test generation reports before/after line and branch coverage for every
-target. A requested minimum line-coverage goal blocks apply until every target meets it.
+JAIPilot checks that the agent changed only allowed files, then runs a clean build. It checks the files
+again after the build so generated source changes cannot slip through.
 
-JAIPilot then runs pinned, class-and-test-scoped PIT mutation testing without changing the project's
-build files. Mutation score, test strength, killed and surviving mutations, uncovered mutations,
-non-viable and error statuses, and elapsed time are returned as structured evidence. Test generation
-always uses PIT with a default 70% mutation gate; no scorable mutations cannot satisfy a positive
-target. Cleanup also applies the 70% mutation gate whenever its candidate changes a related test.
+Validation also proves that:
 
-Validation also recomputes the selected-source quality report. New critical or high findings and an
-overall quality-score regression block apply. The result includes before/after findings, bug risks,
-code smells, remediation debt, duplication, and complexity. The test-quality score combines coverage,
-mutation evidence, and changed-test execution while reporting evidence completeness separately.
+- changed tests really ran, using fresh Maven or Gradle test reports;
+- line and branch coverage meet any requested target when JaCoCo is available;
+- focused PIT mutation testing reaches the default 70% target for test generation, and for cleanup
+  that changes related tests; and
+- the change adds no critical or high-severity issue and does not lower the overall quality score.
 
-The exact formulas and scope boundaries are documented in [quality metrics](quality-metrics.md).
+If PIT finds no mutations to score, a positive mutation target does not pass. The report shows the
+coverage, test execution, mutation results, complexity, duplication, and cleanup effort. See
+[quality metrics](quality-metrics.md) for the exact formulas and scope rules.
 
 ### 5. Apply or discard
 
-Apply requires explicit confirmation and a candidate identical to the immediately validated
-snapshot. JAIPilot also verifies that the live source still matches its original snapshot. It then
-writes the allowlisted files transactionally and rolls back if a write fails. Discard removes the
-workspace without changing live source.
+JAIPilot applies a result only after you confirm it. The result must still match the version that
+passed validation, and the live source must not have changed since the run began. JAIPilot writes
+only approved files and rolls everything back if a write fails.
 
-## Persistence and concurrency
+Discarding removes the isolated workspace and leaves the live project unchanged.
 
-Short-lived runner invocations share local workflow state beneath `JAIPILOT_STATE_HOME`,
-`XDG_STATE_HOME/jaipilot`, or the platform-local state directory. Metadata writes are atomic;
-directories are owner-only where POSIX permissions are available; each run is file-locked.
+## Automatic review of Java changes
 
-JAIPilot permits at most one active run for a real project and four active runs globally. Runs
-expire after two hours. Expired workspaces are removed only when their paths match the expected
-JAIPilot temporary-workspace pattern.
+At the end of each agent turn, `diff-gate` checks for new Java changes. On a feature branch, it checks
+everything since the branch split from the local default branch. On the default branch, it checks the
+previous commit. Staged, unstaged, and untracked files are included.
 
-## Local and provider-neutral
+This check is quick and does not run a build. If a Java or build-file change has no matching proof
+receipt, the plugin asks the agent to review it. Non-Git projects are ignored. If Git inspection fails,
+the plugin stops and shows a recovery command instead of skipping the check.
 
-JAIPilot has no hosted backend and never uploads project source. It does not invoke Codex, Claude,
-or another model itself. The host supplies the reasoning environment; the toolkit harness supplies local,
-deterministic orchestration and proof.
+After the fixes are complete, `prove-diff` copies the current project into a fresh workspace and
+checks the exact diff. By default, it requires:
+
+- a clean, full test build;
+- 90% coverage of changed executable lines;
+- 85% coverage of changed branches;
+- an 80% PIT score for mutations on changed lines;
+- a new-code quality score of 90; and
+- no new or newly escalated critical or high-severity issues.
+
+Whole-class results are still shown, but old code outside the patch does not make a small change fail.
+When the diff passes, JAIPilot saves a local receipt for that exact Java and build-file fingerprint.
+Any relevant change makes the receipt stale.
+
+## Private local state
+
+JAIPilot stores run state in `JAIPILOT_STATE_HOME`, `XDG_STATE_HOME/jaipilot`, or your platform's local
+state directory. Proof receipts contain fingerprints and scores, not source code. Writes are atomic,
+private to the owner where POSIX permissions are available, and protected by per-run locks.
+
+Only one run may be active for a project, with at most four active runs across all projects. Runs
+expire after two hours. JAIPilot removes an expired workspace only when its path matches the expected
+temporary-workspace pattern.
+
+JAIPilot has no hosted backend and does not call Codex, Claude, or another model. Your coding tool
+provides the reasoning; JAIPilot provides local, repeatable checks and safe application.

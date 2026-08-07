@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
   "version": "3.1.2",
-  "description": "Java Enterprise Toolkit Harness for unit tests proven by coverage and mutation testing, plus scored code cleanup.",
+  "description": "Java Enterprise Toolkit Harness for automatic Git diff review, proven unit tests, and scored code cleanup.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -22,16 +22,16 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "Java tests, mutation proof, and cleanup",
-    "longDescription": "Generate Java unit tests proven by coverage and PIT, then clean and refactor Java with transparent quality scorecards and real-build validation.",
+    "shortDescription": "Automatic Java diff proof, tests, and cleanup",
+    "longDescription": "Automatically review committed and working-tree Java changes, generate tests proven by coverage and PIT, and clean code with transparent quality scorecards.",
     "developerName": "JAIPilot",
     "category": "Productivity",
     "capabilities": [],
     "websiteURL": "https://github.com/JAIPilot/jaipilot",
     "defaultPrompt": [
       "Generate Java tests and prove them with coverage and PIT.",
-      "Fix smells, complexity, and duplication in changed Java.",
-      "Score this Java code and apply only validated improvements."
+      "Review and prove every changed Java production file.",
+      "Fix smells, complexity, and duplication in changed Java."
     ],
     "brandColor": "#2457D6",
     "logo": "./assets/jaipilot-logo.svg",

@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -74,6 +76,58 @@ class CoverageReportServiceTest {
 
         assertEquals(100.0d, coverage.lineCoverage(), 0.0001d);
         assertEquals(0.0d, coverage.branchCoverage(), 0.0001d);
+    }
+
+    @Test
+    void readsExecutableChangedLineAndBranchCounters() throws Exception {
+        Path report = tempDir.resolve("line-counters/jacoco.xml");
+        Files.createDirectories(report.getParent());
+        Files.writeString(report, """
+                <report name="sample">
+                  <package name="com/example">
+                    <sourcefile name="OrderService.java">
+                      <line nr="12" mi="0" ci="4" mb="1" cb="3"/>
+                      <line nr="13" mi="2" ci="0" mb="0" cb="0"/>
+                    </sourcefile>
+                  </package>
+                </report>
+                """);
+
+        Map<Integer, CoverageReportService.LineCoverage> lines = coverageReportService
+                .readSourceLineCoverage(report)
+                .get("com/example/OrderService.java");
+
+        assertTrue(lines.get(12).covered());
+        assertEquals(4, lines.get(12).branches());
+        assertEquals(3, lines.get(12).coveredBranches());
+        assertTrue(lines.get(13).executable());
+        assertEquals(false, lines.get(13).covered());
+    }
+
+    @Test
+    void sourceLineCoverageSupportsDefaultPackageAndIgnoresInvalidLineNumbers() throws Exception {
+        Path report = tempDir.resolve("default-package.xml");
+        Files.writeString(report, """
+                <report name="fixture">
+                  <package name="">
+                    <sourcefile name="Main.java">
+                      <line nr="0" mi="1" ci="0" mb="0" cb="0"/>
+                      <line nr="1" mi="0" ci="1" mb="0" cb="0"/>
+                    </sourcefile>
+                  </package>
+                </report>
+                """);
+
+        Map<Integer, CoverageReportService.LineCoverage> lines = coverageReportService
+                .readSourceLineCoverage(report)
+                .get("Main.java");
+
+        assertEquals(Set.of(1), lines.keySet());
+        assertTrue(lines.get(1).covered());
+        Path emptyReport = tempDir.resolve("empty-source-report.xml");
+        Files.writeString(emptyReport, "<report/>");
+        assertTrue(coverageReportService.readSourceLineCoverage(emptyReport).isEmpty());
+        assertEquals(0, coverageReportService.parseInteger(null));
     }
 
     @Test

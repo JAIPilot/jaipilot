@@ -14,7 +14,7 @@ PLUGIN_FILES = (
     "plugins/jaipilot/.codex-plugin/plugin.json",
     "plugins/jaipilot/.claude-plugin/plugin.json",
 )
-SKILLS = ("jaipilot-generate-tests", "jaipilot-clean-java")
+SKILLS = ("jaipilot-generate-tests", "jaipilot-clean-java", "jaipilot-review-diff")
 
 
 def text(relative_path: str) -> str:
@@ -68,6 +68,16 @@ def main() -> None:
     require(
         (ROOT / "plugins/jaipilot/libexec/install.sh").is_file(),
         "Plugin-local installer is required",
+    )
+    hooks = payload("plugins/jaipilot/hooks/hooks.json")
+    stop_hooks = hooks.get("hooks", {}).get("Stop") if isinstance(hooks.get("hooks"), dict) else None
+    require(isinstance(stop_hooks, list) and len(stop_hooks) == 1, "One automatic Stop hook is required")
+    command = stop_hooks[0].get("hooks", [{}])[0].get("command") if isinstance(stop_hooks[0], dict) else None
+    require(
+        isinstance(command, str)
+        and "${CLAUDE_PLUGIN_ROOT}/bin/jaipilot" in command
+        and "hook-stop" in command,
+        "Stop hook must use the portable plugin runner",
     )
 
     codex_marketplace = payload(".agents/plugins/marketplace.json")

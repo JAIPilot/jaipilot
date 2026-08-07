@@ -113,6 +113,41 @@ public final class CoverageReportService {
         );
     }
 
+    /** Reads executable-line and branch counters keyed by JaCoCo package/source path. */
+    public Map<String, Map<Integer, LineCoverage>> readSourceLineCoverage(Path reportPath) {
+        Document document = parse(reportPath);
+        Map<String, Map<Integer, LineCoverage>> bySource = new HashMap<>();
+        NodeList packageElements = document.getElementsByTagName("package");
+        for (int packageIndex = 0; packageIndex < packageElements.getLength(); packageIndex++) {
+            Element packageElement = (Element) packageElements.item(packageIndex);
+            String packageName = packageElement.getAttribute("name");
+            for (Element sourceElement : childElements(packageElement, "sourcefile")) {
+                String key = packageName.isBlank()
+                        ? sourceElement.getAttribute("name")
+                        : packageName + "/" + sourceElement.getAttribute("name");
+                Map<Integer, LineCoverage> lines = new HashMap<>();
+                for (Element lineElement : childElements(sourceElement, "line")) {
+                    int line = parseInteger(lineElement.getAttribute("nr"));
+                    if (line < 1) {
+                        continue;
+                    }
+                    lines.put(line, new LineCoverage(
+                            line,
+                            parseInteger(lineElement.getAttribute("mi")),
+                            parseInteger(lineElement.getAttribute("ci")),
+                            parseInteger(lineElement.getAttribute("mb")),
+                            parseInteger(lineElement.getAttribute("cb"))
+                    ));
+                }
+                bySource.put(key, Map.copyOf(lines));
+            }
+        }
+        return bySource.entrySet().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue
+        ));
+    }
+
     private Document parse(Path reportPath) {
         try (InputStream inputStream = Files.newInputStream(reportPath)) {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -181,6 +216,10 @@ public final class CoverageReportService {
         return value == null || value.isBlank() ? 0.0d : Double.parseDouble(value);
     }
 
+    int parseInteger(String value) {
+        return value == null || value.isBlank() ? 0 : Integer.parseInt(value);
+    }
+
     private String normalize(Path path) {
         return path.toString().replace('\\', '/');
     }
@@ -220,5 +259,25 @@ public final class CoverageReportService {
             double lineCoverage,
             double branchCoverage
     ) {
+    }
+
+    public record LineCoverage(
+            int line,
+            int missedInstructions,
+            int coveredInstructions,
+            int missedBranches,
+            int coveredBranches
+    ) {
+        public boolean executable() {
+            return missedInstructions + coveredInstructions > 0;
+        }
+
+        public boolean covered() {
+            return coveredInstructions > 0;
+        }
+
+        public int branches() {
+            return missedBranches + coveredBranches;
+        }
     }
 }

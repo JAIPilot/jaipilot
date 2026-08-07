@@ -15,8 +15,9 @@
   </p>
 </div>
 
-JAIPilot is the Java Enterprise Toolkit Harness for Codex and Claude Code. It gives coding agents two
-focused capabilities: high-quality Java unit testing and safe code cleanup.
+JAIPilot is the Java Enterprise Toolkit Harness for Codex and Claude Code. It gives coding agents
+three focused capabilities: automatic Git diff review, high-quality Java unit testing, and safe code
+cleanup.
 
 > **Built for enterprise Java teams:** keep source local, constrain agent edits, and require
 > real-build evidence before apply. In a reproducible Spring Framework Petclinic evaluation,
@@ -43,9 +44,24 @@ Run these commands inside Claude Code:
 ```
 
 The plugin downloads its private Java runtime on first use. It does not require npm or a globally
-installed JDK.
+installed JDK. Codex and Claude Code show the bundled Stop hook for trust review; approve it to
+enable automatic changed-code proof.
 
 ## Core tools
+
+### Automatic changed-code proof
+
+- Detect committed branch work from the local default-branch merge base, plus staged, unstaged, and
+  untracked Java changes.
+- Check at every agent Stop, block completion for an unproved production diff, and continue the
+  connected agent into focused remediation and proof.
+- Fail closed when an in-scope Git inspection cannot be completed; non-Git workspaces remain quiet.
+- Run expensive proof once per exact diff fingerprint, then reuse the local receipt until relevant
+  Java or build files change.
+- Require a clean full build, fresh changed-line coverage, changed-line PIT, new-code quality, and
+  zero new or severity-escalated critical/high findings.
+- Default to 90% changed-line coverage, 85% changed-branch coverage, 80% changed-line mutation
+  score, and a 90 new-code quality score.
 
 ### High-quality unit testing
 
@@ -74,6 +90,7 @@ for the formulas, gates, and interpretation boundaries.
 
 - `jaipilot-generate-tests`
 - `jaipilot-clean-java`
+- `jaipilot-review-diff`
 
 ## Example requests
 
@@ -83,17 +100,18 @@ Strengthen PaymentServiceTest until it reaches an 80% mutation score.
 Generate tests for the Java classes changed on this branch.
 Find and fix bug risks, complexity, duplication, and code smells in the changed Java classes.
 Review PaymentService for code cleanup, but show me the candidate before apply.
+Review and prove every Java production change on this branch.
 ```
 
 ## Workflow
 
 ```text
-inspect or quality → prepare-tests or prepare-cleanup → edit isolated candidate → validate → apply or discard
+diff-gate → quality and isolated remediation → prove-diff → fingerprinted local proof
 ```
 
-Apply requires an immediately validated candidate and explicit confirmation. Preparing, editing,
-validating, and discarding never change the live source tree; discard only removes the isolated
-candidate.
+Each remediation transaction remains `prepare-tests` or `prepare-cleanup → edit isolated candidate
+→ validate → apply or discard`. Apply requires an immediately validated candidate and explicit
+confirmation. Final diff proof runs in another isolated copy and never edits live source.
 
 Read [how JAIPilot works](docs/how-it-works.md) for the complete scope, evidence, concurrency, and
 transaction model.

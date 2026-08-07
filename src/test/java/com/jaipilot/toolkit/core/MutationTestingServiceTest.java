@@ -2,12 +2,15 @@ package com.jaipilot.toolkit.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -105,6 +108,46 @@ class MutationTestingServiceTest {
     }
 
     @Test
+    void mutationEvidenceCanBeScoredOnlyOnChangedLines() throws Exception {
+        Path report = tempDir.resolve("changed-lines.xml");
+        Files.writeString(report, """
+                <mutations>
+                  <mutation status="KILLED">
+                    <mutatedClass>com.example.OrderService</mutatedClass>
+                    <mutatedMethod>changed</mutatedMethod>
+                    <lineNumber>12</lineNumber>
+                    <mutator>MathMutator</mutator>
+                    <description>changed math</description>
+                  </mutation>
+                  <mutation status="SURVIVED">
+                    <mutatedClass>com.example.OrderService</mutatedClass>
+                    <mutatedMethod>legacy</mutatedMethod>
+                    <lineNumber>40</lineNumber>
+                    <mutator>MathMutator</mutator>
+                    <description>legacy math</description>
+                  </mutation>
+                  <mutation status="NO_COVERAGE">
+                    <mutatedClass>com.example.OrderService$Nested</mutatedClass>
+                    <mutatedMethod>changedNested</mutatedMethod>
+                    <lineNumber>13</lineNumber>
+                    <mutator>VoidMethodCallMutator</mutator>
+                    <description>changed nested call</description>
+                  </mutation>
+                </mutations>
+                """);
+
+        MutationTestingService.MutationCounts counts = service().readReports(
+                List.of(report),
+                Map.of("com.example.OrderService", Set.of(12, 13))
+        );
+
+        assertEquals(2, counts.total());
+        assertEquals(1, counts.killed());
+        assertEquals(0, counts.survived());
+        assertEquals(1, counts.noCoverage());
+    }
+
+    @Test
     void gradleConfigurationIsTargetedParallelAndMachineReadable() {
         MutationTestingService service = service();
 
@@ -119,6 +162,48 @@ class MutationTestingServiceTest {
         assertTrue(script.contains("targetTests.set(['com.example.OrderServiceTest*'] as Set)"));
         assertTrue(script.contains("outputFormats.set(['XML'] as Set)"));
         assertFalse(script.contains("timestampedReports.set(true)"));
+    }
+
+    @Test
+    void changedMutationLinesAreNormalizedBeforeAnyBuildRuns() {
+        MutationTestingService service = service();
+
+        assertEquals(
+                Map.of("com.example.OrderService", Set.of(12)),
+                service.normalizeIncludedLines(Map.of(" com.example.OrderService ", Set.of(-1, 0, 12)))
+        );
+        assertTrue(service.normalizeIncludedLines(null).isEmpty());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.normalizeIncludedLines(Map.of(" ", Set.of(12)))
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.run(tempDir, List.of(), List.of(), 80.0d, Map.of())
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.run(tempDir, List.of(), List.of(), 80.0d)
+        );
+        Map<String, Set<Integer>> missingLines = new java.util.LinkedHashMap<>();
+        missingLines.put("com.example.MissingLines", null);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.normalizeIncludedLines(missingLines)
+        );
+    }
+
+    @Test
+    void malformedMutationXmlFailsClosed() throws Exception {
+        Path report = tempDir.resolve("malformed-mutations.xml");
+        Files.writeString(report, "<mutations><mutation>");
+
+        IllegalStateException failure = assertThrows(
+                IllegalStateException.class,
+                () -> service().readReports(List.of(report))
+        );
+
+        assertTrue(failure.getMessage().contains("Failed to parse PIT mutation report"));
     }
 
     private MutationTestingService service() {

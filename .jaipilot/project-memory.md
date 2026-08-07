@@ -19,6 +19,10 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
 
 - `jaipilot inspect`: read build, project, coverage, and active-run metadata.
 - `jaipilot quality`: report deterministic findings, method complexity, duplication, debt, and scores.
+- `jaipilot diff-gate`: discover committed and working-tree Java changes and check the exact local
+  proof receipt without running a build.
+- `jaipilot prove-diff`: prove the exact Git fingerprint in a fresh isolated workspace with a clean
+  build, changed-line JaCoCo, changed-line PIT, and new-code quality evidence.
 - `jaipilot prepare-tests`: clean-baseline and isolate named, changed, all, or fresh-coverage targets.
 - `jaipilot prepare-cleanup`: clean-baseline, isolate, and run exact-scoped OpenRewrite first.
 - `jaipilot status`: inspect persisted run state.
@@ -43,6 +47,12 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
   test strength, survivors, evidence completeness, and a composite test-quality score.
 - Validation rejects deletion, symbolic paths, invalid scope, build-time source drift, and missing
   execution evidence. Apply rejects post-validation candidate drift and live-worktree drift.
+- The shared plugin Stop hook runs the cheap diff gate at the end of every agent turn. It ignores
+  non-Git workspaces, fails closed on unexpected inspection errors, and continues an agent when a
+  changed Java production fingerprint lacks a sufficiently strict receipt.
+- Changed-code proof defaults are 90% executable-line coverage, 85% changed-branch coverage, 80%
+  changed-line PIT score, 90 new-code quality, and zero new or severity-escalated critical/high
+  findings. Deletion-only diffs still require a clean full build.
 - Direct runs persist beneath `JAIPILOT_STATE_HOME`, `XDG_STATE_HOME/jaipilot`, or the user's local
   state directory. Metadata writes are atomic, directories are owner-only where POSIX permissions
   exist, run operations are file-locked, and creation uses a brief global registry lock.
@@ -69,7 +79,8 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
 - The installer writes only to its private app directory and never creates a PATH or global launcher.
 - Codex marketplace: `.agents/plugins/marketplace.json`.
 - Claude marketplace: `.claude-plugin/marketplace.json`.
-- Shared plugin: `plugins/jaipilot`, containing `jaipilot-generate-tests` and `jaipilot-clean-java`.
+- Shared plugin: `plugins/jaipilot`, containing `jaipilot-generate-tests`, `jaipilot-clean-java`, and
+  `jaipilot-review-diff`.
 
 ## Performance Baseline
 

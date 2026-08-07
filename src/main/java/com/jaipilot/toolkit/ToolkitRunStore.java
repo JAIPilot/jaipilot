@@ -1,7 +1,11 @@
 package com.jaipilot.toolkit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jaipilot.toolkit.core.DiffVerificationService;
+import com.jaipilot.toolkit.core.GitChangeService;
+import com.jaipilot.toolkit.core.JavaProjectService;
 import com.jaipilot.toolkit.core.ProjectFileService;
+import com.jaipilot.toolkit.core.CoverageReportService;
 import com.jaipilot.toolkit.core.WorkflowRunService;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -16,8 +20,10 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Persists short-lived JAIPilot workflow state between agent command invocations.
@@ -38,15 +44,23 @@ final class ToolkitRunStore {
     private final Path runs;
     private final Path reservations;
     private final Path locks;
+    private final Path proofs;
     private final Path registryLock;
+    private final Consumer<String> proofProgress;
 
     ToolkitRunStore(ObjectMapper mapper, Path root) {
+        this(mapper, root, ignored -> { });
+    }
+
+    ToolkitRunStore(ObjectMapper mapper, Path root, Consumer<String> proofProgress) {
         this.mapper = mapper;
         this.root = root.toAbsolutePath().normalize();
         this.runs = this.root.resolve("runs");
         this.reservations = this.root.resolve("reservations");
         this.locks = this.root.resolve("locks");
+        this.proofs = this.root.resolve("proofs");
         this.registryLock = this.root.resolve("registry.lock");
+        this.proofProgress = Objects.requireNonNull(proofProgress, "proofProgress");
         createPrivateDirectories();
     }
 
@@ -86,6 +100,109 @@ final class ToolkitRunStore {
     ) {
         pruneExpired();
         return new WorkflowRunService().inspectQuality(requestedRoot, selection);
+    }
+
+    DiffGateStatus diffGate(
+            Path requestedRoot,
+            DiffVerificationService.VerificationThresholds requiredThresholds
+    ) {
+        Path projectRoot = resolveProjectRoot(requestedRoot);
+        GitChangeService.DiffSnapshot diff = new GitChangeService().snapshot(projectRoot);
+        if (!diff.hasProductionChanges()) {
+            return new DiffGateStatus(
+                    "not_applicable",
+                    projectRoot,
+                    diff.baselineCommit(),
+                    diff.baselineDescription(),
+                    diff.headCommit(),
+                    diff.fingerprint(),
+                    diff.changedJavaPaths(),
+                    diff.changedProductionPaths(),
+                    requiredThresholds,
+                    null,
+                    "No changed Java production files require review."
+            );
+        }
+        ProofReceipt receipt = readProof(projectRoot);
+        boolean current = receipt != null
+                && receipt.fingerprint().equals(diff.fingerprint())
+                && meets(receipt.thresholds(), requiredThresholds);
+        return new DiffGateStatus(
+                current ? "passed" : "review_required",
+                projectRoot,
+                diff.baselineCommit(),
+                diff.baselineDescription(),
+                diff.headCommit(),
+                diff.fingerprint(),
+                diff.changedJavaPaths(),
+                diff.changedProductionPaths(),
+                requiredThresholds,
+                current ? receipt.verifiedAt() : null,
+                current
+                        ? "The exact current Java diff has fresh JAIPilot proof."
+                        : "The current Java diff has not passed the required quality, coverage, and mutation gates."
+        );
+    }
+
+    DiffVerificationService.DiffVerification proveDiff(
+            Path requestedRoot,
+            DiffVerificationService.VerificationThresholds thresholds
+    ) {
+        Path projectRoot = resolveProjectRoot(requestedRoot);
+        Path lockPath = locks.resolve("proof-" + sha256(projectRoot.toString()) + ".lock");
+        try (FileChannel channel = FileChannel.open(
+                lockPath,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE
+        )) {
+            try (FileLock lock = acquireProofLock(channel, projectRoot)) {
+                DiffVerificationService.DiffVerification verification = new DiffVerificationService(proofProgress)
+                        .verify(projectRoot, thresholds);
+                updateProofReceipt(projectRoot, thresholds, verification);
+                return verification;
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to lock changed-code proof for " + projectRoot + ".", exception);
+        }
+    }
+
+    private FileLock acquireProofLock(FileChannel channel, Path projectRoot) throws IOException {
+        FileLock lock = tryProofLock(channel);
+        if (lock != null) {
+            return lock;
+        }
+        throw new IllegalStateException(
+                "Another JAIPilot changed-code proof is already running for " + projectRoot + "."
+        );
+    }
+
+    private FileLock tryProofLock(FileChannel channel) throws IOException {
+        try {
+            return channel.tryLock();
+        } catch (OverlappingFileLockException exception) {
+            return null;
+        }
+    }
+
+    private void updateProofReceipt(
+            Path projectRoot,
+            DiffVerificationService.VerificationThresholds thresholds,
+            DiffVerificationService.DiffVerification verification
+    ) {
+        if (!verification.passed() || !verification.diff().hasProductionChanges()) {
+            deleteProofIfCurrent(projectRoot, verification.diff().fingerprint());
+            return;
+        }
+        writeAtomically(proofPath(projectRoot), new ProofReceipt(
+                1,
+                projectRoot.toString(),
+                verification.diff().fingerprint(),
+                Instant.now().toString(),
+                thresholds,
+                verification.targets().size(),
+                verification.changedQuality() == null ? null : verification.changedQuality().score(),
+                verification.testQuality() == null ? null : verification.testQuality().score()
+        ));
     }
 
     WorkflowRunService.PreparedRun prepareTests(
@@ -251,6 +368,52 @@ final class ToolkitRunStore {
         return Path.of(state.projectRoot()).toAbsolutePath().normalize().equals(projectRoot);
     }
 
+    private Path resolveProjectRoot(Path requestedRoot) {
+        ProjectFileService fileService = new ProjectFileService();
+        JavaProjectService projectService = new JavaProjectService(fileService, new CoverageReportService());
+        Path root = projectService.resolveProjectRoot(requestedRoot.toAbsolutePath().normalize());
+        try {
+            return root.toRealPath();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Project directory is unavailable: " + root, exception);
+        }
+    }
+
+    private boolean meets(
+            DiffVerificationService.VerificationThresholds actual,
+            DiffVerificationService.VerificationThresholds required
+    ) {
+        return actual.minimumLineCoverage() >= required.minimumLineCoverage()
+                && actual.minimumBranchCoverage() >= required.minimumBranchCoverage()
+                && actual.minimumMutationScore() >= required.minimumMutationScore()
+                && actual.minimumQualityScore() >= required.minimumQualityScore();
+    }
+
+    private ProofReceipt readProof(Path projectRoot) {
+        Path path = proofPath(projectRoot);
+        if (!Files.isRegularFile(path)) {
+            return null;
+        }
+        try {
+            ProofReceipt receipt = mapper.readValue(path.toFile(), ProofReceipt.class);
+            return receipt.schemaVersion() == 1 && receipt.thresholds() != null ? receipt : null;
+        } catch (IOException | RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private void deleteProofIfCurrent(Path projectRoot, String fingerprint) {
+        ProofReceipt current = readProof(projectRoot);
+        if (current == null || !current.fingerprint().equals(fingerprint)) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(proofPath(projectRoot));
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to invalidate stale changed-code proof.", exception);
+        }
+    }
+
     private void pruneExpired() {
         withRegistry(() -> {
             pruneExpiredLocked();
@@ -405,6 +568,10 @@ final class ToolkitRunStore {
         return runs.resolve(runId + ".json");
     }
 
+    private Path proofPath(Path projectRoot) {
+        return proofs.resolve(sha256(projectRoot.toString()) + ".json");
+    }
+
     private void validateRunId(String runId) {
         if (runId == null) {
             throw new IllegalArgumentException("runId must be a UUID.");
@@ -430,7 +597,7 @@ final class ToolkitRunStore {
 
     private void createPrivateDirectories() {
         try {
-            for (Path directory : List.of(root, runs, reservations, locks)) {
+            for (Path directory : List.of(root, runs, reservations, locks, proofs)) {
                 Files.createDirectories(directory);
                 try {
                     Files.setPosixFilePermissions(directory, OWNER_ONLY);
@@ -459,6 +626,33 @@ final class ToolkitRunStore {
     }
 
     private record Reservation(String id, String projectRoot, String createdAt) {
+    }
+
+    record DiffGateStatus(
+            String status,
+            Path projectRoot,
+            String baselineCommit,
+            String baselineDescription,
+            String headCommit,
+            String fingerprint,
+            List<Path> changedJavaPaths,
+            List<Path> changedProductionPaths,
+            DiffVerificationService.VerificationThresholds requiredThresholds,
+            String verifiedAt,
+            String message
+    ) {
+    }
+
+    private record ProofReceipt(
+            int schemaVersion,
+            String projectRoot,
+            String fingerprint,
+            String verifiedAt,
+            DiffVerificationService.VerificationThresholds thresholds,
+            int targetCount,
+            Double qualityScore,
+            Double testQualityScore
+    ) {
     }
 
     private static final class StateReadException extends RuntimeException {

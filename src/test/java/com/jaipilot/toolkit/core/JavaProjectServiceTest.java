@@ -146,6 +146,43 @@ class JavaProjectServiceTest {
     }
 
     @Test
+    void findChangedProductionClassesIncludesCommittedFeatureBranchWork() throws Exception {
+        Path projectRoot = tempDir.resolve("sample-committed-feature");
+        initializeGitProject(projectRoot);
+        Path source = projectRoot.resolve("src/main/java/com/example/OrderService.java");
+        writeJava(source, "OrderService");
+        git(projectRoot, "add", ".");
+        git(projectRoot, "commit", "-qm", "baseline");
+        git(projectRoot, "switch", "-qc", "feature/review");
+        Files.writeString(source, "package com.example; class OrderService { int changed; }\n");
+        git(projectRoot, "add", ".");
+        git(projectRoot, "commit", "-qm", "change order service");
+
+        JavaProjectService service = new JavaProjectService(new ProjectFileService(), new CoverageReportService());
+
+        assertEquals(
+                List.of("com.example.OrderService"),
+                service.findChangedProductionClasses(projectRoot).stream()
+                        .map(JavaProjectService.JavaClassDescriptor::fullyQualifiedName)
+                        .toList()
+        );
+    }
+
+    @Test
+    void changedProductionDiscoveryIsEmptyOutsideAGitWorktree() throws Exception {
+        Path projectRoot = tempDir.resolve("sample-not-git");
+        Files.createDirectories(projectRoot);
+        Files.writeString(projectRoot.resolve("pom.xml"), "<project/>");
+        writeJava(projectRoot.resolve("src/main/java/com/example/OrderService.java"), "OrderService");
+        JavaProjectService service = new JavaProjectService(
+                new ProjectFileService(),
+                new CoverageReportService()
+        );
+
+        assertTrue(service.findChangedProductionClasses(projectRoot).isEmpty());
+    }
+
+    @Test
     void wrapperIsOptionalWhenWrapperIsMissing() throws Exception {
         Path projectRoot = tempDir.resolve("sample-no-wrapper");
         Files.createDirectories(projectRoot);
@@ -274,5 +311,23 @@ class JavaProjectServiceTest {
                 class %s {
                 }
                 """.formatted(className));
+    }
+
+    private void initializeGitProject(Path projectRoot) throws Exception {
+        Files.createDirectories(projectRoot);
+        Files.writeString(projectRoot.resolve("pom.xml"), "<project/>\n");
+        git(projectRoot, "init", "-q", "-b", "main");
+        git(projectRoot, "config", "user.name", "JAIPilot Test");
+        git(projectRoot, "config", "user.email", "test@jaipilot.local");
+    }
+
+    private void git(Path projectRoot, String... arguments) throws Exception {
+        List<String> command = new java.util.ArrayList<>();
+        command.add("git");
+        command.addAll(List.of(arguments));
+        Process process = new ProcessBuilder(command).directory(projectRoot.toFile()).start();
+        int status = process.waitFor();
+        String errors = new String(process.getErrorStream().readAllBytes());
+        assertEquals(0, status, errors);
     }
 }

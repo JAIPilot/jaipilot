@@ -93,14 +93,14 @@ public final class JavaProjectService {
 
     public List<JavaClassDescriptor> findChangedProductionClasses(Path projectRoot) {
         LinkedHashMap<Path, JavaClassDescriptor> classes = new LinkedHashMap<>();
-        for (String candidate : changedPaths(projectRoot)) {
-            if (!candidate.endsWith(".java") || candidate.contains("/src/test/")) {
-                continue;
-            }
+        List<Path> changedPaths;
+        try {
+            changedPaths = new GitChangeService().snapshot(projectRoot).existingProductionPaths();
+        } catch (GitChangeService.NotGitWorktreeException exception) {
+            return List.of();
+        }
+        for (Path candidate : changedPaths) {
             Path path = projectRoot.resolve(candidate).normalize();
-            if (!Files.isRegularFile(path) || !isProductionJavaPath(path)) {
-                continue;
-            }
             classes.put(path, describeProductionClass(path, projectRoot));
         }
         return sorted(classes.values());
@@ -206,45 +206,6 @@ public final class JavaProjectService {
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to inspect Gradle coverage configuration under " + projectRoot, exception);
         }
-    }
-
-    private List<String> changedPaths(Path projectRoot) {
-        try {
-            ProcessExecutor processExecutor = new ProcessExecutor();
-            List<String> paths = new ArrayList<>();
-            paths.addAll(lines(processExecutor.execute(
-                    List.of("git", "diff", "--name-only", "--cached", "--diff-filter=ACMR"),
-                    projectRoot,
-                    java.time.Duration.ofSeconds(30),
-                    false,
-                    new java.io.PrintWriter(System.err, true)
-            ).output()));
-            paths.addAll(lines(processExecutor.execute(
-                    List.of("git", "diff", "--name-only", "--diff-filter=ACMR"),
-                    projectRoot,
-                    java.time.Duration.ofSeconds(30),
-                    false,
-                    new java.io.PrintWriter(System.err, true)
-            ).output()));
-            paths.addAll(lines(processExecutor.execute(
-                    List.of("git", "ls-files", "--others", "--exclude-standard"),
-                    projectRoot,
-                    java.time.Duration.ofSeconds(30),
-                    false,
-                    new java.io.PrintWriter(System.err, true)
-            ).output()));
-            return paths.stream()
-                    .map(String::trim)
-                    .filter(path -> !path.isBlank())
-                    .distinct()
-                    .toList();
-        } catch (Exception exception) {
-            throw new IllegalStateException("Failed to inspect git changes under " + projectRoot, exception);
-        }
-    }
-
-    private List<String> lines(String value) {
-        return value == null ? List.of() : value.lines().toList();
     }
 
     private boolean isProductionJavaPath(Path path) {
