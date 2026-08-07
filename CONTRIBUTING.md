@@ -22,7 +22,7 @@ current-platform bundled distribution.
 
 ```bash
 ./mvnw -B test
-java -jar target/jaipilot-toolkit-3.2.0-all.jar inspect --project .
+java -jar target/jaipilot-toolkit-3.3.0-all.jar inspect --project .
 ./scripts/smoke-test-install.sh
 ```
 
