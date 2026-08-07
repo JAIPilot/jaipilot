@@ -55,7 +55,9 @@ Validation also proves that:
 - changed tests really ran, using fresh Maven or Gradle test reports;
 - line and branch coverage meet any requested target when JaCoCo is available;
 - focused PIT mutation testing reaches the default 70% target for test generation, and for cleanup
-  that changes related tests; and
+  that changes related tests;
+- pinned ArchUnit analysis of the freshly compiled production bytecode finds no package cycle
+  involving a selected cleanup class; and
 - the change adds no critical or high-severity issue and does not lower the overall quality score.
 
 If PIT finds no mutations to score, a positive mutation target does not pass. The report shows the
@@ -87,7 +89,8 @@ checks the exact diff. By default, it requires:
 - 90% coverage of changed executable lines;
 - 85% coverage of changed branches;
 - an 80% PIT score for mutations on changed lines;
-- a new-code quality score of 90; and
+- a new-code quality score of 90;
+- complete ArchUnit bytecode evidence with no package-cycle violation involving changed classes; and
 - no new or newly escalated critical or high-severity issues.
 
 Whole-class results are still shown, but old code outside the patch does not make a small change fail.

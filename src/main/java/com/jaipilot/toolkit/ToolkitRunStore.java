@@ -1,11 +1,12 @@
 package com.jaipilot.toolkit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jaipilot.toolkit.core.ArchitectureService;
+import com.jaipilot.toolkit.core.CoverageReportService;
 import com.jaipilot.toolkit.core.DiffVerificationService;
 import com.jaipilot.toolkit.core.GitChangeService;
 import com.jaipilot.toolkit.core.JavaProjectService;
 import com.jaipilot.toolkit.core.ProjectFileService;
-import com.jaipilot.toolkit.core.CoverageReportService;
 import com.jaipilot.toolkit.core.WorkflowRunService;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -194,14 +195,16 @@ final class ToolkitRunStore {
             return;
         }
         writeAtomically(proofPath(projectRoot), new ProofReceipt(
-                1,
+                2,
                 projectRoot.toString(),
                 verification.diff().fingerprint(),
                 Instant.now().toString(),
                 thresholds,
                 verification.targets().size(),
                 verification.changedQuality() == null ? null : verification.changedQuality().score(),
-                verification.testQuality() == null ? null : verification.testQuality().score()
+                verification.testQuality() == null ? null : verification.testQuality().score(),
+                verification.architecture() == null ? 0 : verification.architecture().violations().size(),
+                ArchitectureService.RULESET_VERSION
         ));
     }
 
@@ -396,7 +399,14 @@ final class ToolkitRunStore {
         }
         try {
             ProofReceipt receipt = mapper.readValue(path.toFile(), ProofReceipt.class);
-            return receipt.schemaVersion() == 1 && receipt.thresholds() != null ? receipt : null;
+            return receipt.schemaVersion() == 2
+                    && receipt.thresholds() != null
+                    && receipt.architectureViolationCount() != null
+                    && receipt.architectureViolationCount() == 0
+                    && receipt.architectureRulesetVersion() != null
+                    && receipt.architectureRulesetVersion() == ArchitectureService.RULESET_VERSION
+                    ? receipt
+                    : null;
         } catch (IOException | RuntimeException exception) {
             return null;
         }
@@ -651,7 +661,9 @@ final class ToolkitRunStore {
             DiffVerificationService.VerificationThresholds thresholds,
             int targetCount,
             Double qualityScore,
-            Double testQualityScore
+            Double testQualityScore,
+            Integer architectureViolationCount,
+            Integer architectureRulesetVersion
     ) {
     }
 

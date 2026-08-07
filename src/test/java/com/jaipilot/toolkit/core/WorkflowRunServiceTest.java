@@ -80,7 +80,7 @@ class WorkflowRunServiceTest {
         String encoded = mapper.writeValueAsString(stored);
         assertFalse(encoded.contains("mutationTestingEnabled"));
         String legacyEncoded = encoded
-                .replace("\"schemaVersion\":3", "\"schemaVersion\":2")
+                .replace("\"schemaVersion\":4", "\"schemaVersion\":2")
                 .replaceFirst("\\{", "{\"mutationTestingEnabled\":false,");
         stored = mapper.readValue(
                 legacyEncoded,
@@ -390,6 +390,56 @@ class WorkflowRunServiceTest {
     }
 
     @Test
+    void architectureViolationsAreReturnedToTheAgentAndBlockCleanupApply() throws Exception {
+        service.close();
+        AtomicInteger analyses = new AtomicInteger();
+        service = new WorkflowRunService(
+                fileService,
+                projectService,
+                coverageService,
+                this::successfulBuild,
+                root -> coverage(root, 100.0d),
+                (root, targets) -> successfulRewrite(),
+                new WorkflowRunService.ValidationGates(
+                        null,
+                        (root, targets) -> analyses.incrementAndGet() == 1
+                                ? architectureReport(targets, List.of())
+                                : architectureReport(targets, List.of(new ArchitectureService.ArchitectureViolation(
+                                        ArchitectureService.PACKAGE_CYCLE_RULE,
+                                        "HIGH",
+                                        "com.example.OrderService",
+                                        "com.example.inventory.Inventory",
+                                        "src/main/java/com/example/OrderService.java",
+                                        3,
+                                        List.of("com.example", "com.example.inventory", "com.example"),
+                                        List.of("com.example.OrderService"),
+                                        "Package cycle com.example -> com.example.inventory -> com.example.",
+                                        "Invert the dependency."
+                                ))),
+                        (root, targets, tests, minimum) -> mutationReport(minimum, 100.0d, 100.0d, true)
+                )
+        );
+        WorkflowRunService.PreparedRun run = service.prepareCodeCleanup(
+                tempDir,
+                WorkflowRunService.TargetSelection.classes(List.of("OrderService"))
+        );
+        assertTrue(run.architectureBefore().goalMet());
+        assertTrue(run.agentInstructions().contains("final validation requires"));
+        Files.writeString(
+                run.workspaceRoot().resolve("src/main/java/com/example/OrderService.java"),
+                "package com.example; class OrderService { int changed = 1; }\n"
+        );
+
+        WorkflowRunService.ValidationResult validation = service.validate(run.runId());
+
+        assertFalse(validation.valid());
+        assertFalse(validation.readyToApply());
+        assertFalse(validation.architectureGoalMet());
+        assertEquals(1, validation.architecture().violations().size());
+        assertTrue(validation.failures().stream().anyMatch(message -> message.contains("architecture violation")));
+    }
+
+    @Test
     void improvingASevereComplexityFindingDoesNotReclassifyItAsNew() throws Exception {
         Path source = tempDir.resolve("src/main/java/com/example/OrderService.java");
         Files.writeString(source, complexOrderService(21));
@@ -519,6 +569,26 @@ class WorkflowRunServiceTest {
                 List.of(List.of("pitest")),
                 null,
                 Duration.ofMillis(10).toNanos()
+        );
+    }
+
+    private ArchitectureService.ArchitectureReport architectureReport(
+            List<String> targets,
+            List<ArchitectureService.ArchitectureViolation> violations
+    ) {
+        return new ArchitectureService.ArchitectureReport(
+                "ArchUnit",
+                ArchitectureService.ARCHUNIT_VERSION,
+                ArchitectureService.RULESET_VERSION,
+                List.of(ArchitectureService.PACKAGE_CYCLE_RULE),
+                true,
+                2,
+                List.of("target/classes"),
+                targets,
+                List.of(),
+                violations,
+                null,
+                1L
         );
     }
 

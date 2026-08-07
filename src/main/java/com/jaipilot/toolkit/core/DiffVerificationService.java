@@ -30,6 +30,7 @@ public final class DiffVerificationService {
     private final WorkflowRunService.BuildGate buildGate;
     private final WorkflowRunService.CoverageGate coverageGate;
     private final WorkflowRunService.QualityGate qualityGate;
+    private final WorkflowRunService.ArchitectureGate architectureGate;
     private final DiffMutationGate mutationGate;
     private final Consumer<String> progress;
 
@@ -90,6 +91,7 @@ public final class DiffVerificationService {
         this.buildGate = Objects.requireNonNull(configured.build(), "build gate");
         this.coverageGate = Objects.requireNonNull(configured.coverage(), "coverage gate");
         this.qualityGate = Objects.requireNonNull(configured.quality(), "quality gate");
+        this.architectureGate = Objects.requireNonNull(configured.architecture(), "architecture gate");
         this.mutationGate = Objects.requireNonNull(configured.mutation(), "mutation gate");
         this.progress = Objects.requireNonNull(progress, "progress");
     }
@@ -103,6 +105,7 @@ public final class DiffVerificationService {
                 new JavaBuildVerificationService(projectService)::verify,
                 new CoverageRefreshService(projectService, coverageReportService)::refresh,
                 new JavaQualityService()::analyze,
+                new ArchitectureService(projectService)::analyze,
                 new MutationTestingService(projectService, fileService)::run
         );
     }
@@ -137,6 +140,7 @@ public final class DiffVerificationService {
                 null,
                 Map.of(),
                 Map.of(),
+                null,
                 null,
                 null,
                 List.of(),
@@ -222,7 +226,7 @@ public final class DiffVerificationService {
             return;
         }
         if (!projectService.supportsCoverage(sandbox)) {
-            runBuildWithoutCoverage(sandbox, evidence);
+            runBuildWithoutCoverage(sandbox, sandboxTargets, evidence);
             return;
         }
         progress.accept("Running the clean full-suite build and fresh JaCoCo coverage.");
@@ -230,6 +234,10 @@ public final class DiffVerificationService {
         evidence.buildPassed = true;
         evidence.changedCoverage = changedCoverage(evidence.coverage, sandboxTargets, rangesByClass);
         evaluateCoverage(evidence.changedCoverage, thresholds, evidence.failures, evidence.warnings);
+        runArchitectureEvidence(sandbox, sandboxTargets, evidence);
+        if (evidence.architecture != null && !evidence.architecture.goalMet()) {
+            return;
+        }
         runMutationEvidence(sandbox, sandboxTargets, rangesByClass, thresholds, evidence);
     }
 
@@ -242,13 +250,38 @@ public final class DiffVerificationService {
         );
     }
 
-    private void runBuildWithoutCoverage(Path sandbox, VerificationEvidence evidence) {
+    private void runBuildWithoutCoverage(
+            Path sandbox,
+            List<JavaProjectService.JavaClassDescriptor> targets,
+            VerificationEvidence evidence
+    ) {
         progress.accept("Running the clean full-suite build; JaCoCo is unavailable.");
         buildGate.verify(sandbox);
         evidence.buildPassed = true;
+        runArchitectureEvidence(sandbox, targets, evidence);
         evidence.failures.add(
                 "The clean build passed, but fresh JaCoCo XML coverage is unavailable for the changed classes."
         );
+    }
+
+    private void runArchitectureEvidence(
+            Path sandbox,
+            List<JavaProjectService.JavaClassDescriptor> targets,
+            VerificationEvidence evidence
+    ) {
+        progress.accept("Running ArchUnit architecture analysis on freshly compiled changed classes.");
+        evidence.architecture = architectureGate.analyze(
+                sandbox,
+                targets.stream().map(JavaProjectService.JavaClassDescriptor::fullyQualifiedName).toList()
+        );
+        if (!evidence.architecture.complete()) {
+            evidence.failures.add("ArchUnit architecture evidence is incomplete: "
+                    + evidence.architecture.incompleteReason());
+        } else if (!evidence.architecture.violations().isEmpty()) {
+            evidence.failures.add("ArchUnit found " + evidence.architecture.violations().size()
+                    + " architecture violation(s) involving changed classes; "
+                    + "resolve every item in architecture.violations and rerun proof.");
+        }
     }
 
     private void runMutationEvidence(
@@ -304,6 +337,7 @@ public final class DiffVerificationService {
                 evidence.changedQuality,
                 targetCoverage(evidence.coverage, scope.targetNames),
                 evidence.changedCoverage,
+                evidence.architecture,
                 evidence.mutation,
                 score(evidence.changedCoverage, evidence.mutation, evidence.buildPassed),
                 List.copyOf(evidence.failures),
@@ -738,6 +772,7 @@ public final class DiffVerificationService {
             ChangedCodeQuality changedQuality,
             Map<String, CoverageReportService.ClassCoverage> coverage,
             Map<String, ChangedCodeCoverage> changedCoverage,
+            ArchitectureService.ArchitectureReport architecture,
             MutationTestingService.MutationReport mutation,
             DiffTestScore testQuality,
             List<String> failures,
@@ -766,6 +801,7 @@ public final class DiffVerificationService {
         private ChangedCodeQuality changedQuality;
         private CoverageReportService.CoverageSnapshot coverage;
         private Map<String, ChangedCodeCoverage> changedCoverage = Map.of();
+        private ArchitectureService.ArchitectureReport architecture;
         private MutationTestingService.MutationReport mutation;
         private boolean buildPassed;
     }
@@ -774,8 +810,17 @@ public final class DiffVerificationService {
             WorkflowRunService.BuildGate build,
             WorkflowRunService.CoverageGate coverage,
             WorkflowRunService.QualityGate quality,
+            WorkflowRunService.ArchitectureGate architecture,
             DiffMutationGate mutation
     ) {
+        VerificationGates(
+                WorkflowRunService.BuildGate build,
+                WorkflowRunService.CoverageGate coverage,
+                WorkflowRunService.QualityGate quality,
+                DiffMutationGate mutation
+        ) {
+            this(build, coverage, quality, WorkflowRunService::skippedArchitectureReport, mutation);
+        }
     }
 
     @FunctionalInterface

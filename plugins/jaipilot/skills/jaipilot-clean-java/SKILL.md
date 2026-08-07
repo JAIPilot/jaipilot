@@ -7,8 +7,8 @@ description: Analyze, clean, refactor, modernize, and validate Java with JAIPilo
 
 Use JAIPilot's deterministic findings and scores to prioritize work. Run pinned, exactly scoped
 OpenRewrite recipes first, then use the host agent's repository context to review and refine the
-candidate. JAIPilot owns isolation, scope enforcement, builds, test and mutation evidence, quality
-regression gates, drift protection, and transactional apply.
+candidate. JAIPilot owns isolation, scope enforcement, builds, ArchUnit architecture feedback, test
+and mutation evidence, quality regression gates, drift protection, and transactional apply.
 
 ## Workflow
 
@@ -22,8 +22,9 @@ regression gates, drift protection, and transactional apply.
 5. Run `jaipilot prepare-cleanup --project <root> --mode <mode> ...`. This clean-baselines the
    project, creates an isolated workspace, and runs the pinned exact-source OpenRewrite bundle only
    on selected production files.
-6. Work only inside `result.workspaceRoot`. Review `openRewriteChanges`, `qualityBefore`, and
-   `qualityAfterOpenRewrite`; keep useful deterministic fixes and refine or revert inappropriate ones.
+6. Work only inside `result.workspaceRoot`. Review `openRewriteChanges`, `qualityBefore`,
+   `qualityAfterOpenRewrite`, and `architectureBefore`; keep useful deterministic fixes and refine or
+   revert inappropriate ones.
 7. Review selected code and directly related tests for evidence-backed improvements:
    - correctness defects, null handling, exception behavior, and broken contracts;
    - resource leaks, concurrency hazards, unsafe state, and error recovery;
@@ -33,9 +34,9 @@ regression gates, drift protection, and transactional apply.
 8. Preserve behavior unless a regression test proves a defect. Edit only selected production Java
    and directly relevant Java tests; never change builds, configuration, documentation, generated
    output, or unselected production files.
-9. Run `jaipilot validate --run <runId>`. Resolve any new critical/high finding or quality-score
-   regression. If tests changed, the required 70% PIT gate runs; review survivors and strengthen
-   the tests. Repeat until `readyToApply` is true.
+9. Run `jaipilot validate --run <runId>`. Resolve every item in `architecture.violations`, any new
+   critical/high finding, and any quality-score regression. If tests changed, the required 70% PIT
+   gate runs; review survivors and strengthen the tests. Repeat until `readyToApply` is true.
 10. After reviewing the candidate and confirming the requested change, run
    `jaipilot apply --run <runId> --confirm`. Otherwise discard it.
 
@@ -47,5 +48,5 @@ with raw finding counts, code-smell count, modernization opportunities, duplicat
 debt, and parse failures. Scores prioritize review; they do not replace contextual judgment.
 
 Report OpenRewrite changes, findings resolved and introduced, before/after score and debt deltas,
-changed tests, build and mutation evidence, elapsed timings, warnings, and whether the verified
-candidate was applied.
+ArchUnit completeness and violations, changed tests, build and mutation evidence, elapsed timings,
+warnings, and whether the verified candidate was applied.

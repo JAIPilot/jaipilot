@@ -41,6 +41,8 @@
         <jacoco.maven.plugin.version>0.8.15</jacoco.maven.plugin.version>
         <jackson.version>2.18.9</jackson.version>
         <javaparser.version>3.28.2</javaparser.version>
+        <archunit.version>1.4.2</archunit.version>
+        <slf4j.version>2.0.17</slf4j.version>
     </properties>
 
     <dependencies>
@@ -54,6 +56,19 @@
             <groupId>com.github.javaparser</groupId>
             <artifactId>javaparser-core</artifactId>
             <version>${javaparser.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit</artifactId>
+            <version>${archunit.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>

@@ -236,7 +236,8 @@ class JaiPilotToolkitTest {
         assertEquals(1, result.status());
         assertFalse(json.path("ok").asBoolean());
         assertFalse(json.path("result").path("passed").asBoolean());
-        assertTrue(json.path("result").path("failures").get(0).asText().contains("JaCoCo"));
+        assertTrue(json.path("result").path("failures").toString().contains("JaCoCo"));
+        assertFalse(json.path("result").path("architecture").path("complete").asBoolean());
         assertTrue(result.stderr().contains("actionable gaps"));
     }
 

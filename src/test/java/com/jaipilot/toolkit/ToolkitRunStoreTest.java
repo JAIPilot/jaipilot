@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jaipilot.toolkit.core.ArchitectureService;
 import com.jaipilot.toolkit.core.DiffVerificationService;
 import com.jaipilot.toolkit.core.WorkflowRunService;
 import java.nio.channels.FileChannel;
@@ -127,15 +128,31 @@ class ToolkitRunStoreTest {
                 .digest(project.toRealPath().toString().getBytes(StandardCharsets.UTF_8)));
         Path receipt = tempDir.resolve("proof-state/proofs/" + projectHash + ".json");
         String validReceipt = Files.readString(receipt);
+        ObjectMapper mapper = new ObjectMapper();
+        var validNode = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(validReceipt);
+        assertEquals(2, validNode.path("schemaVersion").asInt());
+        assertEquals(0, validNode.path("architectureViolationCount").asInt());
+        assertEquals(
+                ArchitectureService.RULESET_VERSION,
+                validNode.path("architectureRulesetVersion").asInt()
+        );
         Files.writeString(receipt, "{not-json");
         assertEquals("review_required", store.diffGate(project, thresholds).status());
-        var invalidSchema = (com.fasterxml.jackson.databind.node.ObjectNode) new ObjectMapper().readTree(validReceipt);
-        invalidSchema.put("schemaVersion", 2);
-        Files.writeString(receipt, new ObjectMapper().writeValueAsString(invalidSchema));
+        var invalidSchema = validNode.deepCopy();
+        invalidSchema.put("schemaVersion", 3);
+        Files.writeString(receipt, mapper.writeValueAsString(invalidSchema));
         assertEquals("review_required", store.diffGate(project, thresholds).status());
         invalidSchema.put("schemaVersion", 1);
         invalidSchema.putNull("thresholds");
-        Files.writeString(receipt, new ObjectMapper().writeValueAsString(invalidSchema));
+        Files.writeString(receipt, mapper.writeValueAsString(invalidSchema));
+        assertEquals("review_required", store.diffGate(project, thresholds).status());
+        var staleArchitecture = validNode.deepCopy();
+        staleArchitecture.put("architectureRulesetVersion", ArchitectureService.RULESET_VERSION + 1);
+        Files.writeString(receipt, mapper.writeValueAsString(staleArchitecture));
+        assertEquals("review_required", store.diffGate(project, thresholds).status());
+        staleArchitecture = validNode.deepCopy();
+        staleArchitecture.put("architectureViolationCount", 1);
+        Files.writeString(receipt, mapper.writeValueAsString(staleArchitecture));
         assertEquals("review_required", store.diffGate(project, thresholds).status());
         Files.writeString(receipt, validReceipt);
 
