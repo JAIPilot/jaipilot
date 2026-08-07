@@ -12,7 +12,7 @@
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
       "description": "Generate proven Java tests and remediate code quality with transparent scorecards.",
-      "version": "3.3.0",
+      "version": "3.3.1",
       "category": "development",
       "tags": [
         "java",
