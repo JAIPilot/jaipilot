@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,11 +45,24 @@ class DashboardServerTest {
             Response page = get(dashboard.status().url());
             assertEquals(200, page.status());
             assertTrue(page.body().contains("JAIPilot Impact Dashboard"));
+            assertTrue(page.body().contains("current-status-panel"));
             assertTrue(page.contentSecurityPolicy().contains("default-src 'self'"));
+            assertEquals("no-cache", page.cacheControl());
+
+            Response script = get(dashboard.status().url() + "assets/dashboard.js");
+            assertEquals(200, script.status());
+            assertTrue(script.body().contains("renderCurrentStatus"));
+            assertEquals("no-cache", script.cacheControl());
+
+            Response styles = get(dashboard.status().url() + "assets/dashboard.css");
+            assertEquals(200, styles.status());
+            assertTrue(styles.body().contains(".current-status-grid"));
+            assertEquals("no-cache", styles.cacheControl());
 
             Response metrics = get(dashboard.status().url() + "api/metrics");
             JsonNode json = mapper.readTree(metrics.body());
             assertEquals(200, metrics.status());
+            assertEquals("no-store", metrics.cacheControl());
             assertEquals(1, json.path("usage").path("totalCommands").asInt());
             assertEquals(1, json.path("usage").path("projectsSeen").asInt());
 
@@ -93,6 +107,84 @@ class DashboardServerTest {
         }
     }
 
+    @Test
+    void servesFreshProofStatusWrittenAfterTheDashboardStarts() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Path stateRoot = tempDir.resolve("live-state");
+        UsageMetricsStore writer = new UsageMetricsStore(mapper, stateRoot);
+
+        try (DashboardServer.RunningDashboard dashboard = DashboardServer.start(mapper, stateRoot, 0)) {
+            JsonNode initial = metrics(mapper, dashboard.status().url());
+            assertFalse(initial.path("latestEvidence").path("findings").path("total").isNumber());
+
+            writer.record("prove-diff", 1, proof(false), Duration.ZERO);
+            JsonNode gaps = metrics(mapper, dashboard.status().url());
+            assertEquals(1, gaps.path("latestEvidence").path("findings").path("total").asInt());
+            assertEquals(1, gaps.path("latestEvidence").path("architecture").path("violationCount").asInt());
+            assertFalse(gaps.path("latestEvidence").path("gates").path("passed").asBoolean());
+
+            writer.record("prove-diff", 0, proof(true), Duration.ZERO);
+            JsonNode clean = metrics(mapper, dashboard.status().url());
+            assertEquals(0, clean.path("latestEvidence").path("findings").path("total").asInt());
+            assertEquals(0, clean.path("latestEvidence").path("architecture").path("violationCount").asInt());
+            assertTrue(clean.path("latestEvidence").path("architecture").path("goalMet").asBoolean());
+            assertTrue(clean.path("latestEvidence").path("gates").path("passed").asBoolean());
+        }
+    }
+
+    private JsonNode metrics(ObjectMapper mapper, String dashboardUrl) throws Exception {
+        return mapper.readTree(get(dashboardUrl + "api/metrics").body());
+    }
+
+    private Map<String, Object> proof(boolean passed) {
+        List<Map<String, Object>> findings = passed
+                ? List.of()
+                : List.of(Map.of(
+                        "id", "JAI-QUAL-001",
+                        "category", "COMPLEXITY",
+                        "severity", "HIGH",
+                        "relativePath", "src/main/java/com/example/PaymentService.java",
+                        "line", 42,
+                        "message", "Method complexity exceeds the deterministic limit."
+                ));
+        List<Map<String, Object>> violations = passed
+                ? List.of()
+                : List.of(Map.of(
+                        "id", "JAI-ARCH-001",
+                        "severity", "HIGH",
+                        "relativePath", "src/main/java/com/example/PaymentService.java",
+                        "line", 17,
+                        "message", "A package cycle crosses the changed class."
+                ));
+        return Map.of(
+                "ok", passed,
+                "result", Map.of(
+                        "passed", passed,
+                        "targets", List.of("com.example.PaymentService"),
+                        "changedQuality", Map.of("score", passed ? 96.0d : 88.0d),
+                        "quality", Map.of(
+                                "findings", findings,
+                                "parseFailures", List.of(),
+                                "metrics", Map.of(
+                                        "findingCount", findings.size(),
+                                        "findingsBySeverity", passed ? Map.of() : Map.of("HIGH", 1)
+                                )
+                        ),
+                        "architecture", Map.of(
+                                "engine", "ArchUnit",
+                                "engineVersion", "1.4.2",
+                                "rulesetVersion", 1,
+                                "rules", List.of("JAI-ARCH-001"),
+                                "complete", true,
+                                "compiledClassCount", 17,
+                                "violations", violations
+                        ),
+                        "failures", passed ? List.of() : List.of("ArchUnit found one package cycle."),
+                        "warnings", List.of()
+                )
+        );
+    }
+
     private Response get(String url) throws Exception {
         return request(url, "GET");
     }
@@ -113,12 +205,13 @@ class DashboardServerTest {
         Response response = new Response(
                 status,
                 new String(bytes, StandardCharsets.UTF_8),
-                connection.getHeaderField("Content-Security-Policy")
+                connection.getHeaderField("Content-Security-Policy"),
+                connection.getHeaderField("Cache-Control")
         );
         connection.disconnect();
         return response;
     }
 
-    private record Response(int status, String body, String contentSecurityPolicy) {
+    private record Response(int status, String body, String contentSecurityPolicy, String cacheControl) {
     }
 }

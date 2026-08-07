@@ -31,10 +31,15 @@ import java.util.concurrent.locks.ReentrantLock;
 /** Persists privacy-preserving local usage and outcome metrics for the dashboard. */
 final class UsageMetricsStore {
 
-    private static final int SCHEMA_VERSION = 1;
+    private static final int SCHEMA_VERSION = 2;
     private static final int MAX_RECENT_ACTIVITY = 40;
     private static final int MAX_PROJECT_IDENTITIES = 10_000;
     private static final int MAX_PENDING_RUNS = 1_000;
+    private static final int MAX_CURRENT_FINDINGS = 50;
+    private static final int MAX_ARCHITECTURE_VIOLATIONS = 20;
+    private static final int MAX_GATE_MESSAGES = 20;
+    private static final int MAX_LIST_VALUES = 50;
+    private static final int MAX_TEXT_LENGTH = 1_000;
     private static final Set<PosixFilePermission> OWNER_ONLY = Set.of(
             PosixFilePermission.OWNER_READ,
             PosixFilePermission.OWNER_WRITE,
@@ -95,9 +100,9 @@ final class UsageMetricsStore {
         MutableImpact impact = new MutableImpact(state.impact());
         MutableEvidence evidence = new MutableEvidence(state.latestEvidence());
         if (successful) {
-            captureSuccessfulResult(command, json, runs, impact, evidence);
+            captureSuccessfulResult(command, json, runs, impact, evidence, now);
         } else if ("prove-diff".equals(command) && json != null) {
-            captureDiffProof(json, impact, evidence);
+            captureDiffProof(json, impact, evidence, now);
         }
         boundPendingRuns(runs);
 
@@ -130,18 +135,19 @@ final class UsageMetricsStore {
             JsonNode json,
             Map<String, RunEvidence> runs,
             MutableImpact impact,
-            MutableEvidence evidence
+            MutableEvidence evidence,
+            String capturedAt
     ) {
         if (json == null) {
             return;
         }
         switch (command) {
             case "prepare-tests", "prepare-cleanup" -> capturePrepared(command, json, runs, impact);
-            case "validate" -> captureValidation(json, runs, impact, evidence);
+            case "validate" -> captureValidation(json, runs, impact, evidence, capturedAt);
             case "apply" -> captureApply(json, runs, impact);
             case "discard" -> captureDiscard(json, runs, impact);
-            case "prove-diff" -> captureDiffProof(json, impact, evidence);
-            case "quality" -> evidence.qualityScore = decimal(json.path("quality").path("metrics"), "qualityScore");
+            case "prove-diff" -> captureDiffProof(json, impact, evidence, capturedAt);
+            case "quality" -> captureQuality(json.path("quality"), evidence, "Quality analysis", capturedAt);
             default -> {
                 // The remaining commands contribute usage, latency, project, and activity metrics only.
             }
@@ -171,7 +177,8 @@ final class UsageMetricsStore {
             JsonNode json,
             Map<String, RunEvidence> runs,
             MutableImpact impact,
-            MutableEvidence evidence
+            MutableEvidence evidence,
+            String capturedAt
     ) {
         impact.validations++;
         String runId = text(json, "runId");
@@ -196,6 +203,12 @@ final class UsageMetricsStore {
         evidence.mutationScore = decimal(mutation, "mutationScore");
         evidence.lineCoverage = decimal(json.path("testQuality"), "lineCoverage");
         evidence.branchCoverage = decimal(json.path("testQuality"), "branchCoverage");
+        String source = previous != null && "CLEAN_JAVA".equals(previous.kind())
+                ? "Cleanup validation"
+                : "Test validation";
+        evidence.findings = findings(json.path("quality"), source, capturedAt);
+        evidence.architecture = architecture(json.path("architecture"), source, capturedAt);
+        evidence.gates = gates(json, source, capturedAt, ready);
         if (runId != null) {
             runs.put(runId, new RunEvidence(
                     previous == null ? "UNKNOWN" : previous.kind(),
@@ -242,7 +255,12 @@ final class UsageMetricsStore {
         }
     }
 
-    private void captureDiffProof(JsonNode json, MutableImpact impact, MutableEvidence evidence) {
+    private void captureDiffProof(
+            JsonNode json,
+            MutableImpact impact,
+            MutableEvidence evidence,
+            String capturedAt
+    ) {
         impact.diffProofsRun++;
         if (json.path("passed").asBoolean(false)) {
             impact.diffProofsPassed++;
@@ -255,7 +273,146 @@ final class UsageMetricsStore {
         evidence.lineCoverage = decimal(json.path("testQuality"), "lineCoverage");
         evidence.branchCoverage = decimal(json.path("testQuality"), "branchCoverage");
         evidence.lastProofPassed = json.path("passed").asBoolean(false);
-        evidence.lastProofAt = Instant.now().toString();
+        evidence.lastProofAt = capturedAt;
+        evidence.findings = findings(json.path("quality"), "Changed-code proof", capturedAt);
+        evidence.architecture = architecture(json.path("architecture"), "Changed-code proof", capturedAt);
+        evidence.gates = gates(json, "Changed-code proof", capturedAt, evidence.lastProofPassed);
+    }
+
+    private void captureQuality(
+            JsonNode quality,
+            MutableEvidence evidence,
+            String source,
+            String capturedAt
+    ) {
+        evidence.qualityScore = decimal(quality.path("metrics"), "qualityScore");
+        evidence.findings = findings(quality, source, capturedAt);
+    }
+
+    private FindingsEvidence findings(JsonNode quality, String source, String capturedAt) {
+        if (quality == null || !quality.isObject()) {
+            return FindingsEvidence.unavailable(source, capturedAt);
+        }
+        JsonNode metrics = quality.path("metrics");
+        JsonNode findings = quality.path("findings");
+        if (!metrics.isObject() && !findings.isArray()) {
+            return FindingsEvidence.unavailable(source, capturedAt);
+        }
+        List<FindingEvidence> items = new ArrayList<>();
+        if (findings.isArray()) {
+            for (JsonNode finding : findings) {
+                if (items.size() >= MAX_CURRENT_FINDINGS) {
+                    break;
+                }
+                items.add(new FindingEvidence(
+                        boundedText(finding, "id"),
+                        boundedText(finding, "category"),
+                        boundedText(finding, "severity"),
+                        boundedText(finding, "relativePath"),
+                        Math.max(0, integer(finding, "line")),
+                        boundedText(finding, "symbol"),
+                        boundedText(finding, "message"),
+                        boundedText(finding, "remediation")
+                ));
+            }
+        }
+        JsonNode bySeverity = metrics.path("findingsBySeverity");
+        return new FindingsEvidence(
+                source,
+                capturedAt,
+                findingCount(metrics, findings),
+                severityCount(bySeverity, findings, "CRITICAL"),
+                severityCount(bySeverity, findings, "HIGH"),
+                severityCount(bySeverity, findings, "MEDIUM"),
+                severityCount(bySeverity, findings, "LOW"),
+                size(quality.path("parseFailures")),
+                List.copyOf(items)
+        );
+    }
+
+    private int findingCount(JsonNode metrics, JsonNode findings) {
+        JsonNode reported = metrics.path("findingCount");
+        if (reported.isNumber()) {
+            return Math.max(0, reported.asInt());
+        }
+        return findings.isArray() ? findings.size() : 0;
+    }
+
+    private int severityCount(JsonNode bySeverity, JsonNode findings, String severity) {
+        JsonNode value = bySeverity.path(severity);
+        if (value.isNumber()) {
+            return Math.max(0, value.asInt());
+        }
+        if (!findings.isArray()) {
+            return 0;
+        }
+        int count = 0;
+        for (JsonNode finding : findings) {
+            if (severity.equals(finding.path("severity").asText())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private ArchitectureEvidence architecture(JsonNode architecture, String source, String capturedAt) {
+        if (architecture == null || !architecture.isObject()) {
+            return ArchitectureEvidence.unavailable(source, capturedAt);
+        }
+        List<ArchitectureViolationEvidence> violations = new ArrayList<>();
+        JsonNode violationNodes = architecture.path("violations");
+        if (violationNodes.isArray()) {
+            for (JsonNode violation : violationNodes) {
+                if (violations.size() >= MAX_ARCHITECTURE_VIOLATIONS) {
+                    break;
+                }
+                violations.add(new ArchitectureViolationEvidence(
+                        boundedText(violation, "id"),
+                        boundedText(violation, "severity"),
+                        boundedText(violation, "originClass"),
+                        boundedText(violation, "targetClass"),
+                        boundedText(violation, "relativePath"),
+                        Math.max(0, integer(violation, "line")),
+                        textValues(violation.path("cyclePackages"), MAX_LIST_VALUES),
+                        boundedText(violation, "message"),
+                        boundedText(violation, "remediation")
+                ));
+            }
+        }
+        boolean complete = architecture.path("complete").asBoolean(false);
+        int violationCount = violationNodes.isArray() ? violationNodes.size() : 0;
+        return new ArchitectureEvidence(
+                source,
+                capturedAt,
+                boundedText(architecture, "engine"),
+                boundedText(architecture, "engineVersion"),
+                architecture.path("rulesetVersion").isNumber()
+                        ? Math.max(0, architecture.path("rulesetVersion").asInt())
+                        : null,
+                textValues(architecture.path("rules"), MAX_LIST_VALUES),
+                complete,
+                complete && violationCount == 0,
+                violationCount,
+                Math.max(0, integer(architecture, "compiledClassCount")),
+                textValues(architecture.path("missingTargetClasses"), MAX_LIST_VALUES),
+                boundedText(architecture, "incompleteReason"),
+                List.copyOf(violations)
+        );
+    }
+
+    private GateEvidence gates(
+            JsonNode json,
+            String source,
+            String capturedAt,
+            Boolean passed
+    ) {
+        return new GateEvidence(
+                source,
+                capturedAt,
+                passed,
+                textValues(json.path("failures"), MAX_GATE_MESSAGES),
+                textValues(json.path("warnings"), MAX_GATE_MESSAGES)
+        );
     }
 
     private String activitySummary(String command, boolean successful, JsonNode json) {
@@ -393,7 +550,7 @@ final class UsageMetricsStore {
         if (state == null) {
             return emptyState();
         }
-        if (state.schemaVersion() != SCHEMA_VERSION) {
+        if (state.schemaVersion() < 1 || state.schemaVersion() > SCHEMA_VERSION) {
             throw new IllegalStateException("Unsupported JAIPilot metrics schema: " + state.schemaVersion());
         }
         return new MetricsState(
@@ -518,6 +675,33 @@ final class UsageMetricsStore {
         return value.isTextual() && !value.textValue().isBlank() ? value.textValue() : null;
     }
 
+    private String boundedText(JsonNode node, String name) {
+        String value = text(node, name);
+        if (value == null || value.length() <= MAX_TEXT_LENGTH) {
+            return value;
+        }
+        return value.substring(0, MAX_TEXT_LENGTH - 1) + "…";
+    }
+
+    private List<String> textValues(JsonNode values, int maximum) {
+        if (values == null || !values.isArray()) {
+            return List.of();
+        }
+        List<String> result = new ArrayList<>();
+        for (JsonNode value : values) {
+            if (result.size() >= maximum) {
+                break;
+            }
+            if (value.isTextual() && !value.textValue().isBlank()) {
+                String text = value.textValue();
+                result.add(text.length() <= MAX_TEXT_LENGTH
+                        ? text
+                        : text.substring(0, MAX_TEXT_LENGTH - 1) + "…");
+            }
+        }
+        return List.copyOf(result);
+    }
+
     private int integer(JsonNode node, String name) {
         if (node == null) {
             return 0;
@@ -640,10 +824,158 @@ final class UsageMetricsStore {
             Double branchCoverage,
             int verifiedTargetCount,
             Boolean lastProofPassed,
-            String lastProofAt
+            String lastProofAt,
+            FindingsEvidence findings,
+            ArchitectureEvidence architecture,
+            GateEvidence gates
     ) {
+        LatestEvidence {
+            findings = findings == null ? FindingsEvidence.empty() : findings;
+            architecture = architecture == null ? ArchitectureEvidence.empty() : architecture;
+            gates = gates == null ? GateEvidence.empty() : gates;
+        }
+
         private static LatestEvidence empty() {
-            return new LatestEvidence(null, null, null, null, null, 0, null, null);
+            return new LatestEvidence(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    0,
+                    null,
+                    null,
+                    FindingsEvidence.empty(),
+                    ArchitectureEvidence.empty(),
+                    GateEvidence.empty()
+            );
+        }
+    }
+
+    record FindingsEvidence(
+            String source,
+            String capturedAt,
+            Integer total,
+            int critical,
+            int high,
+            int medium,
+            int low,
+            int parseFailures,
+            List<FindingEvidence> items
+    ) {
+        FindingsEvidence {
+            items = items == null ? List.of() : List.copyOf(items);
+        }
+
+        private static FindingsEvidence empty() {
+            return new FindingsEvidence(null, null, null, 0, 0, 0, 0, 0, List.of());
+        }
+
+        private static FindingsEvidence unavailable(String source, String capturedAt) {
+            return new FindingsEvidence(source, capturedAt, null, 0, 0, 0, 0, 0, List.of());
+        }
+    }
+
+    record FindingEvidence(
+            String id,
+            String category,
+            String severity,
+            String relativePath,
+            int line,
+            String symbol,
+            String message,
+            String remediation
+    ) {
+    }
+
+    record ArchitectureEvidence(
+            String source,
+            String capturedAt,
+            String engine,
+            String engineVersion,
+            Integer rulesetVersion,
+            List<String> rules,
+            Boolean complete,
+            Boolean goalMet,
+            Integer violationCount,
+            int compiledClassCount,
+            List<String> missingTargetClasses,
+            String incompleteReason,
+            List<ArchitectureViolationEvidence> violations
+    ) {
+        ArchitectureEvidence {
+            rules = rules == null ? List.of() : List.copyOf(rules);
+            missingTargetClasses = missingTargetClasses == null ? List.of() : List.copyOf(missingTargetClasses);
+            violations = violations == null ? List.of() : List.copyOf(violations);
+        }
+
+        private static ArchitectureEvidence empty() {
+            return new ArchitectureEvidence(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    0,
+                    List.of(),
+                    null,
+                    List.of()
+            );
+        }
+
+        private static ArchitectureEvidence unavailable(String source, String capturedAt) {
+            return new ArchitectureEvidence(
+                    source,
+                    capturedAt,
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    0,
+                    List.of(),
+                    "Architecture evidence was not produced.",
+                    List.of()
+            );
+        }
+    }
+
+    record ArchitectureViolationEvidence(
+            String id,
+            String severity,
+            String originClass,
+            String targetClass,
+            String relativePath,
+            int line,
+            List<String> cyclePackages,
+            String message,
+            String remediation
+    ) {
+        ArchitectureViolationEvidence {
+            cyclePackages = cyclePackages == null ? List.of() : List.copyOf(cyclePackages);
+        }
+    }
+
+    record GateEvidence(
+            String source,
+            String capturedAt,
+            Boolean passed,
+            List<String> failures,
+            List<String> warnings
+    ) {
+        GateEvidence {
+            failures = failures == null ? List.of() : List.copyOf(failures);
+            warnings = warnings == null ? List.of() : List.copyOf(warnings);
+        }
+
+        private static GateEvidence empty() {
+            return new GateEvidence(null, null, null, List.of(), List.of());
         }
     }
 
@@ -727,6 +1059,9 @@ final class UsageMetricsStore {
         private int verifiedTargetCount;
         private Boolean lastProofPassed;
         private String lastProofAt;
+        private FindingsEvidence findings;
+        private ArchitectureEvidence architecture;
+        private GateEvidence gates;
 
         private MutableEvidence(LatestEvidence value) {
             this.qualityScore = value.qualityScore();
@@ -737,6 +1072,9 @@ final class UsageMetricsStore {
             this.verifiedTargetCount = value.verifiedTargetCount();
             this.lastProofPassed = value.lastProofPassed();
             this.lastProofAt = value.lastProofAt();
+            this.findings = value.findings();
+            this.architecture = value.architecture();
+            this.gates = value.gates();
         }
 
         private LatestEvidence freeze() {
@@ -748,7 +1086,10 @@ final class UsageMetricsStore {
                     branchCoverage,
                     verifiedTargetCount,
                     lastProofPassed,
-                    lastProofAt
+                    lastProofAt,
+                    findings,
+                    architecture,
+                    gates
             );
         }
     }

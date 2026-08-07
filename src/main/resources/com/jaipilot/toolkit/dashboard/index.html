@@ -132,6 +132,70 @@
         <div id="command-bars" class="command-bars" aria-label="Commands by usage"></div>
       </article>
 
+      <article class="panel current-status-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">CURRENT PROOF STATUS</p>
+            <h2>Findings and architecture</h2>
+          </div>
+          <span id="current-status-source" class="badge neutral">Awaiting analyzed evidence</span>
+        </div>
+        <div class="current-status-grid">
+          <section class="status-surface" aria-labelledby="architecture-title">
+            <div class="status-heading">
+              <div>
+                <p class="eyebrow">ARCHITECTURE</p>
+                <h3 id="architecture-title">ArchUnit gate</h3>
+              </div>
+              <span id="architecture-badge" class="badge neutral">AWAITING</span>
+            </div>
+            <p id="architecture-summary" class="status-summary">No architecture proof has run yet.</p>
+            <div class="status-stats">
+              <div><strong id="architecture-violations">—</strong><span>violations</span></div>
+              <div><strong id="architecture-classes">—</strong><span>compiled classes</span></div>
+              <div><strong id="architecture-ruleset">—</strong><span>ruleset</span></div>
+            </div>
+            <p id="architecture-meta" class="status-meta">Pinned ArchUnit evidence will appear here.</p>
+            <ol id="architecture-list" class="status-list">
+              <li class="empty-status">No architecture evidence yet.</li>
+            </ol>
+          </section>
+
+          <section class="status-surface" aria-labelledby="findings-title">
+            <div class="status-heading">
+              <div>
+                <p class="eyebrow">CURRENT SCOPE</p>
+                <h3 id="findings-title">Source findings</h3>
+              </div>
+              <span id="findings-badge" class="badge neutral">AWAITING</span>
+            </div>
+            <div class="findings-overview">
+              <strong id="findings-total">—</strong>
+              <span>active findings in the latest analyzed scope</span>
+            </div>
+            <div class="severity-row" aria-label="Findings by severity">
+              <span class="severity critical"><b id="findings-critical">0</b> critical</span>
+              <span class="severity high"><b id="findings-high">0</b> high</span>
+              <span class="severity medium"><b id="findings-medium">0</b> medium</span>
+              <span class="severity low"><b id="findings-low">0</b> low</span>
+            </div>
+            <p id="findings-meta" class="status-meta">Run quality analysis or proof to populate current findings.</p>
+            <ol id="findings-list" class="status-list">
+              <li class="empty-status">No findings evidence yet.</li>
+            </ol>
+          </section>
+        </div>
+        <section class="gate-status" aria-labelledby="gate-status-title">
+          <div>
+            <p class="eyebrow">LATEST GATE RESULT</p>
+            <h3 id="gate-status-title">Proof and apply gates</h3>
+          </div>
+          <ol id="gate-list" class="gate-list">
+            <li class="empty-status">No validation or changed-code proof has run yet.</li>
+          </ol>
+        </section>
+      </article>
+
       <article class="panel workflow-panel">
         <div class="panel-heading">
           <div>

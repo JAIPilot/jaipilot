@@ -59,6 +59,9 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
   clean full build.
 - Run-state schema 4 and proof-receipt schema 2 require architecture evidence; older validated runs
   must revalidate and older proof receipts are ignored.
+- Dashboard metrics schema 2 keeps cumulative impact separate from replace-on-analysis current
+  evidence: bounded source findings, ArchUnit status and violations, and latest gate messages. The
+  loopback UI polls the persisted state every three seconds and revalidates all static assets.
 - Direct runs persist beneath `JAIPILOT_STATE_HOME`, `XDG_STATE_HOME/jaipilot`, or the user's local
   state directory. Metadata writes are atomic, directories are owner-only where POSIX permissions
   exist, run operations are file-locked, and creation uses a brief global registry lock.

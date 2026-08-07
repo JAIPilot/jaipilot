@@ -311,10 +311,7 @@ final class DashboardServer {
         }
         secureHeaders(exchange);
         exchange.getResponseHeaders().set("Content-Type", contentType);
-        exchange.getResponseHeaders().set(
-                "Cache-Control",
-                "/".equals(expectedPath) ? "no-cache" : "public, max-age=3600"
-        );
+        exchange.getResponseHeaders().set("Cache-Control", "no-cache");
         exchange.sendResponseHeaders(200, body.length);
         try (OutputStream output = exchange.getResponseBody()) {
             output.write(body);
