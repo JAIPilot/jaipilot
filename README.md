@@ -5,7 +5,7 @@
   </picture>
   <h1>JAIPilot</h1>
   <p><strong>Java Enterprise Harness for Codex and Claude Code.</strong></p>
-  <p>Deterministic guardrails for high-quality agentic Java changes.</p>
+  <p>Deterministic guardrails for high-quality agentic Java changes—cutting down agentic drift.</p>
   <p><a href="#install"><strong>Install JAIPilot</strong></a></p>
   <p>
     <a href="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml"><img src="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
