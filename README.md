@@ -4,8 +4,8 @@
     <img src="docs/assets/jaipilot-logo.svg" alt="JAIPilot logo" width="140" />
   </picture>
   <h1>JAIPilot</h1>
-  <p><strong>Java Enterprise Toolkit Harness for Codex and Claude Code.</strong></p>
-  <p>High-quality Java unit testing and code cleanup.</p>
+  <p><strong>Java Enterprise Harness for Codex and Claude Code.</strong></p>
+  <p>Deterministic guardrails for high-quality agentic Java changes.</p>
   <p><a href="#install"><strong>Install JAIPilot</strong></a></p>
   <p>
     <a href="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml"><img src="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
@@ -15,9 +15,10 @@
   </p>
 </div>
 
-JAIPilot is the Java Enterprise Toolkit Harness for Codex and Claude Code. It gives coding agents
-three focused capabilities: automatic Git diff review, high-quality Java unit testing, and safe code
-cleanup.
+JAIPilot is the Java Enterprise Harness that cuts down agentic drift so Codex and Claude Code can
+produce and maintain high-quality Java with minimal manual intervention, especially in enterprise
+brownfield projects. It gives coding agents deterministic, local guardrails through automatic Git
+diff review, high-quality unit testing, and safe code cleanup.
 
 > **Built for enterprise Java teams:** keep source local, constrain agent edits, and require
 > real-build evidence before apply. In a reproducible Spring Framework Petclinic evaluation,
@@ -46,6 +47,24 @@ Run these commands inside Claude Code:
 The plugin downloads its private Java runtime on first use. It does not require npm or a globally
 installed JDK. Codex and Claude Code show the bundled Stop hook for trust review; approve it to
 enable automatic changed-code proof.
+
+## Built to reduce agentic drift
+
+JAIPilot keeps agentic Java work inside a continuous quality ratchet: make the smallest worthwhile
+change, remove avoidable complexity, and prove the result before accepting it. The connected coding
+agent owns reasoning and edits; JAIPilot supplies deterministic scope, isolation, cleanup, execution,
+quality, drift, and apply checks that remain stable across long-running coding sessions.
+
+- **Leanest:** constrain the change to its intended scope, reuse existing code, and reject unrelated
+  files, unsafe paths, deletion, generated-source drift, and unnecessary production changes.
+- **Cleanest:** run pinned, exactly scoped OpenRewrite cleanup first, surface actionable quality debt,
+  and prevent severe findings or overall quality regressions.
+- **Meanest:** require the real clean build, changed-test execution, fresh coverage, targeted mutation
+  strength, exact-diff proof, and drift-safe transactional apply.
+
+The objective is straightforward: coding agents should be able to work autonomously for longer while
+continuously producing and maintaining focused, clean, well-tested Java instead of accumulating
+silent complexity and regressions for a human reviewer to unwind later.
 
 ## Core tools
 
