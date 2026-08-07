@@ -120,15 +120,21 @@ The dashboard refreshes live and shows:
 - applied coverage and quality-score change, resolved findings, removed remediation debt, killed
   mutations, executed changed tests, and transactionally applied files;
 - the latest changed-code quality, test-quality, coverage, mutation, and proof evidence;
+- current findings by severity with actionable file-and-line details, the latest ArchUnit ruleset
+  status and violations, and the actual blocking failures or warnings from the latest proof gate;
 - prepared, validated, applied, and safely discarded workflow counts.
 
 Improvement totals are credited only after a validated candidate is applied; attempted or discarded
-work never inflates them. Metrics and one-way project identifiers stay in JAIPilot's owner-private
-local state. The dashboard binds only to IPv4 loopback, exposes read-only endpoints, and sends no
-telemetry or source, paths, or usage data anywhere.
+work never inflates them. Current status is replaced by each new quality analysis, validation, or
+changed-code proof, with its source and capture time shown so stale evidence is not presented as
+live. Metrics and one-way project identifiers stay in JAIPilot's owner-private local state. The
+dashboard binds only to IPv4 loopback, exposes read-only endpoints, and sends no telemetry or source,
+paths, or usage data anywhere.
 
 See the [local dashboard startup evaluation](docs/evaluations/local-dashboard-startup.md) for raw
-cold-start, steady-state, and real `inspect` timings.
+cold-start, steady-state, and real `inspect` timings, and the [current-status dashboard
+evaluation](docs/evaluations/dashboard-current-status.md) for API and real-browser live-refresh
+evidence.
 
 ## Agent Skills
 

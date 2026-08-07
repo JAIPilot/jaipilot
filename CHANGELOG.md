@@ -4,6 +4,16 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 
 ## Unreleased
 
+### Added
+
+- Added current findings by severity, actionable finding details, ArchUnit ruleset and violation
+  evidence, and latest gate failures and warnings to the local impact/proof dashboard.
+
+### Changed
+
+- Made dashboard current-proof status replace stale evidence after every new analysis, validation,
+  or proof, and disabled stale asset caching so the live UI matches the persisted metrics schema.
+
 ## [3.3.0] - 2026-08-07
 
 ### Added

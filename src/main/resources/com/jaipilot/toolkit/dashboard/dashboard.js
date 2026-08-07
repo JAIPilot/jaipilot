@@ -22,6 +22,14 @@ function setGauge(id, textId, value) {
   setText(textId, Number.isFinite(value) ? number.format(value) : '—');
 }
 
+function setBadge(id, text, state = 'neutral') {
+  const badge = byId(id);
+  if (!badge) return;
+  badge.textContent = text;
+  badge.classList.remove('passed', 'failed', 'warning', 'neutral');
+  badge.classList.add(state);
+}
+
 function relativeTime(timestamp) {
   if (!timestamp) return 'never';
   const seconds = Math.max(0, Math.round((Date.now() - Date.parse(timestamp)) / 1000));
@@ -90,6 +98,165 @@ function renderEvidence(evidence) {
     setText('proof-badge', 'No proof yet');
     badge?.classList.add('neutral');
   }
+  renderCurrentStatus(evidence);
+}
+
+function newestEvidence(...values) {
+  return values
+    .filter((value) => value?.capturedAt)
+    .sort((left, right) => Date.parse(right.capturedAt) - Date.parse(left.capturedAt))[0];
+}
+
+function renderCurrentStatus(evidence) {
+  const findings = evidence.findings || {};
+  const architecture = evidence.architecture || {};
+  const gates = evidence.gates || {};
+  const newest = newestEvidence(findings, architecture, gates);
+  setBadge(
+    'current-status-source',
+    newest ? `${newest.source} · ${relativeTime(newest.capturedAt)}` : 'Awaiting analyzed evidence',
+    'neutral',
+  );
+  renderArchitecture(architecture);
+  renderFindings(findings);
+  renderGates(gates);
+}
+
+function replaceStatusList(id, items, emptyMessage, renderItem) {
+  const root = byId(id);
+  if (!root) return;
+  root.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement('li');
+    empty.className = 'empty-status';
+    empty.textContent = emptyMessage;
+    root.append(empty);
+    return;
+  }
+  for (const item of items) root.append(renderItem(item));
+}
+
+function statusItem(title, detail, meta, state = '') {
+  const item = document.createElement('li');
+  item.className = `status-item${state ? ` ${state}` : ''}`;
+  const heading = document.createElement('strong');
+  heading.textContent = title;
+  const message = document.createElement('span');
+  message.textContent = detail;
+  const context = document.createElement('small');
+  context.textContent = meta;
+  item.append(heading, message, context);
+  return item;
+}
+
+function renderArchitecture(architecture) {
+  const available = typeof architecture.complete === 'boolean';
+  const violations = Number.isFinite(architecture.violationCount) ? architecture.violationCount : null;
+  setText('architecture-violations', violations === null ? '—' : number.format(violations));
+  setText(
+    'architecture-classes',
+    available ? number.format(architecture.compiledClassCount || 0) : '—',
+  );
+  setText('architecture-ruleset', Number.isFinite(architecture.rulesetVersion)
+    ? `v${architecture.rulesetVersion}`
+    : '—');
+
+  if (!available) {
+    setBadge('architecture-badge', 'AWAITING', 'neutral');
+    setText('architecture-summary', architecture.incompleteReason || 'No architecture proof has run yet.');
+  } else if (!architecture.complete) {
+    setBadge('architecture-badge', 'INCOMPLETE', 'failed');
+    setText('architecture-summary', architecture.incompleteReason || 'Architecture evidence is incomplete.');
+  } else if (architecture.goalMet === true) {
+    setBadge('architecture-badge', 'CLEAN', 'passed');
+    setText('architecture-summary', 'No package-cycle violations were found in the analyzed scope.');
+  } else {
+    setBadge('architecture-badge', 'GAPS FOUND', 'failed');
+    setText('architecture-summary', `${number.format(violations || 0)} architecture violation(s) require remediation.`);
+  }
+
+  const engine = architecture.engine
+    ? `${architecture.engine}${architecture.engineVersion ? ` ${architecture.engineVersion}` : ''}`
+    : 'ArchUnit';
+  const rules = Array.isArray(architecture.rules) && architecture.rules.length
+    ? architecture.rules.join(', ')
+    : 'rules pending';
+  const items = Array.isArray(architecture.violations) ? architecture.violations.slice(0, 6) : [];
+  const architectureShown = violations > items.length ? ` · showing ${items.length} of ${violations}` : '';
+  setText(
+    'architecture-meta',
+    available ? `${engine} · ${rules}${architectureShown}` : 'Pinned ArchUnit evidence will appear here.',
+  );
+  replaceStatusList(
+    'architecture-list',
+    items,
+    available && architecture.goalMet ? 'Architecture gate is clean.' : 'No architecture violations to display.',
+    (violation) => statusItem(
+      `${violation.severity || 'ISSUE'} · ${violation.id || 'Architecture rule'}`,
+      violation.message || 'Architecture violation detected.',
+      `${violation.relativePath || violation.originClass || 'Analyzed class'}${violation.line ? `:${violation.line}` : ''}`,
+      'failed',
+    ),
+  );
+}
+
+function renderFindings(findings) {
+  const available = Number.isFinite(findings.total);
+  const total = available ? findings.total : null;
+  setText('findings-total', total === null ? '—' : number.format(total));
+  setText('findings-critical', number.format(findings.critical || 0));
+  setText('findings-high', number.format(findings.high || 0));
+  setText('findings-medium', number.format(findings.medium || 0));
+  setText('findings-low', number.format(findings.low || 0));
+  if (!available) {
+    setBadge('findings-badge', 'AWAITING', 'neutral');
+  } else if ((findings.parseFailures || 0) > 0) {
+    setBadge('findings-badge', 'INCOMPLETE', 'failed');
+  } else if (total === 0) {
+    setBadge('findings-badge', 'CLEAN', 'passed');
+  } else if ((findings.critical || 0) + (findings.high || 0) > 0) {
+    setBadge('findings-badge', 'ACTION REQUIRED', 'failed');
+  } else {
+    setBadge('findings-badge', 'REVIEW', 'warning');
+  }
+  const items = Array.isArray(findings.items) ? findings.items.slice(0, 8) : [];
+  const findingsShown = total > items.length ? ` · showing ${items.length} of ${number.format(total)}` : '';
+  setText('findings-meta', available
+    ? `${findings.source || 'Latest analysis'} · ${findings.parseFailures || 0} parse failure(s)${findingsShown} · ${relativeTime(findings.capturedAt)}`
+    : 'Run quality analysis or proof to populate current findings.');
+  replaceStatusList(
+    'findings-list',
+    items,
+    available && total === 0 ? 'No active findings in the latest analyzed scope.' : 'No findings evidence yet.',
+    (finding) => statusItem(
+      `${finding.severity || 'INFO'} · ${finding.category || finding.id || 'Finding'}`,
+      finding.message || 'Source finding detected.',
+      `${finding.relativePath || finding.symbol || 'Analyzed source'}${finding.line ? `:${finding.line}` : ''}`,
+      ['CRITICAL', 'HIGH'].includes(finding.severity) ? 'failed' : 'warning',
+    ),
+  );
+}
+
+function renderGates(gates) {
+  const failures = Array.isArray(gates.failures) ? gates.failures : [];
+  const warnings = Array.isArray(gates.warnings) ? gates.warnings : [];
+  const items = [
+    ...failures.slice(0, 6).map((message) => ({ message, state: 'failed', label: 'BLOCKING' })),
+    ...warnings.slice(0, Math.max(0, 6 - failures.length)).map(
+      (message) => ({ message, state: 'warning', label: 'WARNING' }),
+    ),
+  ];
+  const empty = gates.passed === true
+    ? 'Every reported proof and apply gate passed.'
+    : gates.passed === false
+      ? 'The latest gate did not pass, but no detailed message was recorded.'
+      : 'No validation or changed-code proof has run yet.';
+  replaceStatusList(
+    'gate-list',
+    items,
+    empty,
+    (item) => statusItem(item.label, item.message, gates.source || 'Latest gate', item.state),
+  );
 }
 
 function renderUsage(usage, generatedAt) {
