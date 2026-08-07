@@ -12,6 +12,11 @@ the agent finishes. Proof is cached only for the exact diff fingerprint and requ
 90% changed-line coverage, 85% changed-branch coverage, 80% changed-line PIT, a 90 new-code quality
 score, and no new critical/high findings by default.
 
+The first toolkit invocation also starts a private live impact dashboard on
+`http://127.0.0.1:7433/`. JAIPilot selects a free loopback port when 7433 is occupied; run
+`jaipilot dashboard` to retrieve the active URL. The dashboard shows local usage, verified proof,
+and applied improvement metrics without uploading telemetry, source, or paths.
+
 The plugin includes `jaipilot-review-diff`, `jaipilot-generate-tests`, and `jaipilot-clean-java`.
 
 Learn more at <https://github.com/JAIPilot/jaipilot>.

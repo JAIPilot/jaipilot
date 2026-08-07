@@ -32,6 +32,7 @@ class JaiPilotToolkitTest {
         assertTrue(result.stdout().contains("jaipilot quality"));
         assertTrue(result.stdout().contains("jaipilot diff-gate"));
         assertTrue(result.stdout().contains("jaipilot prove-diff"));
+        assertTrue(result.stdout().contains("jaipilot dashboard"));
         assertTrue(result.stdout().contains("--minimum-mutation-score"));
         assertFalse(result.stdout().contains("skip-mutation"));
         assertTrue(result.stdout().contains("apply --run <uuid> --confirm"));
@@ -47,6 +48,16 @@ class JaiPilotToolkitTest {
         assertTrue(json.path("ok").asBoolean());
         assertTrue(json.path("result").path("version").isTextual());
         assertEquals("", result.stderr());
+    }
+
+    @Test
+    void dashboardStatusIsStructuredWithoutStartingASecondServerInProcess() throws Exception {
+        Captured result = run("dashboard");
+        JsonNode json = new ObjectMapper().readTree(result.stdout()).path("result");
+
+        assertEquals(0, result.status());
+        assertFalse(json.path("running").asBoolean());
+        assertEquals(DashboardServer.DEFAULT_PORT, json.path("preferredPort").asInt());
     }
 
     @Test

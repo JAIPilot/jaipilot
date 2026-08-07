@@ -14,6 +14,10 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
   responses with phase diagnostics isolated on stderr.
 - Added the `jaipilot-review-diff` Agent Skill and default gates for clean build, per-class line and
   branch coverage, targeted PIT mutation strength, source quality, and severe findings.
+- Added an automatically started, loopback-only impact dashboard with conflict-safe port selection,
+  live local usage statistics, latest proof evidence, and applied improvement metrics.
+- Added owner-private, atomic metrics persistence that hashes project identities and credits
+  coverage, quality, findings, debt, mutation, and test-execution gains only after verified apply.
 
 ### Changed
 

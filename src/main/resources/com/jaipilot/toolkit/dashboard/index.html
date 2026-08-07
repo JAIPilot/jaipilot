@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Local JAIPilot usage and Java improvement evidence">
+  <title>JAIPilot Impact Dashboard</title>
+  <link rel="stylesheet" href="/assets/dashboard.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="JAIPilot dashboard home">
+        <span class="brand-mark" aria-hidden="true">J</span>
+        <span>
+          <strong>JAIPilot</strong>
+          <small>Impact dashboard</small>
+        </span>
+      </a>
+      <div class="local-status">
+        <span class="pulse" aria-hidden="true"></span>
+        <span>Live on this machine</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <p class="eyebrow">LOCAL EVIDENCE · ZERO TELEMETRY</p>
+        <h1>See what better Java<br><span>looks like.</span></h1>
+        <p class="hero-copy">Every verified test, resolved finding, and quality gate—measured from real local builds.</p>
+      </div>
+      <div class="proof-orbit" aria-label="Latest changed-code proof status">
+        <div class="orbit-ring ring-one"></div>
+        <div class="orbit-ring ring-two"></div>
+        <div class="proof-core">
+          <span id="proof-state" class="proof-state">AWAITING</span>
+          <strong id="proof-count">0</strong>
+          <small>diffs proven</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="impact-grid" aria-label="Cumulative improvement">
+      <article class="metric-card accent-blue">
+        <div class="metric-icon" aria-hidden="true">↗</div>
+        <p>Line coverage change</p>
+        <strong id="coverage-change">0.0<span> pts</span></strong>
+        <small id="targets-improved">Across 0 applied targets</small>
+      </article>
+      <article class="metric-card accent-mint">
+        <div class="metric-icon" aria-hidden="true">✓</div>
+        <p>Findings resolved</p>
+        <strong id="findings-resolved">0</strong>
+        <small id="debt-removed">0 remediation minutes removed</small>
+      </article>
+      <article class="metric-card accent-violet">
+        <div class="metric-icon" aria-hidden="true">⌁</div>
+        <p>Mutations killed</p>
+        <strong id="mutations-killed">0</strong>
+        <small id="tests-executed">0 changed tests execution-proven</small>
+      </article>
+      <article class="metric-card accent-amber">
+        <div class="metric-icon" aria-hidden="true">◆</div>
+        <p>Verified files applied</p>
+        <strong id="files-changed">0</strong>
+        <small id="applied-runs">Across 0 transactional applies</small>
+      </article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel evidence-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">LATEST EVIDENCE</p>
+            <h2>Quality signal</h2>
+          </div>
+          <span id="proof-badge" class="badge neutral">No proof yet</span>
+        </div>
+        <div class="gauges">
+          <div class="gauge-wrap">
+            <div id="quality-gauge" class="gauge" style="--score: 0">
+              <div><strong id="quality-score">—</strong><span>/100</span></div>
+            </div>
+            <p>Code quality</p>
+          </div>
+          <div class="gauge-wrap">
+            <div id="test-gauge" class="gauge" style="--score: 0">
+              <div><strong id="test-score">—</strong><span>/100</span></div>
+            </div>
+            <p>Test quality</p>
+          </div>
+          <div class="gauge-wrap">
+            <div id="mutation-gauge" class="gauge" style="--score: 0">
+              <div><strong id="mutation-score">—</strong><span>%</span></div>
+            </div>
+            <p>Mutation score</p>
+          </div>
+        </div>
+        <div class="coverage-strip">
+          <div>
+            <span>Changed-line coverage</span>
+            <strong id="line-coverage">—</strong>
+          </div>
+          <div>
+            <span>Changed-branch coverage</span>
+            <strong id="branch-coverage">—</strong>
+          </div>
+          <div>
+            <span>Targets in latest proof</span>
+            <strong id="verified-targets">0</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel usage-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">LOCAL USAGE</p>
+            <h2>Toolkit activity</h2>
+          </div>
+          <span id="last-updated" class="muted">Waiting for data</span>
+        </div>
+        <div class="usage-stats">
+          <div><strong id="total-commands">0</strong><span>invocations</span></div>
+          <div><strong id="success-rate">0%</strong><span>successful</span></div>
+          <div><strong id="projects-seen">0</strong><span>projects</span></div>
+          <div><strong id="average-duration">0 ms</strong><span>average runner time</span></div>
+        </div>
+        <div id="command-bars" class="command-bars" aria-label="Commands by usage"></div>
+      </article>
+
+      <article class="panel workflow-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">WORKFLOW</p>
+            <h2>From candidate to proof</h2>
+          </div>
+        </div>
+        <div class="workflow">
+          <div class="workflow-node">
+            <span>01</span><div><strong id="prepared-count">0</strong><small>runs prepared</small></div>
+          </div>
+          <div class="workflow-line"><i id="prepared-progress"></i></div>
+          <div class="workflow-node">
+            <span>02</span><div><strong id="validated-count">0</strong><small>apply-ready validations</small></div>
+          </div>
+          <div class="workflow-line"><i id="validated-progress"></i></div>
+          <div class="workflow-node">
+            <span>03</span><div><strong id="applied-count">0</strong><small>safe applies</small></div>
+          </div>
+        </div>
+        <div class="workflow-split">
+          <span><b id="test-runs">0</b> test runs applied</span>
+          <span><b id="cleanup-runs">0</b> cleanups applied</span>
+          <span><b id="discarded-runs">0</b> candidates discarded safely</span>
+        </div>
+      </article>
+
+      <article class="panel activity-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">RECENT</p>
+            <h2>Evidence trail</h2>
+          </div>
+        </div>
+        <ol id="activity-list" class="activity-list">
+          <li class="empty-state">JAIPilot activity will appear here.</li>
+        </ol>
+      </article>
+    </section>
+
+    <footer>
+      <div>
+        <span class="shield" aria-hidden="true">◈</span>
+        <p><strong>Your evidence stays yours.</strong><br>Metrics are stored locally. No source, paths, or usage data leave this machine.</p>
+      </div>
+      <span id="dashboard-version">JAIPilot</span>
+    </footer>
+  </main>
+  <script src="/assets/dashboard.js" defer></script>
+</body>
+</html>

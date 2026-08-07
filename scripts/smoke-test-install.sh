@@ -108,6 +108,19 @@ printf '%s  %s\n' "$(compute_sha256 "$TAR_GZ")" "$(basename "$TAR_GZ")" > "$CHEC
 
 rm -rf "$SMOKE_DIR"
 mkdir -p "$SMOKE_DIR"
+JAIPILOT_STATE_HOME="$SMOKE_DIR/state"
+export JAIPILOT_STATE_HOME
+
+cleanup_dashboard() {
+  metadata="$JAIPILOT_STATE_HOME/dashboard/server.json"
+  [ -f "$metadata" ] || return
+  dashboard_pid=$(sed -n 's/.*"pid" : \([0-9][0-9]*\).*/\1/p' "$metadata" | head -n 1)
+  case "$dashboard_pid" in
+    ''|*[!0-9]*) return ;;
+    *) kill "$dashboard_pid" 2>/dev/null || true ;;
+  esac
+}
+trap cleanup_dashboard EXIT HUP INT TERM
 
 if JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/incomplete-app" \
   JAIPILOT_BOOTSTRAP_ARCHIVE_URL="file://$TAR_GZ" \
@@ -124,6 +137,18 @@ JAIPILOT_BOOTSTRAP_CHECKSUM_URL="file://$CHECKSUM_FILE" \
   "$PLUGIN_RUNNER" version > "$SMOKE_DIR/plugin-version.json"
 grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/plugin-version.json" \
   || die "Plugin bootstrap did not install and run version $INSTALL_VERSION"
+JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/plugin-app" \
+  "$PLUGIN_RUNNER" dashboard > "$SMOKE_DIR/plugin-dashboard.json"
+grep -Fq '"running" : true' "$SMOKE_DIR/plugin-dashboard.json" \
+  || die "Plugin bootstrap did not start the local dashboard"
+DASHBOARD_URL=$(awk -F '"' '/"url"/ {print $4; exit}' "$SMOKE_DIR/plugin-dashboard.json")
+case "$DASHBOARD_URL" in
+  http://127.0.0.1:*/) ;;
+  *) die "Plugin dashboard did not report a loopback URL" ;;
+esac
+curl -fsS "${DASHBOARD_URL}api/health" > "$SMOKE_DIR/plugin-dashboard-health.json"
+grep -Fq '"service" : "jaipilot-dashboard"' "$SMOKE_DIR/plugin-dashboard-health.json" \
+  || die "Plugin dashboard health endpoint was unavailable"
 JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/plugin-app" \
   "$PLUGIN_RUNNER" version > "$SMOKE_DIR/plugin-cached-version.json"
 grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/plugin-cached-version.json" \
