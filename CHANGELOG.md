@@ -4,6 +4,8 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 
 ## Unreleased
 
+## [3.2.0] - 2026-08-07
+
 ### Added
 
 - Added a portable Codex and Claude Code Stop hook that detects each new committed or working-tree
@@ -117,6 +119,7 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 - Interactive CLI distribution, npm packaging, MCP transport, hosted dependencies, and Sonar
   scanner integration.
 
+[3.2.0]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.2.0
 [3.1.2]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.1.2
 [3.1.1]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.1.1
 [3.1.0]: https://github.com/JAIPilot/jaipilot/releases/tag/v3.1.0
