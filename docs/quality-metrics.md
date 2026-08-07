@@ -28,6 +28,21 @@ complexity, maximum cognitive complexity, duplicated lines, debt minutes, and an
 Cleanup validation blocks apply when selected code has a parse failure, introduces a new critical or
 high finding, or reduces the overall quality score by more than rounding tolerance.
 
+## Architecture
+
+JAIPilot runs pinned ArchUnit 1.4.2 after the real clean build and imports production bytecode from
+Maven `target/classes` and Gradle `build/classes/*/main` directories. Project-authored ArchUnit tests
+also remain part of that clean build. JAIPilot adds the deterministic `JAI-ARCH-001` rule for direct
+package-dependency cycles.
+
+The built-in rule reports only cycles containing a direct dependency to or from a selected cleanup
+class or changed production class, so unrelated brownfield debt does not block a focused change.
+Each violation includes severity, origin and target class, source path and line, the complete package
+cycle, affected targets, and remediation guidance. Cleanup apply and automatic diff proof require
+complete target bytecode evidence and zero reported architecture violations. Missing target bytecode
+or a truncated cycle search fails closed. Test-only workflows report existing architecture gaps as
+warnings because their production-edit scope cannot repair them.
+
 ## Mutation testing
 
 JAIPilot uses pinned PIT versions and scopes work to the selected production classes and likely or

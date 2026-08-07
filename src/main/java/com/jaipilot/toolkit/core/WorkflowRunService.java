@@ -40,6 +40,7 @@ public final class WorkflowRunService implements AutoCloseable {
     private final CoverageGate coverageGate;
     private final RewriteGate rewriteGate;
     private final QualityGate qualityGate;
+    private final ArchitectureGate architectureGate;
     private final MutationGate mutationGate;
     private final Map<String, ActiveRun> runs = new ConcurrentHashMap<>();
     private final Map<Path, String> activeProjectRuns = new ConcurrentHashMap<>();
@@ -57,8 +58,7 @@ public final class WorkflowRunService implements AutoCloseable {
                 null,
                 null,
                 null,
-                null,
-                null
+                new ValidationGates(null, null, null)
         );
     }
 
@@ -77,8 +77,11 @@ public final class WorkflowRunService implements AutoCloseable {
                 buildGate,
                 coverageGate,
                 rewriteGate,
-                null,
-                (root, targets, tests, minimum) -> skippedMutationReport(minimum)
+                new ValidationGates(
+                        null,
+                        WorkflowRunService::skippedArchitectureReport,
+                        (root, targets, tests, minimum) -> skippedMutationReport(minimum)
+                )
         );
     }
 
@@ -91,6 +94,30 @@ public final class WorkflowRunService implements AutoCloseable {
             RewriteGate rewriteGate,
             QualityGate qualityGate,
             MutationGate mutationGate
+    ) {
+        this(
+                fileService,
+                projectService,
+                coverageReportService,
+                buildGate,
+                coverageGate,
+                rewriteGate,
+                new ValidationGates(
+                        qualityGate,
+                        WorkflowRunService::skippedArchitectureReport,
+                        mutationGate
+                )
+        );
+    }
+
+    WorkflowRunService(
+            ProjectFileService fileService,
+            JavaProjectService projectService,
+            CoverageReportService coverageReportService,
+            BuildGate buildGate,
+            CoverageGate coverageGate,
+            RewriteGate rewriteGate,
+            ValidationGates validationGates
     ) {
         this.fileService = Objects.requireNonNull(fileService, "fileService");
         this.projectService = Objects.requireNonNull(projectService, "projectService");
@@ -105,11 +132,14 @@ public final class WorkflowRunService implements AutoCloseable {
         this.rewriteGate = rewriteGate != null
                 ? rewriteGate
                 : new OpenRewriteCleanupService(projectService)::clean;
-        this.qualityGate = qualityGate != null
-                ? qualityGate
+        this.qualityGate = validationGates.quality() != null
+                ? validationGates.quality()
                 : new JavaQualityService()::analyze;
-        this.mutationGate = mutationGate != null
-                ? mutationGate
+        this.architectureGate = validationGates.architecture() != null
+                ? validationGates.architecture()
+                : new ArchitectureService(projectService)::analyze;
+        this.mutationGate = validationGates.mutation() != null
+                ? validationGates.mutation()
                 : new MutationTestingService(projectService, fileService)::run;
     }
 
@@ -215,6 +245,10 @@ public final class WorkflowRunService implements AutoCloseable {
                     root,
                     targets.stream().map(JavaProjectService.JavaClassDescriptor::cutPath).toList()
             );
+            ArchitectureService.ArchitectureReport architectureBefore = architectureGate.analyze(
+                    root,
+                    targets.stream().map(JavaProjectService.JavaClassDescriptor::fullyQualifiedName).toList()
+            );
 
             Map<Path, ProjectFileService.FileFingerprint> projectBaseline = fileService.snapshotWorkspaceFiles(root);
             sandbox = Files.createTempDirectory("jaipilot-" + kind.slug() + "-");
@@ -254,7 +288,8 @@ public final class WorkflowRunService implements AutoCloseable {
                     baselineElapsed,
                     rewriteElapsed,
                     rewriteChanges,
-                    qualityAfterRewrite
+                    qualityAfterRewrite,
+                    architectureBefore
             );
             runs.put(runId, run);
             return result;
@@ -296,7 +331,7 @@ public final class WorkflowRunService implements AutoCloseable {
         run.lock.lock();
         try {
             return new StoredRunState(
-                    3,
+                    4,
                     run.id,
                     run.kind.name(),
                     run.status.name(),
@@ -329,7 +364,7 @@ public final class WorkflowRunService implements AutoCloseable {
     /** Restores one trusted, locally persisted toolkit-harness run into this service instance. */
     public void restoreRun(StoredRunState state) {
         Objects.requireNonNull(state, "state");
-        if (state.schemaVersion() < 1 || state.schemaVersion() > 3) {
+        if (state.schemaVersion() < 1 || state.schemaVersion() > 4) {
             throw new IllegalArgumentException("Unsupported JAIPilot run-state schema: " + state.schemaVersion());
         }
         validateStoredRunId(state.runId());
@@ -387,17 +422,22 @@ public final class WorkflowRunService implements AutoCloseable {
                     qualityBefore,
                     createdAt
             );
-            run.status = status;
-            run.lastValidation = restoreValidation(state.lastValidation());
+            boolean requiresArchitectureRevalidation = state.schemaVersion() < 4 && status == RunStatus.VALIDATED;
+            run.status = requiresArchitectureRevalidation ? RunStatus.PREPARED : status;
+            run.lastValidation = requiresArchitectureRevalidation
+                    ? null
+                    : restoreValidation(state.lastValidation(), state.schemaVersion());
             if (run.lastValidation != null && !run.id.equals(run.lastValidation.runId())) {
                 throw new IllegalStateException("Stored validation proof belongs to another run.");
             }
-            run.validatedSnapshot = state.validatedSnapshot() == null
+            run.validatedSnapshot = requiresArchitectureRevalidation || state.validatedSnapshot() == null
                     ? null
                     : restoreSnapshot(sandboxRoot, state.validatedSnapshot());
-            if (status == RunStatus.VALIDATED
+            if (run.status == RunStatus.VALIDATED
                     && (run.lastValidation == null
                     || !run.lastValidation.readyToApply()
+                    || run.lastValidation.architecture() == null
+                    || !run.lastValidation.architectureGoalMet()
                     || run.validatedSnapshot == null)) {
                 throw new IllegalStateException("Stored validated run is missing its validation proof.");
             }
@@ -440,6 +480,8 @@ public final class WorkflowRunService implements AutoCloseable {
                         true,
                         run.qualityBefore,
                         qualityDelta(run.qualityBefore, run.qualityBefore),
+                        true,
+                        null,
                         null,
                         null,
                         Duration.ZERO
@@ -468,6 +510,10 @@ public final class WorkflowRunService implements AutoCloseable {
             if (run.kind == WorkflowKind.GENERATE_TESTS) {
                 missingTestReports = testReportService.findMissingReports(run.sandboxRoot, changedTests);
             }
+            ArchitectureService.ArchitectureReport architecture = architectureGate.analyze(
+                    run.sandboxRoot,
+                    run.targets.stream().map(JavaProjectService.JavaClassDescriptor::fullyQualifiedName).toList()
+            );
             Map<String, CoverageChange> coverage = coverageChanges(run, afterCoverage);
             List<String> warnings = new ArrayList<>();
             List<String> failures = new ArrayList<>();
@@ -505,9 +551,17 @@ public final class WorkflowRunService implements AutoCloseable {
                         + qualityChange.qualityScoreBefore() + " to " + qualityChange.qualityScoreAfter() + ".");
             }
 
+            boolean architectureGoalMet = evaluateArchitecture(
+                    run.kind,
+                    architecture,
+                    warnings,
+                    failures
+            );
+
             MutationTestingService.MutationReport mutation = null;
             boolean mutationGoalMet = true;
-            boolean shouldRunMutation = run.kind == WorkflowKind.GENERATE_TESTS || !changedTests.isEmpty();
+            boolean shouldRunMutation = (run.kind == WorkflowKind.GENERATE_TESTS || !changedTests.isEmpty())
+                    && architectureGoalMet;
             if (shouldRunMutation) {
                 try {
                     mutation = mutationGate.run(
@@ -546,7 +600,11 @@ public final class WorkflowRunService implements AutoCloseable {
             }
             Duration verificationElapsed = Duration.ofNanos(System.nanoTime() - started);
             boolean valid = failures.isEmpty();
-            boolean readyToApply = valid && qualityGoalMet && sourceQualityGoalMet && mutationGoalMet;
+            boolean readyToApply = valid
+                    && qualityGoalMet
+                    && sourceQualityGoalMet
+                    && architectureGoalMet
+                    && mutationGoalMet;
             ValidationResult result = new ValidationResult(
                     run.id,
                     valid,
@@ -560,6 +618,8 @@ public final class WorkflowRunService implements AutoCloseable {
                     sourceQualityGoalMet,
                     quality,
                     qualityChange,
+                    architectureGoalMet,
+                    architecture,
                     mutation,
                     testQuality,
                     verificationElapsed
@@ -671,7 +731,8 @@ public final class WorkflowRunService implements AutoCloseable {
             Duration baselineElapsed,
             Duration rewriteElapsed,
             List<Path> rewriteChanges,
-            JavaQualityService.QualityReport qualityAfterRewrite
+            JavaQualityService.QualityReport qualityAfterRewrite,
+            ArchitectureService.ArchitectureReport architectureBefore
     ) {
         List<TargetInfo> targetInfo = run.targets.stream().map(target -> {
             CoverageReportService.ClassCoverage coverage = run.beforeCoverage == null
@@ -696,14 +757,20 @@ public final class WorkflowRunService implements AutoCloseable {
                 rewriteChanges,
                 run.qualityBefore,
                 qualityAfterRewrite,
-                prompt(run, targetInfo, rewriteChanges),
+                architectureBefore,
+                prompt(run, targetInfo, rewriteChanges, architectureBefore),
                 baselineElapsed,
                 rewriteElapsed,
                 run.createdAt.plus(RUN_TTL)
         );
     }
 
-    private String prompt(ActiveRun run, List<TargetInfo> targets, List<Path> rewriteChanges) {
+    private String prompt(
+            ActiveRun run,
+            List<TargetInfo> targets,
+            List<Path> rewriteChanges,
+            ArchitectureService.ArchitectureReport architectureBefore
+    ) {
         String targetList = targets.stream()
                 .map(target -> "- " + target.fullyQualifiedName() + " (" + target.relativePath() + ")")
                 .reduce((left, right) -> left + System.lineSeparator() + right)
@@ -728,10 +795,23 @@ public final class WorkflowRunService implements AutoCloseable {
         String rewriteSummary = rewriteChanges.isEmpty()
                 ? "OpenRewrite made no deterministic changes."
                 : "OpenRewrite changed: " + rewriteChanges;
+        String architectureSummary;
+        if (!architectureBefore.complete()) {
+            architectureSummary = "ArchUnit architecture evidence is incomplete: "
+                    + architectureBefore.incompleteReason();
+        } else if (architectureBefore.goalMet()) {
+            architectureSummary = "ArchUnit found no package-cycle violations involving the selected classes.";
+        } else {
+            architectureSummary = "ArchUnit found " + architectureBefore.violations().size()
+                    + " package-cycle violation(s) involving the selected classes: "
+                    + architectureBefore.violations();
+        }
         return """
                 Work only inside this isolated workspace: %s
 
                 Review and improve these Java production classes:
+                %s
+
                 %s
 
                 %s
@@ -741,10 +821,11 @@ public final class WorkflowRunService implements AutoCloseable {
                 - Preserve public behavior unless a proven defect and its regression test justify a change.
                 - Improve correctness, clarity, maintainability, resource safety, and performance where evidence supports it.
                 - Remove dead or redundant code; do not add dependencies, build changes, generated artifacts, or speculative abstractions.
+                - Resolve every ArchUnit architecture violation involving the selected classes; final validation requires complete bytecode evidence and zero violations.
                 - Inspect OpenRewrite's candidate rather than blindly retaining it. Keep useful deterministic fixes and refine them.
                 - Call jaipilot_validate_run with runId %s. Fix any reported issue in this workspace and revalidate.
                 - Call jaipilot_apply_run only after validation passes and the user wants the verified candidate applied.
-                """.formatted(run.sandboxRoot, targetList, rewriteSummary, run.id);
+                """.formatted(run.sandboxRoot, targetList, rewriteSummary, architectureSummary, run.id);
     }
 
     private Map<String, CoverageChange> coverageChanges(
@@ -953,6 +1034,52 @@ public final class WorkflowRunService implements AutoCloseable {
         return current.getMessage() == null || current.getMessage().isBlank()
                 ? current.getClass().getSimpleName()
                 : current.getMessage();
+    }
+
+    private boolean evaluateArchitecture(
+            WorkflowKind kind,
+            ArchitectureService.ArchitectureReport architecture,
+            List<String> warnings,
+            List<String> failures
+    ) {
+        if (kind == WorkflowKind.GENERATE_TESTS) {
+            if (!architecture.goalMet()) {
+                warnings.add("The selected production classes have existing ArchUnit architecture gaps; "
+                        + "use a cleanup run to resolve architecture.violations.");
+            }
+            return true;
+        }
+        if (!architecture.complete()) {
+            failures.add("ArchUnit architecture evidence is incomplete: " + architecture.incompleteReason());
+            return false;
+        }
+        if (!architecture.violations().isEmpty()) {
+            failures.add("ArchUnit found " + architecture.violations().size()
+                    + " architecture violation(s) involving the selected classes; "
+                    + "resolve every item in architecture.violations and revalidate.");
+            return false;
+        }
+        return true;
+    }
+
+    static ArchitectureService.ArchitectureReport skippedArchitectureReport(
+            Path root,
+            List<String> targets
+    ) {
+        return new ArchitectureService.ArchitectureReport(
+                "ArchUnit",
+                ArchitectureService.ARCHUNIT_VERSION,
+                ArchitectureService.RULESET_VERSION,
+                List.of(ArchitectureService.PACKAGE_CYCLE_RULE),
+                true,
+                0,
+                List.of(),
+                List.copyOf(targets),
+                List.of(),
+                List.of(),
+                null,
+                0L
+        );
     }
 
     private static MutationTestingService.MutationReport skippedMutationReport(double minimum) {
@@ -1266,13 +1393,15 @@ public final class WorkflowRunService implements AutoCloseable {
                 validation.qualityGoalMet(),
                 validation.quality(),
                 validation.qualityDelta(),
+                validation.architectureGoalMet(),
+                validation.architecture(),
                 validation.mutation(),
                 validation.testQuality(),
                 validation.verificationElapsed().toMillis()
         );
     }
 
-    private ValidationResult restoreValidation(StoredValidation validation) {
+    private ValidationResult restoreValidation(StoredValidation validation, int schemaVersion) {
         if (validation == null) {
             return null;
         }
@@ -1289,6 +1418,8 @@ public final class WorkflowRunService implements AutoCloseable {
                 validation.quality() == null || validation.qualityGoalMet(),
                 validation.quality(),
                 validation.qualityDelta(),
+                schemaVersion < 4 || validation.architectureGoalMet(),
+                validation.architecture(),
                 validation.mutation(),
                 validation.testQuality(),
                 Duration.ofMillis(validation.verificationElapsedMillis())
@@ -1366,6 +1497,18 @@ public final class WorkflowRunService implements AutoCloseable {
     @FunctionalInterface
     interface QualityGate {
         JavaQualityService.QualityReport analyze(Path projectRoot, List<Path> targets);
+    }
+
+    @FunctionalInterface
+    interface ArchitectureGate {
+        ArchitectureService.ArchitectureReport analyze(Path projectRoot, List<String> targetClasses);
+    }
+
+    record ValidationGates(
+            QualityGate quality,
+            ArchitectureGate architecture,
+            MutationGate mutation
+    ) {
     }
 
     @FunctionalInterface
@@ -1492,6 +1635,7 @@ public final class WorkflowRunService implements AutoCloseable {
             List<Path> openRewriteChanges,
             JavaQualityService.QualityReport qualityBefore,
             JavaQualityService.QualityReport qualityAfterOpenRewrite,
+            ArchitectureService.ArchitectureReport architectureBefore,
             String agentInstructions,
             Duration baselineElapsed,
             Duration openRewriteElapsed,
@@ -1560,6 +1704,8 @@ public final class WorkflowRunService implements AutoCloseable {
             boolean qualityGoalMet,
             JavaQualityService.QualityReport quality,
             QualityDelta qualityDelta,
+            boolean architectureGoalMet,
+            ArchitectureService.ArchitectureReport architecture,
             MutationTestingService.MutationReport mutation,
             TestQualityScore testQuality,
             Duration verificationElapsed
@@ -1639,6 +1785,8 @@ public final class WorkflowRunService implements AutoCloseable {
             boolean qualityGoalMet,
             JavaQualityService.QualityReport quality,
             QualityDelta qualityDelta,
+            boolean architectureGoalMet,
+            ArchitectureService.ArchitectureReport architecture,
             MutationTestingService.MutationReport mutation,
             TestQualityScore testQuality,
             long verificationElapsedMillis

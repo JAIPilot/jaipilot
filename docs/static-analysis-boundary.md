@@ -12,6 +12,7 @@ concurrent work. Static-analysis platforms solve a different and complementary p
 | Clean behavioral proof before apply | Required | Does not own the local source transaction | Build integration is user-defined | Host-dependent |
 | Changed-test execution proof | Required | Imports test and coverage measures | Not built in | Host-dependent |
 | Fresh coverage-driven targeting | Yes | Central coverage gates and dashboards | No | Must be assembled |
+| Changed-code architecture proof | Pinned ArchUnit package-cycle gate plus project architecture tests | Architecture rules require separate integration | Recipe-dependent | Host-dependent |
 | Isolated candidate and strict write scope | Built in | Does not own local edits | Recipe scope | Host-dependent |
 | Drift-safe transactional apply | Built in | Not its role | Not its role | Host-dependent |
 | Formal taint analysis and hotspots | Not a substitute | Stronger | Recipe-dependent | Not formal analysis |

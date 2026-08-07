@@ -22,7 +22,7 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
 - `jaipilot diff-gate`: discover committed and working-tree Java changes and check the exact local
   proof receipt without running a build.
 - `jaipilot prove-diff`: prove the exact Git fingerprint in a fresh isolated workspace with a clean
-  build, changed-line JaCoCo, changed-line PIT, and new-code quality evidence.
+  build, ArchUnit, changed-line JaCoCo, changed-line PIT, and new-code quality evidence.
 - `jaipilot prepare-tests`: clean-baseline and isolate named, changed, all, or fresh-coverage targets.
 - `jaipilot prepare-cleanup`: clean-baseline, isolate, and run exact-scoped OpenRewrite first.
 - `jaipilot status`: inspect persisted run state.
@@ -43,6 +43,9 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
 - Source quality reports bug risks, code smells, modernization, complexity, duplication, performance,
   remediation debt, and 0–100 component/overall scores. Validation blocks new severe findings and
   overall score regressions.
+- Pinned ArchUnit 1.4.2 imports fresh Maven and Gradle production bytecode after the clean build.
+  Cleanup and changed-code proof fail closed on missing target bytecode and require zero
+  `JAI-ARCH-001` package-cycle violations involving selected or changed classes.
 - Test validation runs class-and-test-scoped PIT with bounded parallelism and reports mutation score,
   test strength, survivors, evidence completeness, and a composite test-quality score.
 - Validation rejects deletion, symbolic paths, invalid scope, build-time source drift, and missing
@@ -52,7 +55,10 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
   changed Java production fingerprint lacks a sufficiently strict receipt.
 - Changed-code proof defaults are 90% executable-line coverage, 85% changed-branch coverage, 80%
   changed-line PIT score, 90 new-code quality, and zero new or severity-escalated critical/high
-  findings. Deletion-only diffs still require a clean full build.
+  findings plus zero changed-class architecture violations. Deletion-only diffs still require a
+  clean full build.
+- Run-state schema 4 and proof-receipt schema 2 require architecture evidence; older validated runs
+  must revalidate and older proof receipts are ignored.
 - Direct runs persist beneath `JAIPILOT_STATE_HOME`, `XDG_STATE_HOME/jaipilot`, or the user's local
   state directory. Metadata writes are atomic, directories are owner-only where POSIX permissions
   exist, run operations are file-locked, and creation uses a brief global registry lock.
@@ -125,6 +131,14 @@ another release while known high-severity dependency alerts have an available co
 Five v3.1.2 Petclinic full-source quality runs retained the same scope, findings, and 97.9 score;
 analyzer time was 0.217 seconds median / 0.221 seconds p95 and complete runner time was 0.71 seconds
 median / 0.73 seconds p95.
+
+On 2026-08-07, the ArchUnit candidate was compared with its `126af92` parent on the same macOS x64
+machine after one warmup. Five complete bundled `inspect --project .` runs were 0.82, 0.78, 0.80,
+0.81, and 0.82 seconds for the parent (0.81 median / 0.82 p95), versus 1.05, 1.01, 1.04, 1.00,
+and 0.99 seconds for the candidate (1.01 median / 1.05 p95). The shaded jar grew from 4,176,528
+to 8,821,583 bytes and the macOS x64 archive from 45,887,774 to 49,941,901 bytes. Five fresh-JVM
+ArchUnit analyses of all 18 source classes and 151 compiled classes took 1.011, 1.116, 0.890,
+0.853, and 0.789 seconds (0.890 median / 1.116 p95); every run was complete with zero violations.
 
 ## Keep Fresh
 

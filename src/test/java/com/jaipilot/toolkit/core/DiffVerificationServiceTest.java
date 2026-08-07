@@ -407,11 +407,50 @@ class DiffVerificationServiceTest {
         );
 
         assertTrue(proof.passed());
-        assertEquals(4, progress.size());
+        assertEquals(5, progress.size());
         assertTrue(progress.get(0).startsWith("Reviewing 1 changed Java production file"));
         assertTrue(progress.get(1).contains("clean full-suite build"));
-        assertTrue(progress.get(2).contains("targeted PIT"));
-        assertEquals("Changed-code proof passed.", progress.get(3));
+        assertTrue(progress.get(2).contains("ArchUnit architecture analysis"));
+        assertTrue(progress.get(3).contains("targeted PIT"));
+        assertEquals("Changed-code proof passed.", progress.get(4));
+    }
+
+    @Test
+    void architectureViolationsBlockDiffProofAndReturnActionableEvidence() throws Exception {
+        Path root = changedProject("architecture-failure");
+        AtomicInteger mutations = new AtomicInteger();
+        ArchitectureService.ArchitectureViolation violation = new ArchitectureService.ArchitectureViolation(
+                ArchitectureService.PACKAGE_CYCLE_RULE,
+                "HIGH",
+                "com.example.OrderService",
+                "com.example.inventory.Inventory",
+                "src/main/java/com/example/OrderService.java",
+                1,
+                List.of("com.example", "com.example.inventory", "com.example"),
+                List.of("com.example.OrderService"),
+                "Package cycle com.example -> com.example.inventory -> com.example.",
+                "Invert the dependency."
+        );
+        DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
+                project -> null,
+                project -> coverage(project, 100.0d, 100.0d),
+                new JavaQualityService()::analyze,
+                (project, targets) -> architectureReport(targets, List.of(violation)),
+                (project, targets, tests, minimum, lines) -> {
+                    mutations.incrementAndGet();
+                    return mutation(minimum, 100.0d, 100.0d, true);
+                }
+        ));
+
+        DiffVerificationService.DiffVerification proof = service.verify(
+                root,
+                DiffVerificationService.DEFAULT_THRESHOLDS
+        );
+
+        assertFalse(proof.passed());
+        assertEquals(0, mutations.get());
+        assertEquals(List.of(violation), proof.architecture().violations());
+        assertTrue(proof.failures().stream().anyMatch(message -> message.contains("architecture violation")));
     }
 
     @Test
@@ -603,6 +642,26 @@ class DiffVerificationServiceTest {
 
     private CoverageReportService.CoverageSnapshot coverage(Path root, double line, double branch) {
         return coverage(root, line, branch, 1);
+    }
+
+    private ArchitectureService.ArchitectureReport architectureReport(
+            List<String> targets,
+            List<ArchitectureService.ArchitectureViolation> violations
+    ) {
+        return new ArchitectureService.ArchitectureReport(
+                "ArchUnit",
+                ArchitectureService.ARCHUNIT_VERSION,
+                ArchitectureService.RULESET_VERSION,
+                List.of(ArchitectureService.PACKAGE_CYCLE_RULE),
+                true,
+                2,
+                List.of("target/classes"),
+                targets,
+                List.of(),
+                violations,
+                null,
+                1L
+        );
     }
 
     private CoverageReportService.CoverageSnapshot coverage(

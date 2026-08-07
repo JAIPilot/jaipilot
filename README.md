@@ -60,7 +60,7 @@ quality, drift, and apply checks that remain stable across long-running coding s
 - **Cleanest:** run pinned, exactly scoped OpenRewrite cleanup first, surface actionable quality debt,
   and prevent severe findings or overall quality regressions.
 - **Meanest:** require the real clean build, changed-test execution, fresh coverage, targeted mutation
-  strength, exact-diff proof, and drift-safe transactional apply.
+  strength, ArchUnit architecture proof, exact-diff proof, and drift-safe transactional apply.
 
 The objective is straightforward: coding agents should be able to work autonomously for longer while
 continuously producing and maintaining focused, clean, well-tested Java instead of accumulating
@@ -77,8 +77,9 @@ silent complexity and regressions for a human reviewer to unwind later.
 - Fail closed when an in-scope Git inspection cannot be completed; non-Git workspaces remain quiet.
 - Run expensive proof once per exact diff fingerprint, then reuse the local receipt until relevant
   Java or build files change.
-- Require a clean full build, fresh changed-line coverage, changed-line PIT, new-code quality, and
-  zero new or severity-escalated critical/high findings.
+- Require a clean full build, fresh changed-line coverage, changed-line PIT, new-code quality,
+  zero new or severity-escalated critical/high findings, and zero ArchUnit package-cycle violations
+  involving changed classes.
 - Default to 90% changed-line coverage, 85% changed-branch coverage, 80% changed-line mutation
   score, and a 90 new-code quality score.
 
@@ -99,6 +100,8 @@ silent complexity and regressions for a human reviewer to unwind later.
 - Let the coding agent review and refine the candidate.
 - Keep production edits limited to selected Java files and related tests.
 - Track reliability, maintainability, complexity, duplication, debt, and overall quality scores.
+- Analyze freshly compiled production bytecode with pinned ArchUnit and return actionable package-cycle
+  findings with classes, source path, line, cycle, and remediation.
 - Reject new severe findings or quality regressions, then verify behavior with the real build.
 - Reject candidate drift, live-worktree drift, deletion, and unsafe paths.
 

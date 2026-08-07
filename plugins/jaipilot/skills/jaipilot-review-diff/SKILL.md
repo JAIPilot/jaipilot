@@ -7,7 +7,7 @@ description: Review, improve, and prove Java production changes discovered from 
 
 Treat the current Git fingerprint as the boundary. The host agent reasons about behavior and edits
 isolated candidates; JAIPilot discovers the scope and provides deterministic quality, clean-build,
-JaCoCo, PIT, drift, and apply evidence.
+ArchUnit, JaCoCo, PIT, drift, and apply evidence.
 
 ## Workflow
 
@@ -38,10 +38,11 @@ JaCoCo, PIT, drift, and apply evidence.
    - clean full-suite build and test execution;
    - at least 90% coverage on changed executable lines and 85% on changed branches;
    - at least 80% PIT mutation score for mutations located on changed lines, with complete evidence;
-   - at least 90 new-code quality score and zero new or severity-escalated critical/high findings.
-8. If proof fails, use its raw coverage, quality findings, mutation survivors, and warnings to make
-   the smallest relevant correction, then rerun proof. Do not repeatedly run full proof while the
-   diff is still changing.
+   - at least 90 new-code quality score and zero new or severity-escalated critical/high findings;
+   - complete ArchUnit bytecode evidence and zero package-cycle violations involving changed classes.
+8. If proof fails, use its raw architecture violations, coverage, quality findings, mutation
+   survivors, and warnings to make the smallest relevant correction, then rerun proof. Do not
+   repeatedly run full proof while the diff is still changing.
 
 ## Boundaries
 
@@ -57,4 +58,4 @@ JaCoCo, PIT, drift, and apply evidence.
 
 Report the baseline description and fingerprint, changed targets, applied cleanup and tests, fresh
 changed and whole-class line/branch coverage, changed-line PIT counts and survivors, new and whole-file quality metrics, composite
-test score, elapsed verification time, warnings, and final `passed` status.
+test score, ArchUnit rules and violations, elapsed verification time, warnings, and final `passed` status.

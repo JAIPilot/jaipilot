@@ -383,7 +383,8 @@ public final class JaiPilotToolkit {
                 + shellSafeDisplay(gate.projectRoot())
                 + "` and do not finish until its fresh build, >=90% changed-line coverage, >=85% "
                 + "changed-branch coverage, >=80% changed-line PIT mutation score, >=90 new-code "
-                + "quality score, and zero new critical/high findings pass. Report any genuinely "
+                + "quality score, zero new critical/high findings, and zero ArchUnit architecture "
+                + "violations involving changed classes pass. Report any genuinely "
                 + "unscorable target explicitly; never invent evidence.";
     }
 

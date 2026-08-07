@@ -4,6 +4,15 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 
 ## Unreleased
 
+### Added
+
+- Added pinned ArchUnit 1.4.2 analysis of freshly compiled production bytecode, with structured
+  package-cycle feedback and zero-violation gates for cleanup and changed-code proof.
+
+### Changed
+
+- Invalidated legacy validation and diff-proof receipts that do not contain architecture evidence.
+
 ## [3.2.0] - 2026-08-07
 
 ### Added
@@ -20,7 +29,6 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
   live local usage statistics, latest proof evidence, and applied improvement metrics.
 - Added owner-private, atomic metrics persistence that hashes project identities and credits
   coverage, quality, findings, debt, mutation, and test-execution gains only after verified apply.
-
 ### Changed
 
 - Refined the product identity to **JAIPilot Java Enterprise Toolkit Harness** across plugin,
@@ -28,7 +36,6 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 - Added prominent Codex and Claude Code installation instructions to the README.
 - Added an exact dark-mode variant of the established JAIPilot logo for GitHub and Codex.
 - Added a concise, evidence-backed enterprise value summary to the README.
-
 ## [3.1.2] - 2026-08-05
 
 ### Security
