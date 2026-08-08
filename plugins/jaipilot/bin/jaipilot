@@ -16,28 +16,61 @@ else
   APP_DIR="$HOME/.local/share/jaipilot"
 fi
 
-RUNNER="$APP_DIR/versions/$VERSION/bin/jaipilot"
-if [ ! -x "$RUNNER" ]; then
-  if [ -n "${JAIPILOT_BOOTSTRAP_ARCHIVE_URL:-}" ] \
+if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+  JAVA_COMMAND="$JAVA_HOME/bin/java"
+elif command -v java >/dev/null 2>&1; then
+  JAVA_COMMAND=$(command -v java)
+else
+  [ "${JAIPILOT_BOOTSTRAP_DISABLED:-0}" = "1" ] && exit 0
+  echo "JAIPilot requires Java 17 or newer in JAVA_HOME or PATH." >&2
+  exit 1
+fi
+
+JAVA_SPEC=$(
+  "$JAVA_COMMAND" -XshowSettings:properties -version 2>&1 \
+    | sed -n 's/^[[:space:]]*java\.specification\.version = //p' \
+    | head -n 1
+)
+case "$JAVA_SPEC" in
+  1.*) JAVA_MAJOR=${JAVA_SPEC#1.}; JAVA_MAJOR=${JAVA_MAJOR%%.*} ;;
+  *) JAVA_MAJOR=${JAVA_SPEC%%.*} ;;
+esac
+case "$JAVA_MAJOR" in
+  ''|*[!0-9]*)
+    [ "${JAIPILOT_BOOTSTRAP_DISABLED:-0}" = "1" ] && exit 0
+    echo "JAIPilot could not determine the Java version from $JAVA_COMMAND." >&2
+    exit 1
+    ;;
+esac
+if [ "$JAVA_MAJOR" -lt 17 ]; then
+  [ "${JAIPILOT_BOOTSTRAP_DISABLED:-0}" = "1" ] && exit 0
+  echo "JAIPilot requires Java 17 or newer; found Java $JAVA_SPEC." >&2
+  exit 1
+fi
+
+PAYLOAD="$APP_DIR/versions/$VERSION/jaipilot-toolkit.jar"
+if [ ! -f "$PAYLOAD" ]; then
+  [ "${JAIPILOT_BOOTSTRAP_DISABLED:-0}" != "1" ] || exit 0
+  if [ -n "${JAIPILOT_BOOTSTRAP_ARTIFACT_URL:-}" ] \
     || [ -n "${JAIPILOT_BOOTSTRAP_CHECKSUM_URL:-}" ]; then
-    [ -n "${JAIPILOT_BOOTSTRAP_ARCHIVE_URL:-}" ] \
+    [ -n "${JAIPILOT_BOOTSTRAP_ARTIFACT_URL:-}" ] \
       && [ -n "${JAIPILOT_BOOTSTRAP_CHECKSUM_URL:-}" ] || {
-        echo "JAIPilot bootstrap archive and checksum overrides must be set together." >&2
+        echo "JAIPilot bootstrap artifact and checksum overrides must be set together." >&2
         exit 1
       }
     "$PLUGIN_ROOT/libexec/install.sh" \
       --version "$VERSION" \
       --app-dir "$APP_DIR" \
-      --archive-url "$JAIPILOT_BOOTSTRAP_ARCHIVE_URL" \
+      --artifact-url "$JAIPILOT_BOOTSTRAP_ARTIFACT_URL" \
       --checksum-url "$JAIPILOT_BOOTSTRAP_CHECKSUM_URL"
   else
     "$PLUGIN_ROOT/libexec/install.sh" --version "$VERSION" --app-dir "$APP_DIR"
   fi
 fi
 
-[ -x "$RUNNER" ] || {
-  echo "JAIPilot $VERSION plugin runner was not installed at $RUNNER" >&2
+[ -f "$PAYLOAD" ] || {
+  echo "JAIPilot $VERSION plugin payload was not installed at $PAYLOAD" >&2
   exit 1
 }
 
-exec "$RUNNER" "$@"
+exec "$JAVA_COMMAND" -jar "$PAYLOAD" "$@"

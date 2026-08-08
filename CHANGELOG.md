@@ -2,6 +2,22 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [4.0.2] - 2026-08-08
+
+### Changed
+
+- Replaced four roughly 50 MB platform/JRE archives with one portable plugin payload under 20 MiB;
+  JAIPilot now reuses Java 17+ already available to the Java coding environment.
+- Added bounded retries for transient GitHub TLS and connection failures while preserving exact
+  SHA-256 verification.
+
+### Fixed
+
+- Made Stop skip bootstrap and exit silently when the background payload download is unavailable,
+  incomplete, or failed, instead of surfacing a recurring hook error.
+- Made all hook manifest launchers tolerate incomplete or stale plugin cache entries and kept every
+  hook inert outside detected Maven or Gradle Java repositories.
+
 ## [4.0.1] - 2026-08-08
 
 ### Fixed

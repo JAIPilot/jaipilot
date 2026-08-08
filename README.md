@@ -53,10 +53,11 @@ Run these commands inside Claude Code:
 /plugin install jaipilot@jaipilot
 ```
 
-The plugin downloads a checksum-verified private Java runtime on first use. It does not require a
-globally installed JDK. The stdio MCP server and Agent Skills work together. Hooks initialize and
-refresh only Maven or Gradle directories that contain Java source; other directories exit silently
-without starting Java, creating state, or starting the dashboard.
+The plugin uses Java 17+ from `JAVA_HOME` or `PATH` and downloads one checksum-verified portable
+JAIPilot JAR on first use. It does not download a second JRE or separate operating-system payload.
+The stdio MCP server and Agent Skills work together. Hooks initialize and refresh only Maven or
+Gradle directories that contain Java source; other directories exit silently without starting Java,
+creating state, downloading JAIPilot, or starting the dashboard.
 
 ## Six deterministic MCP tools
 
@@ -76,9 +77,12 @@ opens a PR, or applies a hidden candidate.
 ## How drift is reduced
 
 At session start JAIPilot first checks for a Maven or Gradle build and Java source. For an applicable
-repository it records the canonical path and local GitHub origin, refreshes current quality in a
-detached process, and starts the loopback dashboard. This initialization does not edit the repository
-or create files inside it. Non-Java directories do not invoke the private runtime.
+repository it records the canonical path and local GitHub origin, downloads the small portable
+payload when needed, refreshes current quality in a detached process, and starts the loopback
+dashboard. This initialization does not edit the repository or create files inside it. Non-Java
+directories do not invoke Java or download anything. Stop never performs a synchronous download: if
+background bootstrap is incomplete or the network is unavailable, it exits silently and the MCP
+tool reports the actionable setup error when explicitly invoked.
 
 The direct `git commit` post-tool hook queues the same detached repository snapshot. The Stop hook checks
 the current Java/build diff and returns actionable proof requirements to the host agent. These are
@@ -159,7 +163,9 @@ plugin is active.
 See [how JAIPilot works](docs/how-it-works.md), [quality metrics](docs/quality-metrics.md), and the
 [static-analysis boundary](docs/static-analysis-boundary.md). The
 [v4.0 lean-kernel evidence](docs/evaluations/lean-kernel-4.0.0.md) records raw performance and Kafka
-acceptance results, including the failed Kafka test-suite boundary.
+acceptance results, including the failed Kafka test-suite boundary. The
+[v4.0.2 plugin-bootstrap evidence](docs/evaluations/plugin-bootstrap-4.0.2.md) records the payload-size
+reduction, protocol timings, retry behavior, and silent Stop failure-path acceptance.
 
 ## Project links
 

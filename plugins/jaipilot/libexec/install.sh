@@ -8,30 +8,27 @@ export LC_ALL LANG
 REPO="JAIPilot/jaipilot"
 APP_DIR=""
 VERSION=""
-RESOLVED_VERSION=""
-RESOLVED_PLATFORM=""
-ARCHIVE_URL=""
+ARTIFACT_URL=""
 CHECKSUM_URL=""
-PLATFORM=""
 LOCK_DIR=""
 LOCK_HELD=0
 CURRENT_LINK_TMP=""
+TMP_DIR=""
 
 usage() {
   cat <<'EOF'
-Usage: plugins/jaipilot/libexec/install.sh [options]
+Usage: plugins/jaipilot/libexec/install.sh --version <version> [options]
 
-Installs the JAIPilot plugin runner, portable Agent Skills, and bundled Java
-runtime with SHA-256 verification.
+Installs JAIPilot's checksum-verified portable JAR in an owner-private plugin
+data directory. A Java 17+ runtime must already be available to the host.
 
 Options:
-  --version <version>      Install a specific release version.
-  --platform <platform>    Override platform detection. Example: macos-aarch64.
-  --archive-url <url>      Override the release archive URL. Intended for testing.
-  --checksum-url <url>     Override the archive checksum URL. Intended for testing.
-  --app-dir <dir>          Private plugin runtime directory.
-                           Default: $XDG_DATA_HOME/jaipilot or ~/.local/share/jaipilot.
-  -h, --help               Show this help text.
+  --version <version>       Install a specific release version.
+  --artifact-url <url>      Override the release JAR URL. Intended for testing.
+  --checksum-url <url>      Override the checksum URL. Intended for testing.
+  --app-dir <dir>           Plugin data directory.
+                            Default: $XDG_DATA_HOME/jaipilot or ~/.local/share/jaipilot.
+  -h, --help                Show this help text.
 EOF
 }
 
@@ -40,23 +37,61 @@ die() {
   exit 1
 }
 
-strip_v() {
-  case "$1" in
-    v*) printf '%s\n' "${1#v}" ;;
-    *) printf '%s\n' "$1" ;;
-  esac
-}
-
 require_command() {
   command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
 }
 
 validate_version() {
-  case "$1" in
-    ''|*[!0-9.]*) die "Version must look like 1.0.0" ;;
-  esac
-  printf '%s\n' "$1" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
+  printf '%s' "$1" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
     || die "Version must look like 1.0.0"
+}
+
+resolve_app_dir() {
+  if [ -n "$APP_DIR" ]; then
+    printf '%s\n' "$APP_DIR"
+  elif [ -n "${XDG_DATA_HOME:-}" ]; then
+    printf '%s/jaipilot\n' "$XDG_DATA_HOME"
+  else
+    printf '%s/.local/share/jaipilot\n' "$HOME"
+  fi
+}
+
+compute_sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print tolower($1)}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print tolower($1)}'
+  elif command -v openssl >/dev/null 2>&1; then
+    openssl dgst -sha256 "$1" | awk '{print tolower($NF)}'
+  else
+    die "Required checksum tool not found: sha256sum, shasum, or openssl"
+  fi
+}
+
+read_expected_sha256() {
+  expected=$(awk 'NF {print tolower($1); exit}' "$1")
+  printf '%s' "$expected" | grep -Eq '^[0-9a-f]{64}$' \
+    || die "Checksum file did not contain a SHA-256 digest: $1"
+  printf '%s\n' "$expected"
+}
+
+download() {
+  source_url=$1
+  destination=$2
+  retry_all=""
+  if curl --help all 2>/dev/null | grep -q -- '--retry-all-errors'; then
+    retry_all="--retry-all-errors"
+  fi
+  # GitHub release assets occasionally reset TLS connections. Keep retries
+  # bounded, retry transport errors when supported, and never wait forever.
+  curl -fsSL \
+    --connect-timeout 10 \
+    --max-time 180 \
+    --retry 4 \
+    --retry-delay 1 \
+    --retry-connrefused \
+    $retry_all \
+    "$source_url" -o "$destination"
 }
 
 release_install_lock() {
@@ -73,7 +108,7 @@ release_install_lock() {
 cleanup() {
   [ -z "$CURRENT_LINK_TMP" ] || rm -f "$CURRENT_LINK_TMP"
   release_install_lock
-  rm -rf "$TMP_DIR"
+  [ -z "$TMP_DIR" ] || rm -rf "$TMP_DIR"
 }
 
 acquire_install_lock() {
@@ -82,9 +117,7 @@ acquire_install_lock() {
     owner_pid=""
     [ ! -f "$LOCK_DIR/pid" ] || owner_pid=$(cat "$LOCK_DIR/pid")
     case "$owner_pid" in
-      ''|*[!0-9]*)
-        die "Another JAIPilot install is using $APP_DIR"
-        ;;
+      ''|*[!0-9]*) die "Another JAIPilot install is using $APP_DIR" ;;
       *)
         if kill -0 "$owner_pid" 2>/dev/null; then
           die "Another JAIPilot install is using $APP_DIR (PID $owner_pid)"
@@ -99,158 +132,16 @@ acquire_install_lock() {
   printf '%s\n' "$$" > "$LOCK_DIR/pid"
 }
 
-checksum_command() {
-  if command -v sha256sum >/dev/null 2>&1; then
-    printf 'sha256sum\n'
-    return
-  fi
-  if command -v shasum >/dev/null 2>&1; then
-    printf 'shasum\n'
-    return
-  fi
-  if command -v openssl >/dev/null 2>&1; then
-    printf 'openssl\n'
-    return
-  fi
-  die "Required checksum tool not found: sha256sum, shasum, or openssl"
-}
-
-compute_sha256() {
-  tool=$(checksum_command)
-  case "$tool" in
-    sha256sum)
-      sha256sum "$1" | awk '{print tolower($1)}'
-      ;;
-    shasum)
-      shasum -a 256 "$1" | awk '{print tolower($1)}'
-      ;;
-    openssl)
-      openssl dgst -sha256 "$1" | awk '{print tolower($NF)}'
-      ;;
-  esac
-}
-
-resolve_latest_version() {
-  latest_json=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest")
-  latest_tag=$(printf '%s' "$latest_json" | tr -d '\n' | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
-  if printf '%s\n' "$latest_tag" | grep -Eq '^v[0-9]+(\.[0-9]+)*$'; then
-    strip_v "$latest_tag"
-    return
-  fi
-
-  # Fallback: select the newest semantic-version release tag (v<digits>[.<digits>]...).
-  releases_json=$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=100")
-  version=$(printf '%s\n' "$releases_json" \
-    | tr ',' '\n' \
-    | sed -n 's/^[[:space:]]*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
-    | grep -E '^v[0-9]+(\.[0-9]+)*$' \
-    | head -n 1)
-
-  [ -n "$version" ] || die "Failed to determine the latest JAIPilot semantic release version."
-  strip_v "$version"
-}
-
-resolve_version_from_archive_url() {
-  [ -n "$ARCHIVE_URL" ] || return 1
-  archive_name=$(printf '%s\n' "$ARCHIVE_URL" | sed 's#^.*\/##; s/[?#].*$//')
-  version=$(printf '%s\n' "$archive_name" | sed -n 's/^jaipilot-toolkit-\([0-9][0-9.]*\)-.*\.tar\.gz$/\1/p')
-  [ -n "$version" ] || return 1
-  printf '%s\n' "$version"
-}
-
-resolve_version() {
-  if [ -n "$VERSION" ]; then
-    printf '%s\n' "$VERSION"
-    return
-  fi
-  if version=$(resolve_version_from_archive_url); then
-    printf '%s\n' "$version"
-    return
-  fi
-  resolve_latest_version
-}
-
-resolve_os() {
-  case "$(uname -s)" in
-    Linux) printf 'linux\n' ;;
-    Darwin) printf 'macos\n' ;;
-    *) die "Unsupported operating system: $(uname -s)" ;;
-  esac
-}
-
-resolve_arch() {
-  case "$(uname -m)" in
-    x86_64|amd64) printf 'x64\n' ;;
-    arm64|aarch64) printf 'aarch64\n' ;;
-    *) die "Unsupported architecture: $(uname -m)" ;;
-  esac
-}
-
-resolve_platform() {
-  if [ -n "$PLATFORM" ]; then
-    printf '%s\n' "$PLATFORM"
-    return
-  fi
-  printf '%s-%s\n' "$(resolve_os)" "$(resolve_arch)"
-}
-
-resolve_archive_url() {
-  if [ -n "$ARCHIVE_URL" ]; then
-    printf '%s\n' "$ARCHIVE_URL"
-    return
-  fi
-
-  printf 'https://github.com/%s/releases/download/v%s/jaipilot-toolkit-%s-%s.tar.gz\n' "$REPO" "$RESOLVED_VERSION" "$RESOLVED_VERSION" "$RESOLVED_PLATFORM"
-}
-
-resolve_checksum_url() {
-  if [ -n "$CHECKSUM_URL" ]; then
-    printf '%s\n' "$CHECKSUM_URL"
-    return
-  fi
-  printf '%s.sha256\n' "$1"
-}
-
-resolve_app_dir() {
-  if [ -n "$APP_DIR" ]; then
-    printf '%s\n' "$APP_DIR"
-    return
-  fi
-  if [ -n "${XDG_DATA_HOME:-}" ]; then
-    printf '%s/jaipilot\n' "$XDG_DATA_HOME"
-    return
-  fi
-  printf '%s/.local/share/jaipilot\n' "$HOME"
-}
-
-read_expected_sha256() {
-  expected=$(awk 'NF {print $1; exit}' "$1" | tr '[:upper:]' '[:lower:]')
-  case "$expected" in
-    [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*)
-      ;;
-    *)
-      die "Checksum file did not contain a SHA-256 digest: $1"
-      ;;
-  esac
-  [ "${#expected}" -eq 64 ] || die "Checksum file did not contain a SHA-256 digest: $1"
-  printf '%s\n' "$expected"
-}
-
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --version)
       [ "$#" -ge 2 ] || die "Missing value for --version"
-      VERSION=$(strip_v "$2")
+      VERSION=${2#v}
       shift 2
       ;;
-    --archive-url)
-      [ "$#" -ge 2 ] || die "Missing value for --archive-url"
-      ARCHIVE_URL=$2
-      shift 2
-      ;;
-    --platform)
-      [ "$#" -ge 2 ] || die "Missing value for --platform"
-      PLATFORM=$2
+    --artifact-url)
+      [ "$#" -ge 2 ] || die "Missing value for --artifact-url"
+      ARTIFACT_URL=$2
       shift 2
       ;;
     --checksum-url)
@@ -267,113 +158,72 @@ while [ "$#" -gt 0 ]; do
       usage
       exit 0
       ;;
-    *)
-      die "Unknown option: $1"
-      ;;
+    *) die "Unknown option: $1" ;;
   esac
 done
 
+[ -n "$VERSION" ] || die "--version is required"
+validate_version "$VERSION"
 APP_DIR=$(resolve_app_dir)
 
-require_command curl
-require_command tar
-require_command mktemp
-require_command grep
-
-RESOLVED_VERSION=$(resolve_version)
-validate_version "$RESOLVED_VERSION"
-RESOLVED_PLATFORM=$(resolve_platform)
-ARCHIVE_URL=$(resolve_archive_url)
-CHECKSUM_URL=$(resolve_checksum_url "$ARCHIVE_URL")
-
-TMP_DIR=$(mktemp -d)
-trap cleanup EXIT INT TERM
-
-mkdir -p "$(dirname "$APP_DIR")" "$APP_DIR"
-acquire_install_lock
-
-ARCHIVE_PATH="$TMP_DIR/jaipilot.tar.gz"
-CHECKSUM_PATH="$TMP_DIR/jaipilot.tar.gz.sha256"
-ARCHIVE_LIST="$TMP_DIR/archive.list"
-ARCHIVE_DETAILS="$TMP_DIR/archive.details"
-curl -fsSL "$ARCHIVE_URL" -o "$ARCHIVE_PATH"
-curl -fsSL "$CHECKSUM_URL" -o "$CHECKSUM_PATH"
-
-EXPECTED_SHA256=$(read_expected_sha256 "$CHECKSUM_PATH")
-ACTUAL_SHA256=$(compute_sha256 "$ARCHIVE_PATH")
-[ "$EXPECTED_SHA256" = "$ACTUAL_SHA256" ] || die "SHA-256 mismatch for downloaded archive."
-
-tar -tzf "$ARCHIVE_PATH" > "$ARCHIVE_LIST"
-tar -tvzf "$ARCHIVE_PATH" > "$ARCHIVE_DETAILS"
-if awk 'substr($1, 1, 1) != "-" && substr($1, 1, 1) != "d" { unsafe=1 } END { exit unsafe ? 0 : 1 }' \
-  "$ARCHIVE_DETAILS"; then
-  die "Release archive contains a link or special entry."
+if [ -z "$ARTIFACT_URL" ]; then
+  ARTIFACT_URL="https://github.com/$REPO/releases/download/v$VERSION/jaipilot-toolkit-$VERSION.jar"
 fi
-EXPECTED_ROOT="jaipilot-toolkit-$RESOLVED_VERSION-$RESOLVED_PLATFORM"
-while IFS= read -r entry; do
-  case "$entry" in
-    /*|../*|*/../*|*/..)
-      die "Release archive contains an unsafe path: $entry"
-      ;;
-  esac
-  case "$entry" in
-    "$EXPECTED_ROOT"|"$EXPECTED_ROOT/"|"$EXPECTED_ROOT/"*) ;;
-    *) die "Release archive contains an unexpected top-level path: $entry" ;;
-  esac
-done < "$ARCHIVE_LIST"
+if [ -z "$CHECKSUM_URL" ]; then
+  CHECKSUM_URL="$ARTIFACT_URL.sha256"
+fi
 
-tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
+require_command curl
+require_command grep
+require_command mktemp
 
-EXTRACTED_DIR="$TMP_DIR/$EXPECTED_ROOT"
-[ -d "$EXTRACTED_DIR" ] || die "Failed to unpack the expected JAIPilot archive root."
-[ -f "$EXTRACTED_DIR/lib/jaipilot-toolkit.jar" ] || die "Downloaded archive is missing lib/jaipilot-toolkit.jar."
-[ -x "$EXTRACTED_DIR/bin/jaipilot" ] || die "Downloaded archive is missing bin/jaipilot."
-[ -x "$EXTRACTED_DIR/runtime/bin/java" ] || die "Downloaded archive is missing the bundled Java runtime."
-[ -f "$EXTRACTED_DIR/plugins/jaipilot/.codex-plugin/plugin.json" ] \
-  || die "Downloaded archive is missing the JAIPilot plugin."
-[ ! -L "$EXTRACTED_DIR/lib/jaipilot-toolkit.jar" ] || die "Downloaded toolkit-harness JAR must not be a symbolic link."
-[ ! -L "$EXTRACTED_DIR/bin/jaipilot" ] || die "Downloaded toolkit-harness launcher must not be a symbolic link."
-
-mkdir -p "$APP_DIR/bin" "$APP_DIR/versions"
+umask 077
+mkdir -p "$APP_DIR"
+chmod 700 "$APP_DIR" 2>/dev/null || true
+trap cleanup EXIT HUP INT TERM
+acquire_install_lock
+TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/jaipilot-install.XXXXXX")
 
 if [ -e "$APP_DIR/current" ] && [ ! -L "$APP_DIR/current" ]; then
   die "Current release path is not a symlink: $APP_DIR/current"
 fi
 
-VERSION_DIR="$APP_DIR/versions/$RESOLVED_VERSION"
-rm -rf "$VERSION_DIR"
-mv "$EXTRACTED_DIR" "$VERSION_DIR"
+ARTIFACT_PATH="$TMP_DIR/jaipilot-toolkit.jar"
+CHECKSUM_PATH="$TMP_DIR/jaipilot-toolkit.jar.sha256"
+download "$ARTIFACT_URL" "$ARTIFACT_PATH"
+download "$CHECKSUM_URL" "$CHECKSUM_PATH"
+
+EXPECTED_SHA256=$(read_expected_sha256 "$CHECKSUM_PATH")
+ACTUAL_SHA256=$(compute_sha256 "$ARTIFACT_PATH")
+[ "$EXPECTED_SHA256" = "$ACTUAL_SHA256" ] \
+  || die "SHA-256 mismatch for downloaded JAIPilot payload."
+
+VERSIONS_DIR="$APP_DIR/versions"
+VERSION_DIR="$VERSIONS_DIR/$VERSION"
+mkdir -p "$VERSIONS_DIR"
+[ ! -L "$VERSION_DIR" ] || die "Version path must not be a symbolic link: $VERSION_DIR"
+if [ -e "$VERSION_DIR" ] && [ ! -d "$VERSION_DIR" ]; then
+  die "Version path is not a directory: $VERSION_DIR"
+fi
+mkdir -p "$VERSION_DIR"
+chmod 700 "$VERSION_DIR" 2>/dev/null || true
+
+INSTALLED_JAR="$VERSION_DIR/jaipilot-toolkit.jar"
+INSTALLED_TMP="$VERSION_DIR/.jaipilot-toolkit.jar.$$"
+cp "$ARTIFACT_PATH" "$INSTALLED_TMP"
+chmod 600 "$INSTALLED_TMP"
+mv -f "$INSTALLED_TMP" "$INSTALLED_JAR"
+printf '%s\n' "$ACTUAL_SHA256" > "$VERSION_DIR/jaipilot-toolkit.jar.sha256"
+chmod 600 "$VERSION_DIR/jaipilot-toolkit.jar.sha256"
 
 CURRENT_LINK_TMP="$APP_DIR/.current.$$"
 rm -f "$CURRENT_LINK_TMP"
-ln -s "versions/$RESOLVED_VERSION" "$CURRENT_LINK_TMP"
-case "$(resolve_os)" in
-  macos) mv -fh "$CURRENT_LINK_TMP" "$APP_DIR/current" ;;
-  linux) mv -fT "$CURRENT_LINK_TMP" "$APP_DIR/current" ;;
-esac
+ln -s "versions/$VERSION" "$CURRENT_LINK_TMP"
+rm -f "$APP_DIR/current"
+mv "$CURRENT_LINK_TMP" "$APP_DIR/current"
 CURRENT_LINK_TMP=""
 
-cat > "$APP_DIR/bin/jaipilot" <<EOF
-#!/usr/bin/env sh
-set -eu
-BASE_DIR=\$(CDPATH= cd -- "\$(dirname -- "\$0")/.." && pwd)
-exec "\$BASE_DIR/current/bin/jaipilot" "\$@"
-EOF
-
-chmod +x "$APP_DIR/bin/jaipilot"
-
-{
-  echo "Installed JAIPilot Java Enterprise Harness"
-  echo "  Version: $RESOLVED_VERSION"
-  echo "  Archive: $ARCHIVE_URL"
-  echo "  SHA-256: $ACTUAL_SHA256"
-  echo "  App: $APP_DIR"
-  echo "  Current: $APP_DIR/current"
-  echo "  Payload: $VERSION_DIR"
-  echo "  Runtime: $APP_DIR/current/runtime/bin/java"
-  echo "  Plugin: $APP_DIR/current/plugins/jaipilot"
-  echo "  Plugin runner: $APP_DIR/bin/jaipilot"
-
-  echo
-  echo "Install the bundled plugin in Codex or Claude Code."
-} >&2
+echo "Installed JAIPilot $VERSION plugin payload" >&2
+echo "  Artifact: $ARTIFACT_URL" >&2
+echo "  SHA-256: $ACTUAL_SHA256" >&2
+echo "  Payload: $INSTALLED_JAR" >&2

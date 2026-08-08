@@ -6,6 +6,7 @@ PLUGIN_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 if [ "${1:-}" = "--worker" ]; then
   [ "$#" -eq 2 ] || exit 0
   PROJECT_ROOT=$("$PLUGIN_ROOT/hooks/java-project-root.sh" "$2") || exit 0
+  [ -x "$PLUGIN_ROOT/bin/jaipilot" ] || exit 0
   "$PLUGIN_ROOT/bin/jaipilot" snapshot --project "$PROJECT_ROOT" >/dev/null || exit 0
   exec "$PLUGIN_ROOT/bin/jaipilot" dashboard >/dev/null
 fi

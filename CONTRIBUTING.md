@@ -15,19 +15,20 @@ You need Java 17+, Git, Python 3, and a POSIX shell.
 python3 ./scripts/validate-plugin.py
 ```
 
-`verify` runs the Java suite, creates JaCoCo XML, builds the shaded plugin runner, and produces the
-current-platform bundled distribution.
+`verify` runs the Java suite, creates JaCoCo XML, builds the shaded plugin runner, and produces one
+portable checksum-protected plugin JAR.
 
 ## Common checks
 
 ```bash
 ./mvnw -B test
-java -jar target/jaipilot-toolkit-3.4.0-all.jar inspect --project .
+java -jar target/jaipilot-toolkit-4.0.1-all.jar inspect --project .
 ./scripts/smoke-test-install.sh
 ```
 
-The direct smoke checks structured evidence-kernel discovery. The installer smoke exercises checksum
-verification, the bundled runtime, MCP, hooks, dashboard health, and cached launch.
+The direct smoke checks structured evidence-kernel discovery. The installer smoke exercises bounded
+transport retries, checksum verification, host Java 17+, MCP, Java-only hooks, silent unavailable
+Stop behavior, and cached launch.
 
 ## Pull requests
 
@@ -52,8 +53,8 @@ python3 ./scripts/validate-plugin.py
 ## Release publishing
 
 `scripts/release-build.sh` aligns the Maven revision, plugin bootstrap, marketplaces, and all plugin
-manifests. A `v*` tag builds checksum-protected macOS/Linux x64/arm64 archives and publishes a
-GitHub Release with the plugin-local installer.
+manifests. A `v*` tag builds one portable checksum-protected JAR and publishes a GitHub Release with
+the plugin-local installer. Codex and Claude Code plugins are the only distribution channels.
 
 ## Reporting bugs and security issues
 

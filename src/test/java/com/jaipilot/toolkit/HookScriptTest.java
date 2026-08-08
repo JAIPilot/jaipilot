@@ -32,7 +32,9 @@ class HookScriptTest {
         Files.writeString(nonJava.resolve("package.json"), "{}\n");
         Path log = tempDir.resolve("runner.log");
         Path fakeRunner = tempDir.resolve("fake-runner.sh");
-        Files.writeString(fakeRunner, "#!/bin/sh\nprintf '%s|%s\\n' \"$PWD\" \"$*\" >> \"$JAIPILOT_TEST_LOG\"\n");
+        Files.writeString(fakeRunner,
+                "#!/bin/sh\nprintf '%s|%s|%s\\n' \"$PWD\" \"$*\" "
+                        + "\"${JAIPILOT_BOOTSTRAP_DISABLED:-}\" >> \"$JAIPILOT_TEST_LOG\"\n");
         assertTrue(fakeRunner.toFile().setExecutable(true, false));
         Path pluginRoot = Path.of("plugins/jaipilot").toAbsolutePath().normalize();
         Map<String, String> environment = Map.of(
@@ -62,7 +64,7 @@ class HookScriptTest {
         waitFor(() -> read(log).contains("snapshot --project " + canonicalProject));
         waitFor(() -> read(log).contains("dashboard"));
         run(pluginRoot.resolve("hooks/stop.sh"), project, environment, "{}");
-        assertTrue(read(log).contains("hook-stop --project " + canonicalProject));
+        assertTrue(read(log).contains("hook-stop --project " + canonicalProject + "|1"));
 
         Process detector = new ProcessBuilder(
                 pluginRoot.resolve("hooks/java-project-root.sh").toString(),
@@ -83,6 +85,15 @@ class HookScriptTest {
             assertEquals(0, process.waitFor(), event + ": " + read(process.getErrorStream()));
             assertEquals("", read(process.getInputStream()));
             assertEquals("", read(process.getErrorStream()));
+
+            ProcessBuilder incomplete = new ProcessBuilder("/bin/sh", "-c", command).directory(project.toFile());
+            incomplete.environment().put("PLUGIN_ROOT", tempDir.resolve("incomplete-plugin").toString());
+            incomplete.environment().remove("CLAUDE_PLUGIN_ROOT");
+            Process incompleteProcess = incomplete.start();
+            incompleteProcess.getOutputStream().close();
+            assertEquals(0, incompleteProcess.waitFor(), event + ": " + read(incompleteProcess.getErrorStream()));
+            assertEquals("", read(incompleteProcess.getInputStream()));
+            assertEquals("", read(incompleteProcess.getErrorStream()));
         }
 
         assertFalse(Files.exists(project.resolve(".jaipilot")));

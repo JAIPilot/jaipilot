@@ -69,6 +69,20 @@ def main() -> None:
         (ROOT / "plugins/jaipilot/libexec/install.sh").is_file(),
         "Plugin-local installer is required",
     )
+    bootstrap = text("plugins/jaipilot/bin/jaipilot")
+    installer = text("plugins/jaipilot/libexec/install.sh")
+    require(
+        "jaipilot-toolkit.jar" in bootstrap
+        and "JAVA_HOME" in bootstrap
+        and "Java 17 or newer" in bootstrap,
+        "Plugin bootstrap must use the portable JAR with host Java 17+",
+    )
+    require(
+        "--artifact-url" in installer
+        and "--retry-all-errors" in installer
+        and "runtime/bin/java" not in installer,
+        "Installer must download the retryable portable payload without a bundled JRE",
+    )
     hooks = payload("plugins/jaipilot/hooks/hooks.json")
     hook_map = hooks.get("hooks")
     require(isinstance(hook_map, dict), "Plugin hooks are required")
@@ -83,6 +97,7 @@ def main() -> None:
         and "PLUGIN_ROOT" in session_command
         and "CLAUDE_PLUGIN_ROOT" in session_command
         and "exit 0" in session_command
+        and "-x" in session_command
         and "session-start.sh" in session_command,
         "SessionStart must use the provider-neutral detached initializer",
     )
@@ -109,6 +124,7 @@ def main() -> None:
         and "PLUGIN_ROOT" in post_command
         and "CLAUDE_PLUGIN_ROOT" in post_command
         and "exit 0" in post_command
+        and "-x" in post_command
         and "post-tool-use.sh" in post_command,
         "PostToolUse hook must use the portable commit filter",
     )
@@ -126,12 +142,17 @@ def main() -> None:
         and "PLUGIN_ROOT" in command
         and "CLAUDE_PLUGIN_ROOT" in command
         and "exit 0" in command
+        and "-x" in command
         and "stop.sh" in command,
         "Stop hook must use the Java-only portable filter",
     )
     stop_filter = ROOT / "plugins/jaipilot/hooks/stop.sh"
     require(stop_filter.is_file() and stop_filter.stat().st_mode & 0o111 != 0,
             "Stop hook Java project filter must be executable")
+    require(
+        "JAIPILOT_BOOTSTRAP_DISABLED=1" in text("plugins/jaipilot/hooks/stop.sh"),
+        "Stop must never synchronously bootstrap the plugin payload",
+    )
 
     mcp = payload("plugins/jaipilot/.mcp.json")
     servers = mcp.get("mcpServers")

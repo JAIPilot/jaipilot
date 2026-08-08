@@ -217,7 +217,7 @@
                 <version>${maven.antrun.plugin.version}</version>
                 <executions>
                     <execution>
-                        <id>bundle-runtime-distribution</id>
+                        <id>build-plugin-distribution</id>
                         <phase>package</phase>
                         <goals>
                             <goal>run</goal>
@@ -225,7 +225,7 @@
                         <configuration>
                             <target>
                                 <exec executable="sh" failonerror="true">
-                                    <arg value="${project.basedir}/scripts/build-bundled-dist.sh"/>
+                                    <arg value="${project.basedir}/scripts/build-plugin-dist.sh"/>
                                     <arg value="--version"/>
                                     <arg value="${project.version}"/>
                                 </exec>

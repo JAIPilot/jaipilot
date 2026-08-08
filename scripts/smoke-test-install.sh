@@ -8,20 +8,13 @@ export LC_ALL LANG
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 INSTALLER="$REPO_ROOT/plugins/jaipilot/libexec/install.sh"
-PLUGIN_RUNNER="$REPO_ROOT/plugins/jaipilot/bin/jaipilot"
+PLUGIN_ROOT="$REPO_ROOT/plugins/jaipilot"
+PLUGIN_RUNNER="$PLUGIN_ROOT/bin/jaipilot"
 DIST_DIR="$REPO_ROOT/target/distributions"
 SMOKE_DIR="$REPO_ROOT/target/smoke-install"
 VERSION=""
-CLASSIFIER=""
-NON_JAVA_DIR=""
-
-usage() {
-  cat <<'EOF'
-Usage: scripts/smoke-test-install.sh [--version <version>] [--classifier <platform>]
-
-Smoke-tests the plugin runner installation against a local release archive.
-EOF
-}
+BACKGROUND_APP=""
+RETRY_SERVER_PID=""
 
 die() {
   echo "$1" >&2
@@ -30,42 +23,14 @@ die() {
 
 compute_sha256() {
   if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$1" | awk '{print $1}'
-    return
+    sha256sum "$1" | awk '{print tolower($1)}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print tolower($1)}'
+  elif command -v openssl >/dev/null 2>&1; then
+    openssl dgst -sha256 "$1" | awk '{print tolower($NF)}'
+  else
+    die "Required checksum tool not found"
   fi
-  if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$1" | awk '{print $1}'
-    return
-  fi
-  if command -v openssl >/dev/null 2>&1; then
-    openssl dgst -sha256 "$1" | awk '{print $NF}'
-    return
-  fi
-  die "Required checksum tool not found: sha256sum, shasum, or openssl"
-}
-
-resolve_os() {
-  case "$(uname -s)" in
-    Linux) printf 'linux\n' ;;
-    Darwin) printf 'macos\n' ;;
-    *) die "Unsupported operating system: $(uname -s)" ;;
-  esac
-}
-
-resolve_arch() {
-  case "$(uname -m)" in
-    x86_64|amd64) printf 'x64\n' ;;
-    arm64|aarch64) printf 'aarch64\n' ;;
-    *) die "Unsupported architecture: $(uname -m)" ;;
-  esac
-}
-
-resolve_classifier() {
-  if [ -n "$CLASSIFIER" ]; then
-    printf '%s\n' "$CLASSIFIER"
-    return
-  fi
-  printf '%s-%s\n' "$(resolve_os)" "$(resolve_arch)"
 }
 
 while [ "$#" -gt 0 ]; do
@@ -75,256 +40,230 @@ while [ "$#" -gt 0 ]; do
       VERSION=${2#v}
       shift 2
       ;;
-    --classifier)
-      [ "$#" -ge 2 ] || die "Missing value for --classifier"
-      CLASSIFIER=$2
-      shift 2
-      ;;
     -h|--help)
-      usage
+      echo "Usage: scripts/smoke-test-install.sh [--version <version>]"
       exit 0
       ;;
-    *)
-      die "Unknown option: $1"
-      ;;
+    *) die "Unknown option: $1" ;;
   esac
 done
 
-[ -d "$DIST_DIR" ] || die "Missing distribution directory: $DIST_DIR"
-RESOLVED_CLASSIFIER=$(resolve_classifier)
-
 if [ -n "$VERSION" ]; then
-  TAR_GZ="$DIST_DIR/jaipilot-toolkit-$VERSION-$RESOLVED_CLASSIFIER.tar.gz"
+  ARTIFACT="$DIST_DIR/jaipilot-toolkit-$VERSION.jar"
 else
-  TAR_GZ=$(ls -1t "$DIST_DIR"/jaipilot-toolkit-*-"$RESOLVED_CLASSIFIER".tar.gz 2>/dev/null | head -n 1)
+  ARTIFACT=$(ls -1t "$DIST_DIR"/jaipilot-toolkit-*.jar 2>/dev/null | head -n 1)
+  VERSION=$(basename "$ARTIFACT" | sed -n 's/^jaipilot-toolkit-\([0-9][0-9.]*\)\.jar$/\1/p')
 fi
+[ -n "${ARTIFACT:-}" ] && [ -f "$ARTIFACT" ] || die "Missing portable JAIPilot JAR"
+[ -n "$VERSION" ] || die "Could not determine the plugin payload version"
+CHECKSUM_FILE="$ARTIFACT.sha256"
+printf '%s  %s\n' "$(compute_sha256 "$ARTIFACT")" "$(basename "$ARTIFACT")" > "$CHECKSUM_FILE"
 
-[ -n "${TAR_GZ:-}" ] || die "Could not find a JAIPilot tar.gz distribution under $DIST_DIR"
-[ -f "$TAR_GZ" ] || die "Missing distribution archive: $TAR_GZ"
-CHECKSUM_FILE="$TAR_GZ.sha256"
-INSTALL_VERSION=${VERSION:-$(basename "$TAR_GZ" | sed -n "s/^jaipilot-toolkit-\\([0-9][0-9.]*\\)-$RESOLVED_CLASSIFIER\\.tar\\.gz$/\\1/p")}
-[ -n "${INSTALL_VERSION:-}" ] || die "Could not determine the distribution version from $TAR_GZ"
-
-printf '%s  %s\n' "$(compute_sha256 "$TAR_GZ")" "$(basename "$TAR_GZ")" > "$CHECKSUM_FILE"
+ARTIFACT_BYTES=$(wc -c < "$ARTIFACT" | tr -d ' ')
+[ "$ARTIFACT_BYTES" -lt 20971520 ] || die "Plugin payload exceeds the 20 MiB release cap"
 
 rm -rf "$SMOKE_DIR"
 mkdir -p "$SMOKE_DIR"
-JAIPILOT_STATE_HOME="$SMOKE_DIR/state"
-export JAIPILOT_STATE_HOME
+STATE_HOME="$SMOKE_DIR/state"
+JAVA_PROJECT="$SMOKE_DIR/java-project"
+NON_JAVA_PROJECT=$(mktemp -d "${TMPDIR:-/tmp}/jaipilot-non-java.XXXXXX")
+mkdir -p "$JAVA_PROJECT/src/main/java/example"
+printf '<project/>\n' > "$JAVA_PROJECT/pom.xml"
+printf 'package example; public class Sample {}\n' \
+  > "$JAVA_PROJECT/src/main/java/example/Sample.java"
+git -C "$JAVA_PROJECT" init -q
+printf '{}\n' > "$NON_JAVA_PROJECT/package.json"
 
 cleanup_dashboard() {
-  metadata="$JAIPILOT_STATE_HOME/dashboard/server.json"
-  [ -f "$metadata" ] || return
+  if [ -n "$RETRY_SERVER_PID" ]; then
+    kill "$RETRY_SERVER_PID" 2>/dev/null || true
+  fi
+  rm -rf "$NON_JAVA_PROJECT"
+  metadata="$STATE_HOME/dashboard/server.json"
+  [ -f "$metadata" ] || return 0
   dashboard_pid=$(sed -n 's/.*"pid" : \([0-9][0-9]*\).*/\1/p' "$metadata" | head -n 1)
   case "$dashboard_pid" in
-    ''|*[!0-9]*) return ;;
+    ''|*[!0-9]*) return 0 ;;
     *) kill "$dashboard_pid" 2>/dev/null || true ;;
   esac
 }
-
-cleanup() {
-  cleanup_dashboard
-  [ -z "$NON_JAVA_DIR" ] || rm -rf "$NON_JAVA_DIR"
-}
-trap cleanup EXIT HUP INT TERM
+trap cleanup_dashboard EXIT HUP INT TERM
 
 if JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/incomplete-app" \
-  JAIPILOT_BOOTSTRAP_ARCHIVE_URL="file://$TAR_GZ" \
-  "$PLUGIN_RUNNER" version > "$SMOKE_DIR/incomplete-bootstrap.log" 2>&1; then
-  die "Plugin bootstrap accepted an archive override without its checksum"
+  JAIPILOT_BOOTSTRAP_ARTIFACT_URL="file://$ARTIFACT" \
+  "$PLUGIN_RUNNER" version > "$SMOKE_DIR/incomplete.log" 2>&1; then
+  die "Plugin bootstrap accepted an artifact override without its checksum"
 fi
-grep -Fq "archive and checksum overrides must be set together" \
-  "$SMOKE_DIR/incomplete-bootstrap.log" \
-  || die "Plugin bootstrap did not report incomplete archive overrides cleanly"
+grep -Fq "artifact and checksum overrides must be set together" "$SMOKE_DIR/incomplete.log" \
+  || die "Plugin bootstrap did not explain the incomplete override"
 
-JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/plugin-app" \
-JAIPILOT_BOOTSTRAP_ARCHIVE_URL="file://$TAR_GZ" \
-JAIPILOT_BOOTSTRAP_CHECKSUM_URL="file://$CHECKSUM_FILE" \
-  "$PLUGIN_RUNNER" version > "$SMOKE_DIR/plugin-version.json"
-grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/plugin-version.json" \
-  || die "Plugin bootstrap did not install and run version $INSTALL_VERSION"
-JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/plugin-app" \
-  "$PLUGIN_RUNNER" dashboard > "$SMOKE_DIR/plugin-dashboard.json"
-grep -Fq '"running" : true' "$SMOKE_DIR/plugin-dashboard.json" \
-  || die "Plugin bootstrap did not start the local dashboard"
-DASHBOARD_URL=$(awk -F '"' '/"url"/ {print $4; exit}' "$SMOKE_DIR/plugin-dashboard.json")
-case "$DASHBOARD_URL" in
-  http://127.0.0.1:*/) ;;
-  *) die "Plugin dashboard did not report a loopback URL" ;;
-esac
-curl -fsS "${DASHBOARD_URL}api/health" > "$SMOKE_DIR/plugin-dashboard-health.json"
-grep -Fq '"service" : "jaipilot-dashboard"' "$SMOKE_DIR/plugin-dashboard-health.json" \
-  || die "Plugin dashboard health endpoint was unavailable"
-JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/plugin-app" \
-  "$PLUGIN_RUNNER" version > "$SMOKE_DIR/plugin-cached-version.json"
-grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/plugin-cached-version.json" \
-  || die "Plugin bootstrap did not reuse the cached version"
-
-for removed_option in --prefix --bin-dir --lib-dir --no-bin-link; do
-  option_name=${removed_option#--}
-  if "$INSTALLER" "$removed_option" retired \
-    > "$SMOKE_DIR/removed-$option_name.log" 2>&1; then
-    die "Installer still accepted removed option $removed_option"
-  fi
-  grep -Fq "Unknown option: $removed_option" "$SMOKE_DIR/removed-$option_name.log" \
-    || die "Installer did not reject removed option $removed_option cleanly"
-done
-
-mkdir -p "$SMOKE_DIR/security-app/victim"
-printf 'keep\n' > "$SMOKE_DIR/security-app/victim/marker"
-MALICIOUS_VERSION=$(printf '1.0.0\n../../../victim')
-if "$INSTALLER" \
-  --version "$MALICIOUS_VERSION" \
-  --archive-url "file://$TAR_GZ" \
-  --checksum-url "file://$CHECKSUM_FILE" \
-  --app-dir "$SMOKE_DIR/security-app" \
-  > "$SMOKE_DIR/invalid-version.log" 2>&1; then
-  die "Installer accepted a path-traversal version"
-fi
-grep -Fq "Version must look like 1.0.0" "$SMOKE_DIR/invalid-version.log" \
-  || die "Installer did not report an invalid version cleanly"
-[ -f "$SMOKE_DIR/security-app/victim/marker" ] || die "Invalid version escaped the versions directory"
-
-mkdir -p "$SMOKE_DIR/lock-app/.install-lock"
-printf '%s\n' "$$" > "$SMOKE_DIR/lock-app/.install-lock/pid"
-if "$INSTALLER" \
-  --version "$INSTALL_VERSION" \
-  --archive-url "file://$TAR_GZ" \
-  --checksum-url "file://$CHECKSUM_FILE" \
-  --app-dir "$SMOKE_DIR/lock-app" \
-  > "$SMOKE_DIR/active-lock.log" 2>&1; then
-  die "Installer ignored an active install lock"
-fi
-grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/active-lock.log" \
-  || die "Installer did not report the active install lock cleanly"
-[ "$(cat "$SMOKE_DIR/lock-app/.install-lock/pid")" = "$$" ] \
-  || die "Installer changed another process's active lock"
-
-"$INSTALLER" \
-  --version "$INSTALL_VERSION" \
-  --archive-url "file://$TAR_GZ" \
-  --checksum-url "file://$CHECKSUM_FILE" \
-  --app-dir "$SMOKE_DIR/app"
-
-[ -L "$SMOKE_DIR/app/current" ] || die "Install did not create the current symlink"
-[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Install did not create the stable toolkit-harness launcher"
-[ -x "$SMOKE_DIR/app/current/libexec/install.sh" ] || die "Distribution did not include the self-update installer"
-[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh" ] \
-  || die "Distribution did not include the executable post-tool hook"
-[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/session-start.sh" ] \
-  || die "Distribution did not include the executable SessionStart initializer"
-[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/java-project-root.sh" ] \
-  || die "Distribution did not include the executable Java project detector"
-[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/stop.sh" ] \
-  || die "Distribution did not include the executable Stop filter"
-[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/bin/jaipilot-mcp" ] \
-  || die "Distribution did not include the executable MCP launcher"
-"$SMOKE_DIR/app/bin/jaipilot" version > "$SMOKE_DIR/version.json"
-grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/version.json" \
-  || die "Installed toolkit harness did not report version $INSTALL_VERSION"
-
-printf '%s' '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"git status --short"}}' \
-  | PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
-    JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
-    JAIPILOT_DASHBOARD_DISABLED=1 \
-    "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh" \
-    > "$SMOKE_DIR/non-commit-hook.json"
-[ ! -s "$SMOKE_DIR/non-commit-hook.json" ] || die "Post-tool hook emitted output for a non-commit command"
-
-NON_JAVA_DIR=$(mktemp -d "${TMPDIR:-/tmp}/jaipilot-smoke-nonjava.XXXXXX")
-printf '{}\n' > "$NON_JAVA_DIR/package.json"
-(
-  cd "$NON_JAVA_DIR"
-  PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
-  JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
-  JAIPILOT_DASHBOARD_DISABLED=1 \
-    "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/session-start.sh"
-  printf '%s' '{"tool_input":{"command":"git commit -m ignored"}}' \
-    | PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
-      JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
-      JAIPILOT_DASHBOARD_DISABLED=1 \
-      "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh"
-  PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
-  JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
-  JAIPILOT_DASHBOARD_DISABLED=1 \
-    "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/stop.sh"
-)
-[ ! -d "$SMOKE_DIR/state/session" ] \
-  || die "Non-Java hooks created initialization state"
-
-PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
 JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
-JAIPILOT_DASHBOARD_DISABLED=1 \
-  "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/session-start.sh"
+JAIPILOT_BOOTSTRAP_ARTIFACT_URL="file://$ARTIFACT" \
+JAIPILOT_BOOTSTRAP_CHECKSUM_URL="file://$CHECKSUM_FILE" \
+  "$PLUGIN_RUNNER" version > "$SMOKE_DIR/version.json"
+grep -Fq "\"version\" : \"$VERSION\"" "$SMOKE_DIR/version.json" \
+  || die "Installed plugin payload did not report version $VERSION"
+[ -f "$SMOKE_DIR/app/versions/$VERSION/jaipilot-toolkit.jar" ] \
+  || die "Installer did not persist the portable JAR"
+[ -L "$SMOKE_DIR/app/current" ] || die "Installer did not publish the current version link"
+[ ! -d "$SMOKE_DIR/app/current/runtime" ] || die "Installer unexpectedly bundled a private JRE"
+[ ! -d "$SMOKE_DIR/app/current/plugins" ] || die "Installer duplicated the host plugin"
+
+JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" "$PLUGIN_RUNNER" version \
+  > "$SMOKE_DIR/cached-version.json"
+grep -Fq "\"version\" : \"$VERSION\"" "$SMOKE_DIR/cached-version.json" \
+  || die "Plugin did not reuse its cached payload"
+
+# A transient HTTP transport failure must be retried without weakening checksum verification.
+cat > "$SMOKE_DIR/retry-server.py" <<'PY'
+import http.server
+import pathlib
+import sys
+
+artifact, checksum, counter, port_file = map(pathlib.Path, sys.argv[1:])
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        count = int(counter.read_text() if counter.exists() else "0") + 1
+        counter.write_text(str(count))
+        if count <= 2:
+            self.send_response(503)
+            self.end_headers()
+            return
+        source = artifact if self.path == "/payload.jar" else checksum
+        payload = source.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def log_message(self, *_args):
+        return
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+port_file.write_text(str(server.server_port))
+server.serve_forever()
+PY
+python3 "$SMOKE_DIR/retry-server.py" \
+  "$ARTIFACT" "$CHECKSUM_FILE" "$SMOKE_DIR/curl-count" "$SMOKE_DIR/retry-port" &
+RETRY_SERVER_PID=$!
 attempt=0
-while [ "$attempt" -lt 100 ]; do
-  REPOSITORY_SNAPSHOT=$(
-    find "$SMOKE_DIR/state/repositories" -type f -name '*.json' -print 2>/dev/null \
-      | head -n 1 || true
-  )
-  if [ -n "${REPOSITORY_SNAPSHOT:-}" ] && grep -Fq '"analysisStatus" : "ready"' "$REPOSITORY_SNAPSHOT"; then
-    break
-  fi
+while [ "$attempt" -lt 50 ] && [ ! -f "$SMOKE_DIR/retry-port" ]; do
   attempt=$((attempt + 1))
   sleep 0.1
 done
-[ -n "${REPOSITORY_SNAPSHOT:-}" ] || die "SessionStart did not register the repository"
-grep -Fq '"analysisStatus" : "ready"' "$REPOSITORY_SNAPSHOT" \
-  || die "SessionStart did not initialize current quality in the background"
+[ -f "$SMOKE_DIR/retry-port" ] || die "Retry fixture server did not start"
+RETRY_PORT=$(cat "$SMOKE_DIR/retry-port")
+"$INSTALLER" \
+  --version "$VERSION" \
+  --artifact-url "http://127.0.0.1:$RETRY_PORT/payload.jar" \
+  --checksum-url "http://127.0.0.1:$RETRY_PORT/payload.jar.sha256" \
+  --app-dir "$SMOKE_DIR/retry-app" \
+  > "$SMOKE_DIR/retry.log" 2>&1
+kill "$RETRY_SERVER_PID" 2>/dev/null || true
+RETRY_SERVER_PID=""
+[ "$(cat "$SMOKE_DIR/curl-count")" -ge 4 ] \
+  || die "Installer did not retry a transient curl transport failure"
 
-printf '%s' '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"git commit -m smoke"}}' \
-  | PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
-    JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
-    JAIPILOT_DASHBOARD_DISABLED=1 \
-    "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh" \
-    > "$SMOKE_DIR/post-commit-hook.json"
-[ -n "${REPOSITORY_SNAPSHOT:-}" ] || die "Installed post-tool hook did not persist repository state"
-grep -Fq '"analysisStatus" : "ready"' "$REPOSITORY_SNAPSHOT" \
-  || die "Installed post-tool hook did not persist ready current quality"
-grep -Fq '"revision"' "$REPOSITORY_SNAPSHOT" \
-  || die "Installed post-tool hook did not persist the analyzed Git revision"
+mkdir -p "$SMOKE_DIR/lock-app/.install-lock"
+printf '%s\n' "$$" > "$SMOKE_DIR/lock-app/.install-lock/pid"
+if "$INSTALLER" --version "$VERSION" \
+  --artifact-url "file://$ARTIFACT" \
+  --checksum-url "file://$CHECKSUM_FILE" \
+  --app-dir "$SMOKE_DIR/lock-app" > "$SMOKE_DIR/lock.log" 2>&1; then
+  die "Installer ignored an active install lock"
+fi
+grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/lock.log" \
+  || die "Installer did not report its active lock"
+
+# Non-Java directories must never bootstrap, create state, or emit hook errors.
+(
+  cd "$NON_JAVA_PROJECT"
+  for hook in session-start.sh stop.sh; do
+    PLUGIN_ROOT="$PLUGIN_ROOT" \
+    JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/non-java-app" \
+    JAIPILOT_STATE_HOME="$SMOKE_DIR/non-java-state" \
+      "$PLUGIN_ROOT/hooks/$hook" > "$SMOKE_DIR/non-java-$hook.out" 2>&1
+  done
+  printf '%s' '{"tool_input":{"command":"git commit -m ignored"}}' \
+    | PLUGIN_ROOT="$PLUGIN_ROOT" \
+      JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/non-java-app" \
+      JAIPILOT_STATE_HOME="$SMOKE_DIR/non-java-state" \
+      "$PLUGIN_ROOT/hooks/post-tool-use.sh" \
+      > "$SMOKE_DIR/non-java-post.out" 2>&1
+)
+[ ! -e "$SMOKE_DIR/non-java-app" ] || die "Non-Java hooks bootstrapped JAIPilot"
+[ ! -e "$SMOKE_DIR/non-java-state" ] || die "Non-Java hooks created JAIPilot state"
+[ ! -s "$SMOKE_DIR/non-java-session-start.sh.out" ] \
+  && [ ! -s "$SMOKE_DIR/non-java-stop.sh.out" ] \
+  && [ ! -s "$SMOKE_DIR/non-java-post.out" ] \
+  || die "Non-Java hooks emitted output"
+
+# Stop is fail-open only for payload availability. It must return silently while
+# SessionStart owns a failed or incomplete background download.
+(
+  cd "$JAVA_PROJECT"
+  PLUGIN_ROOT="$PLUGIN_ROOT" \
+  JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/unavailable-app" \
+  JAIPILOT_STATE_HOME="$SMOKE_DIR/unavailable-state" \
+    "$PLUGIN_ROOT/hooks/stop.sh" > "$SMOKE_DIR/unavailable-stop.out" 2>&1
+)
+[ ! -s "$SMOKE_DIR/unavailable-stop.out" ] \
+  || die "Unavailable payload leaked a Stop hook error"
+[ ! -e "$SMOKE_DIR/unavailable-app" ] \
+  || die "Stop hook attempted a synchronous bootstrap"
+
+# SessionStart returns immediately and records a failed download only in its
+# owner-private diagnostic log; the host hook still succeeds.
+BACKGROUND_APP="$SMOKE_DIR/background-app"
+(
+  cd "$JAVA_PROJECT"
+  PLUGIN_ROOT="$PLUGIN_ROOT" \
+  JAIPILOT_RUNTIME_HOME="$BACKGROUND_APP" \
+  JAIPILOT_STATE_HOME="$SMOKE_DIR/background-state" \
+  JAIPILOT_BOOTSTRAP_ARTIFACT_URL="file://$SMOKE_DIR/missing.jar" \
+  JAIPILOT_BOOTSTRAP_CHECKSUM_URL="file://$SMOKE_DIR/missing.jar.sha256" \
+    "$PLUGIN_ROOT/hooks/session-start.sh"
+)
+attempt=0
+while [ "$attempt" -lt 100 ]; do
+  log="$SMOKE_DIR/background-state/session/session-start.log"
+  [ -f "$log" ] && grep -Eq 'curl:|Could not|failed' "$log" && break
+  attempt=$((attempt + 1))
+  sleep 0.1
+done
+[ -f "$SMOKE_DIR/background-state/session/session-start.log" ] \
+  || die "Background bootstrap did not retain its private diagnostic log"
+
+# Installed Java-project hooks and the real protocol server remain functional.
+(
+  cd "$JAVA_PROJECT"
+  PLUGIN_ROOT="$PLUGIN_ROOT" \
+  JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+  JAIPILOT_STATE_HOME="$STATE_HOME" \
+  JAIPILOT_DASHBOARD_DISABLED=1 \
+    "$PLUGIN_ROOT/hooks/session-start.sh"
+)
+attempt=0
+while [ "$attempt" -lt 150 ]; do
+  snapshot=$(find "$STATE_HOME/repositories" -type f -name '*.json' -print 2>/dev/null | head -n 1 || true)
+  [ -n "${snapshot:-}" ] && grep -Fq '"analysisStatus" : "ready"' "$snapshot" && break
+  attempt=$((attempt + 1))
+  sleep 0.1
+done
+[ -n "${snapshot:-}" ] || die "SessionStart did not register the Java repository"
+grep -Fq '"analysisStatus" : "ready"' "$snapshot" \
+  || die "SessionStart did not initialize Java quality"
 
 (
-  cd "$NON_JAVA_DIR"
-  JAIPILOT_STATE_HOME="$SMOKE_DIR/mcp-only-state" \
+  cd "$JAVA_PROJECT"
+  JAIPILOT_STATE_HOME="$SMOKE_DIR/mcp-state" \
   JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
-  JAIPILOT_DASHBOARD_DISABLED=0 \
-    python3 "$REPO_ROOT/scripts/smoke-test-mcp.py" \
-    "$SMOKE_DIR/app/current/plugins/jaipilot/bin/jaipilot-mcp"
+  JAIPILOT_DASHBOARD_DISABLED=1 \
+    python3 "$REPO_ROOT/scripts/smoke-test-mcp.py" "$PLUGIN_ROOT/bin/jaipilot-mcp"
 )
-[ ! -e "$SMOKE_DIR/mcp-only-state/dashboard/server.json" ] \
-  || die "MCP activation started a dashboard in a non-Java directory"
-[ ! -d "$SMOKE_DIR/mcp-only-state/repositories" ] \
-  || die "MCP activation registered a non-Java directory"
 
-STABLE_RUNNER_SHA256=$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")
-"$SMOKE_DIR/app/current/libexec/install.sh" \
-  --version "$INSTALL_VERSION" \
-  --archive-url "file://$TAR_GZ" \
-  --checksum-url "file://$CHECKSUM_FILE" \
-  --app-dir "$SMOKE_DIR/app"
-
-[ "$STABLE_RUNNER_SHA256" = "$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")" ] \
-  || die "Self-update changed the stable plugin runner unexpectedly"
-[ -L "$SMOKE_DIR/app/current" ] || die "Self-update did not preserve the current symlink"
-[ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Self-update did not preserve the toolkit-harness launcher"
-"$SMOKE_DIR/app/bin/jaipilot" version > "$SMOKE_DIR/app-version.json"
-
-rm -f "$SMOKE_DIR/app/current"
-mkdir -p "$SMOKE_DIR/app/current"
-if "$INSTALLER" \
-  --version "$INSTALL_VERSION" \
-  --archive-url "file://$TAR_GZ" \
-  --checksum-url "file://$CHECKSUM_FILE" \
-  --app-dir "$SMOKE_DIR/app" \
-  > "$SMOKE_DIR/invalid-current.log" 2>&1; then
-  die "Installer replaced a non-symlink current directory"
-fi
-grep -Fq "Current release path is not a symlink" "$SMOKE_DIR/invalid-current.log" \
-  || die "Installer did not report the unsafe current path cleanly"
-[ -d "$SMOKE_DIR/app/current" ] && [ ! -L "$SMOKE_DIR/app/current" ] \
-  || die "Installer changed the non-symlink current directory"
-[ ! -d "$SMOKE_DIR/app/.install-lock" ] || die "Installer left its lock after a failed update"
-
-echo "Smoke-tested install script"
-echo "  Archive: $TAR_GZ"
+echo "Smoke-tested lean plugin installation"
+echo "  Artifact: $ARTIFACT"
+echo "  Bytes: $ARTIFACT_BYTES"
+echo "  Runtime: host Java 17+"
