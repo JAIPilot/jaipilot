@@ -128,7 +128,7 @@ Improvement totals are credited only after a validated candidate is applied; att
 work never inflates them. Current status is replaced by each new quality analysis, validation, or
 changed-code proof, with its source and capture time shown so stale evidence is not presented as
 live. Metrics and one-way project identifiers stay in JAIPilot's owner-private local state. The
-dashboard binds only to IPv4 loopback, exposes read-only endpoints, and sends no telemetry or source,
+dashboard binds only to IPv4 loopback, exposes read-only endpoints, and sends no telemetry, source,
 paths, or usage data anywhere.
 
 See the [local dashboard startup evaluation](docs/evaluations/local-dashboard-startup.md) for raw

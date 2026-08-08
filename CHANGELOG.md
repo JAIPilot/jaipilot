@@ -4,6 +4,11 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 
 ## Unreleased
 
+### Fixed
+
+- Made truncated gate feedback explicit and improved current-status accessibility, readability, and
+  documentation clarity after the v3.3.1 dashboard review.
+
 ## [3.3.1] - 2026-08-08
 
 ### Added

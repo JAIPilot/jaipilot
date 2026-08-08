@@ -173,7 +173,7 @@
               <strong id="findings-total">—</strong>
               <span>active findings in the latest analyzed scope</span>
             </div>
-            <div class="severity-row" aria-label="Findings by severity">
+            <div class="severity-row" role="group" aria-label="Findings by severity">
               <span class="severity critical"><b id="findings-critical">0</b> critical</span>
               <span class="severity high"><b id="findings-high">0</b> high</span>
               <span class="severity medium"><b id="findings-medium">0</b> medium</span>
@@ -189,6 +189,7 @@
           <div>
             <p class="eyebrow">LATEST GATE RESULT</p>
             <h3 id="gate-status-title">Proof and apply gates</h3>
+            <p id="gate-message-count" class="status-meta gate-message-count">No gate messages</p>
           </div>
           <ol id="gate-list" class="gate-list">
             <li class="empty-status">No validation or changed-code proof has run yet.</li>

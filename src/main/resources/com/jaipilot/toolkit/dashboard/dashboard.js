@@ -246,6 +246,10 @@ function renderGates(gates) {
       (message) => ({ message, state: 'warning', label: 'WARNING' }),
     ),
   ];
+  const total = failures.length + warnings.length;
+  setText('gate-message-count', total > items.length
+    ? `Showing ${items.length} of ${total} gate messages`
+    : `${number.format(total)} gate message${total === 1 ? '' : 's'}`);
   const empty = gates.passed === true
     ? 'Every reported proof and apply gate passed.'
     : gates.passed === false
