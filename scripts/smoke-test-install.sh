@@ -13,7 +13,6 @@ PLUGIN_RUNNER="$PLUGIN_ROOT/bin/jaipilot"
 DIST_DIR="$REPO_ROOT/target/distributions"
 SMOKE_DIR="$REPO_ROOT/target/smoke-install"
 VERSION=""
-BACKGROUND_APP=""
 RETRY_SERVER_PID=""
 
 die() {
@@ -66,28 +65,18 @@ rm -rf "$SMOKE_DIR"
 mkdir -p "$SMOKE_DIR"
 STATE_HOME="$SMOKE_DIR/state"
 JAVA_PROJECT="$SMOKE_DIR/java-project"
-NON_JAVA_PROJECT=$(mktemp -d "${TMPDIR:-/tmp}/jaipilot-non-java.XXXXXX")
 mkdir -p "$JAVA_PROJECT/src/main/java/example"
 printf '<project/>\n' > "$JAVA_PROJECT/pom.xml"
 printf 'package example; public class Sample {}\n' \
   > "$JAVA_PROJECT/src/main/java/example/Sample.java"
 git -C "$JAVA_PROJECT" init -q
-printf '{}\n' > "$NON_JAVA_PROJECT/package.json"
 
-cleanup_dashboard() {
+cleanup() {
   if [ -n "$RETRY_SERVER_PID" ]; then
     kill "$RETRY_SERVER_PID" 2>/dev/null || true
   fi
-  rm -rf "$NON_JAVA_PROJECT"
-  metadata="$STATE_HOME/dashboard/server.json"
-  [ -f "$metadata" ] || return 0
-  dashboard_pid=$(sed -n 's/.*"pid" : \([0-9][0-9]*\).*/\1/p' "$metadata" | head -n 1)
-  case "$dashboard_pid" in
-    ''|*[!0-9]*) return 0 ;;
-    *) kill "$dashboard_pid" 2>/dev/null || true ;;
-  esac
 }
-trap cleanup_dashboard EXIT HUP INT TERM
+trap cleanup EXIT HUP INT TERM
 
 if JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/incomplete-app" \
   JAIPILOT_BOOTSTRAP_ARTIFACT_URL="file://$ARTIFACT" \
@@ -176,92 +165,28 @@ fi
 grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/lock.log" \
   || die "Installer did not report its active lock"
 
-# Non-Java directories must never bootstrap, create state, or emit hook errors.
-(
-  cd "$NON_JAVA_PROJECT"
-  for hook in session-start.sh stop.sh; do
-    PLUGIN_ROOT="$PLUGIN_ROOT" \
-    JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/non-java-app" \
-    JAIPILOT_STATE_HOME="$SMOKE_DIR/non-java-state" \
-      "$PLUGIN_ROOT/hooks/$hook" > "$SMOKE_DIR/non-java-$hook.out" 2>&1
-  done
-  printf '%s' '{"tool_input":{"command":"git commit -m ignored"}}' \
-    | PLUGIN_ROOT="$PLUGIN_ROOT" \
-      JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/non-java-app" \
-      JAIPILOT_STATE_HOME="$SMOKE_DIR/non-java-state" \
-      "$PLUGIN_ROOT/hooks/post-tool-use.sh" \
-      > "$SMOKE_DIR/non-java-post.out" 2>&1
-)
-[ ! -e "$SMOKE_DIR/non-java-app" ] || die "Non-Java hooks bootstrapped JAIPilot"
-[ ! -e "$SMOKE_DIR/non-java-state" ] || die "Non-Java hooks created JAIPilot state"
-[ ! -s "$SMOKE_DIR/non-java-session-start.sh.out" ] \
-  && [ ! -s "$SMOKE_DIR/non-java-stop.sh.out" ] \
-  && [ ! -s "$SMOKE_DIR/non-java-post.out" ] \
-  || die "Non-Java hooks emitted output"
-
-# Stop is fail-open only for payload availability. It must return silently while
-# SessionStart owns a failed or incomplete background download.
+# The plugin is available to the agent but performs no repository work merely
+# because the host starts its MCP server.
+[ ! -e "$PLUGIN_ROOT/hooks" ] || die "Plugin still contains automatic coding-tool hooks"
 (
   cd "$JAVA_PROJECT"
-  PLUGIN_ROOT="$PLUGIN_ROOT" \
-  JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/unavailable-app" \
-  JAIPILOT_STATE_HOME="$SMOKE_DIR/unavailable-state" \
-    "$PLUGIN_ROOT/hooks/stop.sh" > "$SMOKE_DIR/unavailable-stop.out" 2>&1
-)
-[ ! -s "$SMOKE_DIR/unavailable-stop.out" ] \
-  || die "Unavailable payload leaked a Stop hook error"
-[ ! -e "$SMOKE_DIR/unavailable-app" ] \
-  || die "Stop hook attempted a synchronous bootstrap"
-
-# SessionStart returns immediately and records a failed download only in its
-# owner-private diagnostic log; the host hook still succeeds.
-BACKGROUND_APP="$SMOKE_DIR/background-app"
-(
-  cd "$JAVA_PROJECT"
-  PLUGIN_ROOT="$PLUGIN_ROOT" \
-  JAIPILOT_RUNTIME_HOME="$BACKGROUND_APP" \
-  JAIPILOT_STATE_HOME="$SMOKE_DIR/background-state" \
-  JAIPILOT_BOOTSTRAP_ARTIFACT_URL="file://$SMOKE_DIR/missing.jar" \
-  JAIPILOT_BOOTSTRAP_CHECKSUM_URL="file://$SMOKE_DIR/missing.jar.sha256" \
-    "$PLUGIN_ROOT/hooks/session-start.sh"
-)
-attempt=0
-while [ "$attempt" -lt 100 ]; do
-  log="$SMOKE_DIR/background-state/session/session-start.log"
-  [ -f "$log" ] && grep -Eq 'curl:|Could not|failed' "$log" && break
-  attempt=$((attempt + 1))
-  sleep 0.1
-done
-[ -f "$SMOKE_DIR/background-state/session/session-start.log" ] \
-  || die "Background bootstrap did not retain its private diagnostic log"
-
-# Installed Java-project hooks and the real protocol server remain functional.
-(
-  cd "$JAVA_PROJECT"
-  PLUGIN_ROOT="$PLUGIN_ROOT" \
-  JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
   JAIPILOT_STATE_HOME="$STATE_HOME" \
-  JAIPILOT_DASHBOARD_DISABLED=1 \
-    "$PLUGIN_ROOT/hooks/session-start.sh"
-)
-attempt=0
-while [ "$attempt" -lt 150 ]; do
-  snapshot=$(find "$STATE_HOME/repositories" -type f -name '*.json' -print 2>/dev/null | head -n 1 || true)
-  [ -n "${snapshot:-}" ] && grep -Fq '"analysisStatus" : "ready"' "$snapshot" && break
-  attempt=$((attempt + 1))
-  sleep 0.1
-done
-[ -n "${snapshot:-}" ] || die "SessionStart did not register the Java repository"
-grep -Fq '"analysisStatus" : "ready"' "$snapshot" \
-  || die "SessionStart did not initialize Java quality"
-
-(
-  cd "$JAVA_PROJECT"
-  JAIPILOT_STATE_HOME="$SMOKE_DIR/mcp-state" \
   JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
   JAIPILOT_DASHBOARD_DISABLED=1 \
     python3 "$REPO_ROOT/scripts/smoke-test-mcp.py" "$PLUGIN_ROOT/bin/jaipilot-mcp"
 )
+[ ! -e "$STATE_HOME/repositories" ] \
+  || die "MCP initialization analyzed or registered a repository without an agent tool call"
+
+# An explicit agent-selected snapshot initializes the common dashboard store.
+JAIPILOT_STATE_HOME="$STATE_HOME" \
+JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+JAIPILOT_DASHBOARD_DISABLED=1 \
+  "$PLUGIN_RUNNER" snapshot --project "$JAVA_PROJECT" > "$SMOKE_DIR/snapshot.json"
+snapshot=$(find "$STATE_HOME/repositories" -type f -name '*.json' -print 2>/dev/null | head -n 1 || true)
+[ -n "${snapshot:-}" ] || die "Explicit snapshot did not register the Java repository"
+grep -Fq '"analysisStatus" : "ready"' "$snapshot" \
+  || die "Explicit snapshot did not initialize Java quality"
 
 echo "Smoke-tested lean plugin installation"
 echo "  Artifact: $ARTIFACT"

@@ -19,14 +19,13 @@ The plugin exposes six synchronous MCP tools:
 Its Agent Skills are `jaipilot-review-diff`, `jaipilot-generate-tests`, and
 `jaipilot-clean-java`.
 
-At SessionStart, a lightweight shell check first requires a Maven or Gradle build plus Java source.
-Only then does a detached read-only snapshot register the repository, record its local GitHub origin,
-download the checksum-verified portable JAR when needed, initialize current metrics, and start the
-loopback dashboard. JAIPilot uses Java 17+ from `JAVA_HOME` or `PATH`; it does not download a private
-JRE or a platform-specific bundle. The direct `git commit` post-tool hook queues the same Java-only
-refresh. The Stop hook checks the current Java/build diff only when the payload is ready and never
-downloads synchronously. Other directories exit silently without starting Java, downloading
-JAIPilot, or creating state. These are coding-tool hooks, not a global Git hook.
+JAIPilot installs no automatic hooks. Opening a repository, editing a file, running a shell command,
+committing, or stopping an agent session does not analyze the repository or run its build. The host
+agent chooses a JAIPilot MCP tool when deterministic evidence is useful. An explicit snapshot records
+the repository and GitHub origin, refreshes current metrics, and starts the loopback dashboard.
+
+JAIPilot uses Java 17+ from `JAVA_HOME` or `PATH`; it downloads one checksum-verified portable JAR,
+not a private JRE or platform-specific bundle.
 
 The private machine-wide dashboard is normally available at <http://127.0.0.1:7433/>. Its repository
 selector reads the common owner-private state store and shows every retained Java repository, its

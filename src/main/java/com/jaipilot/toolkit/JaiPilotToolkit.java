@@ -1,7 +1,6 @@
 package com.jaipilot.toolkit;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -10,7 +9,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.jaipilot.toolkit.core.DiffVerificationService;
 import com.jaipilot.toolkit.core.GitChangeService;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -68,43 +66,34 @@ public final class JaiPilotToolkit {
         if (arguments.length > 0 && "dashboard-serve".equals(arguments[0])) {
             System.exit(DashboardServer.serve(mapper, stateRoot, System.err));
         }
-        int status = run(arguments, System.in, System.out, System.err, stateRoot, mapper);
+        int status = run(arguments, System.out, System.err, stateRoot, mapper);
         if (status != 0) {
             System.exit(status);
         }
     }
 
     static int run(String[] arguments, PrintStream stdout, PrintStream stderr) {
-        return run(arguments, InputStream.nullInputStream(), stdout, stderr);
-    }
-
-    static int run(String[] arguments, InputStream stdin, PrintStream stdout, PrintStream stderr) {
-        return run(arguments, stdin, stdout, stderr, ToolkitRunStore.defaultRoot());
+        return run(arguments, stdout, stderr, ToolkitRunStore.defaultRoot());
     }
 
     static int run(
             String[] arguments,
-            InputStream stdin,
             PrintStream stdout,
             PrintStream stderr,
             Path stateRoot
     ) {
-        return run(arguments, stdin, stdout, stderr, stateRoot, mapper());
+        return run(arguments, stdout, stderr, stateRoot, mapper());
     }
 
     static int run(
             String[] arguments,
-            InputStream stdin,
             PrintStream stdout,
             PrintStream stderr,
             Path stateRoot,
             ObjectMapper mapper
     ) {
         try {
-            Object result = execute(arguments, stdin, stderr, stateRoot, mapper);
-            if (result == NoOutput.INSTANCE) {
-                return 0;
-            }
+            Object result = execute(arguments, stderr, stateRoot, mapper);
             if (result instanceof Usage usage) {
                 stdout.print(usage.text());
                 return 0;
@@ -112,10 +101,6 @@ public final class JaiPilotToolkit {
             if (result instanceof FailedProof failed) {
                 writeJson(mapper, stdout, failed);
                 return 1;
-            }
-            if (result instanceof HookResponse response) {
-                writeJson(mapper, stdout, response);
-                return 0;
             }
             writeJson(mapper, stdout, new Success(true, result));
             return 0;
@@ -136,7 +121,6 @@ public final class JaiPilotToolkit {
 
     private static Object execute(
             String[] arguments,
-            InputStream stdin,
             PrintStream stderr,
             Path stateRoot,
             ObjectMapper mapper
@@ -157,17 +141,16 @@ public final class JaiPilotToolkit {
         }
         ToolkitRunStore store = new ToolkitRunStore(mapper, stateRoot, message -> stderr.println("jaipilot: " + message));
         RepositorySnapshotStore snapshots = new RepositorySnapshotStore(mapper, stateRoot);
-        if ("hook-stop".equals(parsed.command())) {
-            parsed.allow("project");
-            return stopHook(mapper, stdin, parsed.project(), store);
-        }
-        return executeEvidenceCommand(parsed, store, snapshots);
+        return executeEvidenceCommand(parsed, store, snapshots, mapper, stateRoot, stderr);
     }
 
     private static Object executeEvidenceCommand(
             ParsedArguments parsed,
             ToolkitRunStore store,
-            RepositorySnapshotStore snapshots
+            RepositorySnapshotStore snapshots,
+            ObjectMapper mapper,
+            Path stateRoot,
+            PrintStream stderr
     ) {
         return switch (parsed.command()) {
             case "inspect" -> {
@@ -177,7 +160,9 @@ public final class JaiPilotToolkit {
             }
             case "snapshot" -> {
                 parsed.allow("project");
-                yield refreshSnapshot(parsed.project(), store, snapshots);
+                Object snapshot = refreshSnapshot(parsed.project(), store, snapshots);
+                DashboardServer.ensureRunning(mapper, stateRoot, stderr, false);
+                yield snapshot;
             }
             case "quality" -> {
                 parsed.allow("project", "mode", "class", "coverage-threshold");
@@ -247,51 +232,6 @@ public final class JaiPilotToolkit {
         }
     }
 
-    private static Object stopHook(
-            ObjectMapper mapper,
-            InputStream stdin,
-            Path project,
-            ToolkitRunStore store
-    ) {
-        if (stopHookActive(mapper, stdin)) {
-            return NoOutput.INSTANCE;
-        }
-        try {
-            ToolkitRunStore.DiffGateStatus gate = store.diffGate(
-                    project,
-                    DiffVerificationService.DEFAULT_THRESHOLDS
-            );
-            return "review_required".equals(gate.status())
-                    ? new HookResponse("block", hookReason(gate))
-                    : NoOutput.INSTANCE;
-        } catch (GitChangeService.NotGitWorktreeException exception) {
-            return NoOutput.INSTANCE;
-        } catch (RuntimeException exception) {
-            return new HookResponse(
-                    "block",
-                    "JAIPilot could not inspect the current Java diff: " + rootMessage(exception)
-                            + ". Resolve this deterministic check before finishing."
-            );
-        }
-    }
-
-    private static boolean stopHookActive(ObjectMapper mapper, InputStream stdin) {
-        try {
-            JsonNode input = mapper.readTree(stdin);
-            return input != null && input.path("stop_hook_active").asBoolean(false);
-        } catch (IOException exception) {
-            return false;
-        }
-    }
-
-    private static String hookReason(ToolkitRunStore.DiffGateStatus gate) {
-        return "JAIPilot found " + gate.proofRelevantPaths().size()
-                + " changed Java/build input(s) without proof for fingerprint "
-                + gate.fingerprint().substring(0, 12)
-                + ". Use the jaipilot-review-diff skill, run the private `prove-diff` command, "
-                + "and continue only after the clean build, coverage, PIT, quality, and ArchUnit gates pass.";
-    }
-
     static ObjectMapper mapper() {
         SimpleModule module = new SimpleModule();
         module.addSerializer(Path.class, stringSerializer(Path::toString));
@@ -345,9 +285,6 @@ public final class JaiPilotToolkit {
     private record ErrorDetail(String code, String message) {
     }
 
-    private record HookResponse(String decision, String reason) {
-    }
-
     private record SnapshotSkipped(boolean applicable, String reason) {
     }
 
@@ -355,10 +292,6 @@ public final class JaiPilotToolkit {
     }
 
     private record Usage(String text) {
-    }
-
-    private enum NoOutput {
-        INSTANCE
     }
 
     private static final class ParsedArguments {

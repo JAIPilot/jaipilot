@@ -21,7 +21,6 @@ if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
 elif command -v java >/dev/null 2>&1; then
   JAVA_COMMAND=$(command -v java)
 else
-  [ "${JAIPILOT_BOOTSTRAP_DISABLED:-0}" = "1" ] && exit 0
   echo "JAIPilot requires Java 17 or newer in JAVA_HOME or PATH." >&2
   exit 1
 fi
@@ -37,20 +36,17 @@ case "$JAVA_SPEC" in
 esac
 case "$JAVA_MAJOR" in
   ''|*[!0-9]*)
-    [ "${JAIPILOT_BOOTSTRAP_DISABLED:-0}" = "1" ] && exit 0
     echo "JAIPilot could not determine the Java version from $JAVA_COMMAND." >&2
     exit 1
     ;;
 esac
 if [ "$JAVA_MAJOR" -lt 17 ]; then
-  [ "${JAIPILOT_BOOTSTRAP_DISABLED:-0}" = "1" ] && exit 0
   echo "JAIPilot requires Java 17 or newer; found Java $JAVA_SPEC." >&2
   exit 1
 fi
 
 PAYLOAD="$APP_DIR/versions/$VERSION/jaipilot-toolkit.jar"
 if [ ! -f "$PAYLOAD" ]; then
-  [ "${JAIPILOT_BOOTSTRAP_DISABLED:-0}" != "1" ] || exit 0
   if [ -n "${JAIPILOT_BOOTSTRAP_ARTIFACT_URL:-}" ] \
     || [ -n "${JAIPILOT_BOOTSTRAP_CHECKSUM_URL:-}" ]; then
     [ -n "${JAIPILOT_BOOTSTRAP_ARTIFACT_URL:-}" ] \

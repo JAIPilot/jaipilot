@@ -83,75 +83,9 @@ def main() -> None:
         and "runtime/bin/java" not in installer,
         "Installer must download the retryable portable payload without a bundled JRE",
     )
-    hooks = payload("plugins/jaipilot/hooks/hooks.json")
-    hook_map = hooks.get("hooks")
-    require(isinstance(hook_map, dict), "Plugin hooks are required")
-    require("PreToolUse" not in hook_map, "JAIPilot must not intercept every shell command")
-
-    session_hooks = hook_map.get("SessionStart")
-    require(isinstance(session_hooks, list) and len(session_hooks) == 1,
-            "One SessionStart initializer is required")
-    session_command = session_hooks[0].get("hooks", [{}])[0].get("command")
     require(
-        isinstance(session_command, str)
-        and "PLUGIN_ROOT" in session_command
-        and "CLAUDE_PLUGIN_ROOT" in session_command
-        and "exit 0" in session_command
-        and "-x" in session_command
-        and "session-start.sh" in session_command,
-        "SessionStart must use the provider-neutral detached initializer",
-    )
-    session_script = ROOT / "plugins/jaipilot/hooks/session-start.sh"
-    require(session_script.is_file(), "SessionStart script is required")
-    require(session_script.stat().st_mode & 0o111 != 0,
-            "SessionStart script must be executable")
-    java_detector = ROOT / "plugins/jaipilot/hooks/java-project-root.sh"
-    require(java_detector.is_file() and java_detector.stat().st_mode & 0o111 != 0,
-            "Java project detector must be executable")
-    require("java-project-root.sh" in text("plugins/jaipilot/hooks/session-start.sh"),
-            "SessionStart must ignore non-Java directories before bootstrap")
-
-    post_hooks = hook_map.get("PostToolUse")
-    require(isinstance(post_hooks, list) and len(post_hooks) == 1, "One PostToolUse hook is required")
-    require(post_hooks[0].get("matcher") == "Bash", "PostToolUse hook must match Bash")
-    post_command = (
-        post_hooks[0].get("hooks", [{}])[0].get("command")
-        if isinstance(post_hooks[0], dict)
-        else None
-    )
-    require(
-        isinstance(post_command, str)
-        and "PLUGIN_ROOT" in post_command
-        and "CLAUDE_PLUGIN_ROOT" in post_command
-        and "exit 0" in post_command
-        and "-x" in post_command
-        and "post-tool-use.sh" in post_command,
-        "PostToolUse hook must use the portable commit filter",
-    )
-    post_filter = ROOT / "plugins/jaipilot/hooks/post-tool-use.sh"
-    require(post_filter.is_file(), "PostToolUse commit filter is required")
-    require(post_filter.stat().st_mode & 0o111 != 0, "PostToolUse commit filter must be executable")
-    require("session-start.sh" in text("plugins/jaipilot/hooks/post-tool-use.sh"),
-            "PostToolUse commit filter must queue the detached snapshot refresh")
-
-    stop_hooks = hook_map.get("Stop")
-    require(isinstance(stop_hooks, list) and len(stop_hooks) == 1, "One automatic Stop hook is required")
-    command = stop_hooks[0].get("hooks", [{}])[0].get("command") if isinstance(stop_hooks[0], dict) else None
-    require(
-        isinstance(command, str)
-        and "PLUGIN_ROOT" in command
-        and "CLAUDE_PLUGIN_ROOT" in command
-        and "exit 0" in command
-        and "-x" in command
-        and "stop.sh" in command,
-        "Stop hook must use the Java-only portable filter",
-    )
-    stop_filter = ROOT / "plugins/jaipilot/hooks/stop.sh"
-    require(stop_filter.is_file() and stop_filter.stat().st_mode & 0o111 != 0,
-            "Stop hook Java project filter must be executable")
-    require(
-        "JAIPILOT_BOOTSTRAP_DISABLED=1" in text("plugins/jaipilot/hooks/stop.sh"),
-        "Stop must never synchronously bootstrap the plugin payload",
+        not (ROOT / "plugins/jaipilot/hooks").exists(),
+        "JAIPilot must remain agent-invoked and must not install automatic coding-tool hooks",
     )
 
     mcp = payload("plugins/jaipilot/.mcp.json")

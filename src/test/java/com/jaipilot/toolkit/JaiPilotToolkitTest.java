@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -52,17 +51,21 @@ class JaiPilotToolkitTest {
     @Test
     void snapshotInitializesCurrentDashboardStateWithoutTouchingProject() throws Exception {
         Path project = TestProject.gitMaven(tempDir, "snapshot");
-        Captured result = run("snapshot", "--project", project.toString());
-        RepositorySnapshotStore.DashboardView dashboard = new RepositorySnapshotStore(
-                JaiPilotToolkit.mapper(), stateRoot()
-        ).view(null);
+        try {
+            Captured result = run("snapshot", "--project", project.toString());
+            RepositorySnapshotStore.DashboardView dashboard = new RepositorySnapshotStore(
+                    JaiPilotToolkit.mapper(), stateRoot()
+            ).view(null);
 
-        assertEquals(0, result.status(), result.stderr());
-        assertEquals("ready", dashboard.selectedRepository().analysisStatus());
-        assertEquals(1, dashboard.selectedRepository().quality().metrics().fileCount());
-        assertEquals("", gitStatus(project));
-        assertFalse(Files.exists(project.resolve(".jaipilot")));
-        assertFalse(Files.exists(project.resolve("target")));
+            assertEquals(0, result.status(), result.stderr());
+            assertEquals("ready", dashboard.selectedRepository().analysisStatus());
+            assertEquals(1, dashboard.selectedRepository().quality().metrics().fileCount());
+            assertEquals("", gitStatus(project));
+            assertFalse(Files.exists(project.resolve(".jaipilot")));
+            assertFalse(Files.exists(project.resolve("target")));
+        } finally {
+            stopDashboard();
+        }
     }
 
     @Test
@@ -89,28 +92,8 @@ class JaiPilotToolkitTest {
             assertTrue(result.path("result").path("url").asText().startsWith("http://127.0.0.1:"));
             assertTrue(pid > 0);
         } finally {
-            ProcessHandle process = pid > 0 ? ProcessHandle.of(pid).orElse(null) : null;
-            if (process != null) {
-                process.destroy();
-                process.onExit().get(5, TimeUnit.SECONDS);
-            }
+            stopProcess(pid);
         }
-    }
-
-    @Test
-    void stopBlocksOnlyWhenExactProofIsRequired() throws Exception {
-        Path project = TestProject.gitMaven(tempDir, "stop");
-        assertEquals("", runWithInput("{}", "hook-stop", "--project", project.toString()).stdout());
-        Files.writeString(project.resolve("src/main/java/com/example/OrderService.java"),
-                "package com.example; public class OrderService { int total() { return 2; } }\n");
-
-        Captured blocked = runWithInput("{\"stop_hook_active\":false}",
-                "hook-stop", "--project", project.toString());
-        JsonNode response = new ObjectMapper().readTree(blocked.stdout());
-        assertEquals("block", response.path("decision").asText());
-        assertTrue(response.path("reason").asText().contains("prove-diff"));
-        assertEquals("", runWithInput("{\"stop_hook_active\":true}",
-                "hook-stop", "--project", project.toString()).stdout());
     }
 
     @Test
@@ -125,15 +108,10 @@ class JaiPilotToolkitTest {
     }
 
     private Captured run(String... arguments) {
-        return runWithInput("", arguments);
-    }
-
-    private Captured runWithInput(String input, String... arguments) {
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
         int status = JaiPilotToolkit.run(
                 arguments,
-                new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)),
                 new PrintStream(stdout, true, StandardCharsets.UTF_8),
                 new PrintStream(stderr, true, StandardCharsets.UTF_8),
                 stateRoot()
@@ -154,6 +132,27 @@ class JaiPilotToolkitTest {
 
     private Path stateRoot() {
         return tempDir.resolve("state");
+    }
+
+    private void stopDashboard() throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        DashboardServer.DashboardStatus status;
+        do {
+            status = DashboardServer.currentStatus(JaiPilotToolkit.mapper(), stateRoot());
+            if (status.pid() > 0) {
+                stopProcess(status.pid());
+                return;
+            }
+            Thread.sleep(20);
+        } while (System.nanoTime() < deadline);
+    }
+
+    private void stopProcess(long pid) throws Exception {
+        ProcessHandle process = pid > 0 ? ProcessHandle.of(pid).orElse(null) : null;
+        if (process != null) {
+            process.destroy();
+            process.onExit().get(5, TimeUnit.SECONDS);
+        }
     }
 
     private record Captured(int status, String stdout, String stderr) {

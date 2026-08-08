@@ -27,8 +27,8 @@ java -jar target/jaipilot-toolkit-4.0.1-all.jar inspect --project .
 ```
 
 The direct smoke checks structured evidence-kernel discovery. The installer smoke exercises bounded
-transport retries, checksum verification, host Java 17+, MCP, Java-only hooks, silent unavailable
-Stop behavior, and cached launch.
+transport retries, checksum verification, host Java 17+, MCP, cached launch, zero automatic
+repository work, and explicit snapshot initialization.
 
 ## Pull requests
 

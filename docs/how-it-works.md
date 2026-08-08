@@ -69,18 +69,16 @@ host cancellation works, and there is no detached-operation database to reconcil
 The three skills teach the host agent how to use those primitives for test generation, cleanup, and
 diff review. The skills own no hidden state.
 
-## Automatic initialization and hooks
+## Agent-selected execution
 
-SessionStart first verifies that the detected directory has a Maven or Gradle build and Java source.
-Only applicable projects launch a detached `snapshot`, register a repository entry, compute current
-whole-project quality, record the local GitHub link, and start the dashboard. Non-Java directories
-exit before bootstrap or state creation. The process writes only to JAIPilot's private state root,
-never the repository.
+JAIPilot installs no SessionStart, PostToolUse, Stop, shell, or repository Git hooks. MCP startup
+publishes the six tools but does not inspect or register the current directory. The host agent decides
+when the task benefits from deterministic evidence and invokes only the required tool.
 
-PostToolUse filters for direct coding-agent `git commit` shell calls and queues a detached snapshot refresh. Stop
-runs `diff-gate` so applicable working-tree changes still reach the review skill. These hooks do not
-install a repository Git hook and cannot observe commits made by unrelated terminals or opaque
-wrapper programs.
+An explicit `snapshot` registers the repository, records its local GitHub link, computes current
+whole-project quality, and starts the dashboard. `quality`, `rewrite`, `diff-gate`, and `prove-diff`
+run only when selected by the agent. No file watcher or background scheduler reruns them after an edit
+or commit.
 
 ## Bounded private state
 

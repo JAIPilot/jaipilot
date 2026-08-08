@@ -1,6 +1,6 @@
 ---
 name: jaipilot-review-diff
-description: Review, improve, and prove Java changes from Git commits or the working tree. Use when JAIPilot's direct post-commit or Stop hook reports an unproved diff, or for branch review, pre-commit quality, changed-code coverage, mutation strength, architecture checks, or Java pull-request review.
+description: Review, improve, and prove Java changes from Git commits or the working tree. Use for branch review, pre-commit quality, changed-code coverage, mutation strength, architecture checks, or Java pull-request diff review when the host agent decides deterministic proof is useful.
 ---
 
 # Review a Java Diff with JAIPilot

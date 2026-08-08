@@ -55,9 +55,9 @@ Run these commands inside Claude Code:
 
 The plugin uses Java 17+ from `JAVA_HOME` or `PATH` and downloads one checksum-verified portable
 JAIPilot JAR on first use. It does not download a second JRE or separate operating-system payload.
-The stdio MCP server and Agent Skills work together. Hooks initialize and refresh only Maven or
-Gradle directories that contain Java source; other directories exit silently without starting Java,
-creating state, downloading JAIPilot, or starting the dashboard.
+The stdio MCP server and Agent Skills work together. JAIPilot installs no SessionStart, shell,
+commit, or Stop hooks. Merely opening a repository does not analyze it, run its build, create
+repository state, or start the dashboard.
 
 ## Six deterministic MCP tools
 
@@ -76,19 +76,16 @@ opens a PR, or applies a hidden candidate.
 
 ## How drift is reduced
 
-At session start JAIPilot first checks for a Maven or Gradle build and Java source. For an applicable
-repository it records the canonical path and local GitHub origin, downloads the small portable
-payload when needed, refreshes current quality in a detached process, and starts the loopback
-dashboard. This initialization does not edit the repository or create files inside it. Non-Java
-directories do not invoke Java or download anything. Stop never performs a synchronous download: if
-background bootstrap is incomplete or the network is unavailable, it exits silently and the MCP
-tool reports the actionable setup error when explicitly invoked.
+The host agent decides when JAIPilot is useful. It can inspect a Java repository, request a current
+snapshot, analyze a selected scope, run a pinned cleanup, check a diff receipt, or prove the exact
+diff. A snapshot records the canonical path and local GitHub origin, refreshes whole-repository
+quality, and starts the loopback dashboard. Nothing edits the repository except an agent-selected
+OpenRewrite invocation.
 
-The direct `git commit` post-tool hook queues the same detached repository snapshot. The Stop hook checks
-the current Java/build diff and returns actionable proof requirements to the host agent. These are
-coding-tool hooks, not operating-system-wide Git hooks; commits made in unrelated terminals or hidden
-inside arbitrary wrapper programs are outside this automatic boundary. The diff gate still catches
-applicable working-tree changes at Stop or whenever the agent invokes it.
+JAIPilot does not watch files, intercept shell commands, run after commits, or block the agent at
+Stop. This keeps ordinary coding sessions quiet and makes every potentially expensive build,
+coverage, mutation, or architecture check an explicit agent decision. Agent Skills describe when
+those checks are worthwhile; the deterministic tools enforce their evidence once selected.
 
 The normal loop is intentionally short:
 
@@ -156,9 +153,9 @@ remain stronger for formal security/data-flow analysis, large rule catalogs, cen
 portfolios, compliance, and long-term organization-wide history.
 
 JAIPilot requires a local Maven or Gradle repository and uses local Git refs without fetching. Fresh
-coverage and mutation evidence depend on the repository's JaCoCo/PIT compatibility. A clean existing
-root commit is treated as repository history; automatic direct-commit observation begins after the
-plugin is active.
+coverage and mutation evidence depend on the repository's JaCoCo/PIT compatibility. JAIPilot does
+not automatically observe commits; the agent invokes snapshot, diff gate, or diff proof when current
+evidence is useful.
 
 See [how JAIPilot works](docs/how-it-works.md), [quality metrics](docs/quality-metrics.md), and the
 [static-analysis boundary](docs/static-analysis-boundary.md). The

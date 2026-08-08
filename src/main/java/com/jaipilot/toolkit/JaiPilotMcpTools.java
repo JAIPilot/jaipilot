@@ -100,7 +100,6 @@ final class JaiPilotMcpTools {
             try (PrintStream output = new PrintStream(bytes, true, StandardCharsets.UTF_8)) {
                 status = JaiPilotToolkit.run(
                         arguments.toArray(String[]::new),
-                        java.io.InputStream.nullInputStream(),
                         output,
                         System.err,
                         stateRoot,

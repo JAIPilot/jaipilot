@@ -2,6 +2,20 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [4.0.3] - 2026-08-08
+
+### Changed
+
+- Removed SessionStart, PostToolUse, and Stop hooks. JAIPilot is now entirely agent-invoked: opening,
+  editing, committing, and stopping do not trigger repository analysis or a build.
+- Made `jaipilot_snapshot` the explicit operation that registers a repository, refreshes current
+  metrics, and starts the machine-wide dashboard.
+
+### Removed
+
+- Removed the hook-only runner command, shell project detector, detached initialization path, hook
+  manifest, and their tests and installer branches.
+
 ## [4.0.2] - 2026-08-08
 
 ### Changed
