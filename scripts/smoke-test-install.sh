@@ -203,9 +203,32 @@ grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/active-lock.log" \
 [ -L "$SMOKE_DIR/app/current" ] || die "Install did not create the current symlink"
 [ -x "$SMOKE_DIR/app/bin/jaipilot" ] || die "Install did not create the stable toolkit-harness launcher"
 [ -x "$SMOKE_DIR/app/current/libexec/install.sh" ] || die "Distribution did not include the self-update installer"
+[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh" ] \
+  || die "Distribution did not include the executable post-tool hook"
 "$SMOKE_DIR/app/bin/jaipilot" version > "$SMOKE_DIR/version.json"
 grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/version.json" \
   || die "Installed toolkit harness did not report version $INSTALL_VERSION"
+
+printf '%s' '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"git status --short"}}' \
+  | PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
+    JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+    JAIPILOT_DASHBOARD_DISABLED=1 \
+    "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh" \
+    > "$SMOKE_DIR/non-commit-hook.json"
+[ ! -s "$SMOKE_DIR/non-commit-hook.json" ] || die "Post-tool hook emitted output for a non-commit command"
+
+printf '%s' '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"git commit -m smoke"}}' \
+  | PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
+    JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+    JAIPILOT_DASHBOARD_DISABLED=1 \
+    "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh" \
+    > "$SMOKE_DIR/post-commit-hook.json"
+grep -Fq '"source" : "Automatic post-commit analysis"' \
+  "$SMOKE_DIR/state/metrics/summary.json" \
+  || die "Installed post-tool hook did not persist current project quality"
+grep -Fq '"revision"' "$SMOKE_DIR/state/metrics/summary.json" \
+  || die "Installed post-tool hook did not persist the analyzed Git revision"
+
 STABLE_RUNNER_SHA256=$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")
 "$SMOKE_DIR/app/current/libexec/install.sh" \
   --version "$INSTALL_VERSION" \

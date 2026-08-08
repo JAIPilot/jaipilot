@@ -3,248 +3,187 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <meta name="description" content="Local JAIPilot usage and Java improvement evidence">
-  <title>JAIPilot Impact Dashboard</title>
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Current local Java quality, findings, architecture, and proof evidence">
+  <title>JAIPilot Project Quality</title>
   <link rel="stylesheet" href="/assets/dashboard.css">
 </head>
 <body>
-  <div class="ambient ambient-one" aria-hidden="true"></div>
-  <div class="ambient ambient-two" aria-hidden="true"></div>
-  <main class="shell">
-    <header class="topbar">
-      <a class="brand" href="/" aria-label="JAIPilot dashboard home">
-        <span class="brand-mark" aria-hidden="true">J</span>
-        <span>
-          <strong>JAIPilot</strong>
-          <small>Impact dashboard</small>
-        </span>
-      </a>
-      <div class="local-status">
-        <span class="pulse" aria-hidden="true"></span>
-        <span>Live on this machine</span>
-      </div>
-    </header>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="JAIPilot project quality home">JAIPilot</a>
+      <span>Project Quality</span>
+      <span class="local-label">LOCAL · NO TELEMETRY</span>
+    </div>
+  </header>
 
-    <section class="hero">
+  <main class="page">
+    <section class="project-heading" aria-labelledby="page-title">
       <div>
-        <p class="eyebrow">LOCAL EVIDENCE · ZERO TELEMETRY</p>
-        <h1>See what better Java<br><span>looks like.</span></h1>
-        <p class="hero-copy">Every verified test, resolved finding, and quality gate—measured from real local builds.</p>
+        <p class="breadcrumb">PROJECT / CURRENT STATE</p>
+        <h1 id="page-title">Current quality</h1>
+        <p id="analysis-meta" class="meta">Waiting for the first whole-project analysis.</p>
       </div>
-      <div class="proof-orbit" aria-label="Latest changed-code proof status">
-        <div class="orbit-ring ring-one"></div>
-        <div class="orbit-ring ring-two"></div>
-        <div class="proof-core">
-          <span id="proof-state" class="proof-state">AWAITING</span>
-          <strong id="proof-count">0</strong>
-          <small>diffs proven</small>
-        </div>
+      <div class="analysis-state">
+        <span>Current score</span>
+        <strong id="quality-score">—</strong>
+        <b id="quality-status" class="status neutral">NOT ANALYZED</b>
       </div>
     </section>
 
-    <section class="impact-grid" aria-label="Cumulative improvement">
-      <article class="metric-card accent-blue">
-        <div class="metric-icon" aria-hidden="true">↗</div>
-        <p>Line coverage change</p>
-        <strong id="coverage-change">0.0<span> pts</span></strong>
-        <small id="targets-improved">Across 0 applied targets</small>
+    <section class="metric-grid" aria-label="Current quality metrics">
+      <article class="metric-cell">
+        <span>Reliability</span>
+        <strong id="reliability-score">—</strong>
+        <small id="bug-risk-count">— bug risks</small>
       </article>
-      <article class="metric-card accent-mint">
-        <div class="metric-icon" aria-hidden="true">✓</div>
-        <p>Findings resolved</p>
-        <strong id="findings-resolved">0</strong>
-        <small id="debt-removed">0 remediation minutes removed</small>
+      <article class="metric-cell">
+        <span>Maintainability</span>
+        <strong id="maintainability-score">—</strong>
+        <small id="code-smell-count">— code smells</small>
       </article>
-      <article class="metric-card accent-violet">
-        <div class="metric-icon" aria-hidden="true">⌁</div>
-        <p>Mutations killed</p>
-        <strong id="mutations-killed">0</strong>
-        <small id="tests-executed">0 changed tests execution-proven</small>
+      <article class="metric-cell">
+        <span>Complexity</span>
+        <strong id="complexity-score">—</strong>
+        <small id="complexity-detail">Maximum —</small>
       </article>
-      <article class="metric-card accent-amber">
-        <div class="metric-icon" aria-hidden="true">◆</div>
-        <p>Verified files applied</p>
-        <strong id="files-changed">0</strong>
-        <small id="applied-runs">Across 0 transactional applies</small>
+      <article class="metric-cell">
+        <span>Duplication</span>
+        <strong id="duplication-score">—</strong>
+        <small id="duplication-detail">— duplicated lines</small>
+      </article>
+      <article class="metric-cell">
+        <span>Debt</span>
+        <strong id="debt-minutes">—</strong>
+        <small id="debt-ratio">— debt ratio</small>
+      </article>
+      <article class="metric-cell">
+        <span>Analyzed source</span>
+        <strong id="source-lines">—</strong>
+        <small id="source-detail">— files · — methods</small>
       </article>
     </section>
 
-    <section class="dashboard-grid">
-      <article class="panel evidence-panel">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">LATEST EVIDENCE</p>
-            <h2>Quality signal</h2>
-          </div>
-          <span id="proof-badge" class="badge neutral">No proof yet</span>
+    <section class="panel findings-panel" aria-labelledby="findings-title">
+      <div class="panel-header">
+        <div>
+          <h2 id="findings-title">Current findings</h2>
+          <p id="findings-meta" class="meta">No current quality analysis has run.</p>
         </div>
-        <div class="gauges">
-          <div class="gauge-wrap">
-            <div id="quality-gauge" class="gauge" style="--score: 0">
-              <div><strong id="quality-score">—</strong><span>/100</span></div>
-            </div>
-            <p>Code quality</p>
-          </div>
-          <div class="gauge-wrap">
-            <div id="test-gauge" class="gauge" style="--score: 0">
-              <div><strong id="test-score">—</strong><span>/100</span></div>
-            </div>
-            <p>Test quality</p>
-          </div>
-          <div class="gauge-wrap">
-            <div id="mutation-gauge" class="gauge" style="--score: 0">
-              <div><strong id="mutation-score">—</strong><span>%</span></div>
-            </div>
-            <p>Mutation score</p>
-          </div>
+        <div class="finding-total">
+          <strong id="findings-total">—</strong>
+          <span>active</span>
         </div>
-        <div class="coverage-strip">
-          <div>
-            <span>Changed-line coverage</span>
-            <strong id="line-coverage">—</strong>
-          </div>
-          <div>
-            <span>Changed-branch coverage</span>
-            <strong id="branch-coverage">—</strong>
-          </div>
-          <div>
-            <span>Targets in latest proof</span>
-            <strong id="verified-targets">0</strong>
-          </div>
-        </div>
-      </article>
+      </div>
+      <div class="severity-summary" aria-label="Findings by severity">
+        <span><b id="findings-critical" class="severity critical">0</b> Critical</span>
+        <span><b id="findings-high" class="severity high">0</b> High</span>
+        <span><b id="findings-medium" class="severity medium">0</b> Medium</span>
+        <span><b id="findings-low" class="severity low">0</b> Low</span>
+      </div>
+      <div class="table-wrap">
+        <table class="findings-table">
+          <thead>
+            <tr><th>Severity</th><th>Rule</th><th>Finding</th><th>Location</th></tr>
+          </thead>
+          <tbody id="findings-list">
+            <tr class="empty-row"><td colspan="4">No findings evidence yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-      <article class="panel usage-panel">
-        <div class="panel-heading">
+    <div class="two-column">
+      <section class="panel" aria-labelledby="architecture-title">
+        <div class="panel-header compact">
           <div>
-            <p class="eyebrow">LOCAL USAGE</p>
-            <h2>Toolkit activity</h2>
+            <h2 id="architecture-title">Architecture</h2>
+            <p class="meta">ArchUnit changed-code proof</p>
           </div>
-          <span id="last-updated" class="muted">Waiting for data</span>
+          <b id="architecture-status" class="status neutral">NOT RUN</b>
         </div>
-        <div class="usage-stats">
-          <div><strong id="total-commands">0</strong><span>invocations</span></div>
-          <div><strong id="success-rate">0%</strong><span>successful</span></div>
-          <div><strong id="projects-seen">0</strong><span>projects</span></div>
-          <div><strong id="average-duration">0 ms</strong><span>average runner time</span></div>
-        </div>
-        <div id="command-bars" class="command-bars" aria-label="Commands by usage"></div>
-      </article>
+        <p id="architecture-summary" class="summary">No architecture proof has run.</p>
+        <dl class="fact-grid">
+          <div><dt>Violations</dt><dd id="architecture-violations">—</dd></div>
+          <div><dt>Classes</dt><dd id="architecture-classes">—</dd></div>
+          <div><dt>Ruleset</dt><dd id="architecture-ruleset">—</dd></div>
+        </dl>
+        <p id="architecture-meta" class="meta detail-meta">Pinned ArchUnit evidence will appear here.</p>
+        <ol id="architecture-list" class="issue-list">
+          <li class="empty-item">No architecture evidence yet.</li>
+        </ol>
+      </section>
 
-      <article class="panel current-status-panel">
-        <div class="panel-heading">
+      <section class="panel" aria-labelledby="proof-title">
+        <div class="panel-header compact">
           <div>
-            <p class="eyebrow">CURRENT PROOF STATUS</p>
-            <h2>Findings and architecture</h2>
+            <h2 id="proof-title">Changed-code proof</h2>
+            <p id="proof-time" class="meta">No proof has run.</p>
           </div>
-          <span id="current-status-source" class="badge neutral">Awaiting analyzed evidence</span>
+          <b id="proof-status" class="status neutral">NOT RUN</b>
         </div>
-        <div class="current-status-grid">
-          <section class="status-surface" aria-labelledby="architecture-title">
-            <div class="status-heading">
-              <div>
-                <p class="eyebrow">ARCHITECTURE</p>
-                <h3 id="architecture-title">ArchUnit gate</h3>
-              </div>
-              <span id="architecture-badge" class="badge neutral">AWAITING</span>
-            </div>
-            <p id="architecture-summary" class="status-summary">No architecture proof has run yet.</p>
-            <div class="status-stats">
-              <div><strong id="architecture-violations">—</strong><span>violations</span></div>
-              <div><strong id="architecture-classes">—</strong><span>compiled classes</span></div>
-              <div><strong id="architecture-ruleset">—</strong><span>ruleset</span></div>
-            </div>
-            <p id="architecture-meta" class="status-meta">Pinned ArchUnit evidence will appear here.</p>
-            <ol id="architecture-list" class="status-list">
-              <li class="empty-status">No architecture evidence yet.</li>
-            </ol>
-          </section>
+        <dl class="fact-grid proof-facts">
+          <div><dt>Test quality</dt><dd id="test-score">—</dd></div>
+          <div><dt>Mutation</dt><dd id="mutation-score">—</dd></div>
+          <div><dt>Targets</dt><dd id="verified-targets">—</dd></div>
+          <div><dt>Line coverage</dt><dd id="line-coverage">—</dd></div>
+          <div><dt>Branch coverage</dt><dd id="branch-coverage">—</dd></div>
+          <div><dt>Gate messages</dt><dd id="gate-message-count">—</dd></div>
+        </dl>
+        <ol id="gate-list" class="issue-list">
+          <li class="empty-item">No changed-code proof evidence yet.</li>
+        </ol>
+      </section>
+    </div>
 
-          <section class="status-surface" aria-labelledby="findings-title">
-            <div class="status-heading">
-              <div>
-                <p class="eyebrow">CURRENT SCOPE</p>
-                <h3 id="findings-title">Source findings</h3>
-              </div>
-              <span id="findings-badge" class="badge neutral">AWAITING</span>
-            </div>
-            <div class="findings-overview">
-              <strong id="findings-total">—</strong>
-              <span>active findings in the latest analyzed scope</span>
-            </div>
-            <div class="severity-row" role="group" aria-label="Findings by severity">
-              <span class="severity critical"><b id="findings-critical">0</b> critical</span>
-              <span class="severity high"><b id="findings-high">0</b> high</span>
-              <span class="severity medium"><b id="findings-medium">0</b> medium</span>
-              <span class="severity low"><b id="findings-low">0</b> low</span>
-            </div>
-            <p id="findings-meta" class="status-meta">Run quality analysis or proof to populate current findings.</p>
-            <ol id="findings-list" class="status-list">
-              <li class="empty-status">No findings evidence yet.</li>
-            </ol>
-          </section>
+    <section class="panel" aria-labelledby="impact-title">
+      <div class="panel-header compact">
+        <div>
+          <h2 id="impact-title">Verified impact</h2>
+          <p class="meta">Cumulative outcomes from applied JAIPilot transactions</p>
         </div>
-        <section class="gate-status" aria-labelledby="gate-status-title">
-          <div>
-            <p class="eyebrow">LATEST GATE RESULT</p>
-            <h3 id="gate-status-title">Proof and apply gates</h3>
-            <p id="gate-message-count" class="status-meta gate-message-count">No gate messages</p>
-          </div>
-          <ol id="gate-list" class="gate-list">
-            <li class="empty-status">No validation or changed-code proof has run yet.</li>
-          </ol>
-        </section>
-      </article>
+      </div>
+      <dl class="impact-grid">
+        <div><dt>Coverage change</dt><dd id="coverage-change">0.0 pts</dd></div>
+        <div><dt>Findings resolved</dt><dd id="findings-resolved">0</dd><small id="debt-removed">0 debt minutes removed</small></div>
+        <div><dt>Mutations killed</dt><dd id="mutations-killed">0</dd><small id="tests-executed">0 changed tests proven</small></div>
+        <div><dt>Files applied</dt><dd id="files-changed">0</dd><small id="applied-runs">0 transactional applies</small></div>
+      </dl>
+    </section>
 
-      <article class="panel workflow-panel">
-        <div class="panel-heading">
+    <div class="two-column lower-grid">
+      <section class="panel" aria-labelledby="activity-title">
+        <div class="panel-header compact">
           <div>
-            <p class="eyebrow">WORKFLOW</p>
-            <h2>From candidate to proof</h2>
-          </div>
-        </div>
-        <div class="workflow">
-          <div class="workflow-node">
-            <span>01</span><div><strong id="prepared-count">0</strong><small>runs prepared</small></div>
-          </div>
-          <div class="workflow-line"><i id="prepared-progress"></i></div>
-          <div class="workflow-node">
-            <span>02</span><div><strong id="validated-count">0</strong><small>apply-ready validations</small></div>
-          </div>
-          <div class="workflow-line"><i id="validated-progress"></i></div>
-          <div class="workflow-node">
-            <span>03</span><div><strong id="applied-count">0</strong><small>safe applies</small></div>
-          </div>
-        </div>
-        <div class="workflow-split">
-          <span><b id="test-runs">0</b> test runs applied</span>
-          <span><b id="cleanup-runs">0</b> cleanups applied</span>
-          <span><b id="discarded-runs">0</b> candidates discarded safely</span>
-        </div>
-      </article>
-
-      <article class="panel activity-panel">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">RECENT</p>
-            <h2>Evidence trail</h2>
+            <h2 id="activity-title">Recent analysis</h2>
+            <p id="last-updated" class="meta">Waiting for data</p>
           </div>
         </div>
         <ol id="activity-list" class="activity-list">
-          <li class="empty-state">JAIPilot activity will appear here.</li>
+          <li class="empty-item">JAIPilot activity will appear here.</li>
         </ol>
-      </article>
-    </section>
-
-    <footer>
-      <div>
-        <span class="shield" aria-hidden="true">◈</span>
-        <p><strong>Your evidence stays yours.</strong><br>Metrics are stored locally. No source, paths, or usage data leave this machine.</p>
-      </div>
-      <span id="dashboard-version">JAIPilot</span>
-    </footer>
+      </section>
+      <section class="panel" aria-labelledby="usage-title">
+        <div class="panel-header compact">
+          <div>
+            <h2 id="usage-title">Local usage</h2>
+            <p class="meta">Operational context, not a quality result</p>
+          </div>
+        </div>
+        <dl class="fact-grid usage-facts">
+          <div><dt>Commands</dt><dd id="total-commands">0</dd></div>
+          <div><dt>Success rate</dt><dd id="success-rate">0%</dd></div>
+          <div><dt>Projects</dt><dd id="projects-seen">0</dd></div>
+          <div><dt>Average time</dt><dd id="average-duration">0 ms</dd></div>
+        </dl>
+        <div id="command-bars" class="command-list" aria-label="Commands by usage"></div>
+      </section>
+    </div>
   </main>
+
+  <footer class="site-footer">
+    <div><strong id="dashboard-version">JAIPilot</strong> · localhost only · source and paths never leave this machine</div>
+  </footer>
   <script src="/assets/dashboard.js" defer></script>
 </body>
 </html>

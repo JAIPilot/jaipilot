@@ -1,6 +1,19 @@
 {
-  "description": "Require fresh JAIPilot proof for each changed Java production diff.",
+  "description": "Refresh current Java quality after agent Git commits and require fresh proof for changed production diffs.",
   "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.sh\"",
+            "timeout": 60,
+            "statusMessage": "Analyzing committed Java"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

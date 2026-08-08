@@ -139,6 +139,62 @@ class UsageMetricsStoreTest {
     }
 
     @Test
+    void automaticPostCommitAnalysisPersistsCompleteCurrentProjectQuality() {
+        UsageMetricsStore store = new UsageMetricsStore(new ObjectMapper(), tempDir.resolve("commit-state"));
+        store.record("hook-post-commit", 0, Map.of(
+                "analysisStatus", "analyzed",
+                "revision", "0123456789abcdef0123456789abcdef01234567",
+                "fingerprint", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+                "currentQuality", Map.of(
+                        "projectRoot", tempDir.resolve("project").toString(),
+                        "targets", List.of(
+                                "com.example.PaymentService",
+                                "com.example.InvoiceService"
+                        ),
+                        "quality", quality(false)
+                )
+        ), Duration.ofMillis(310));
+
+        UsageMetricsStore.DashboardMetrics metrics = store.snapshot();
+        UsageMetricsStore.CurrentQualityEvidence current = metrics.latestEvidence().currentQuality();
+        assertEquals(3, metrics.schemaVersion());
+        assertEquals("Automatic post-commit analysis", current.source());
+        assertEquals("whole_project", current.scope());
+        assertEquals("analyzed", current.analysisStatus());
+        assertEquals("0123456789abcdef0123456789abcdef01234567", current.revision());
+        assertEquals(
+                "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+                current.fingerprint()
+        );
+        assertEquals(2, current.targetCount());
+        assertEquals(4, current.fileCount());
+        assertEquals(240, current.linesOfCode());
+        assertEquals(8_192L, current.sourceBytes());
+        assertEquals(18, current.methodCount());
+        assertEquals(1, current.findingCount());
+        assertEquals(1, current.bugRiskCount());
+        assertEquals(1, current.codeSmellCount());
+        assertEquals(2, current.modernizationOpportunityCount());
+        assertEquals(14, current.maximumCyclomaticComplexity());
+        assertEquals(4.6d, current.averageCyclomaticComplexity());
+        assertEquals(19, current.maximumCognitiveComplexity());
+        assertEquals(24, current.duplicatedLineCount());
+        assertEquals(10.0d, current.duplicationPercent());
+        assertEquals(55, current.remediationDebtMinutes());
+        assertEquals(3.8d, current.remediationDebtRatioPercent());
+        assertEquals(75.0d, current.reliabilityScore());
+        assertEquals(84.0d, current.maintainabilityScore());
+        assertEquals(70.0d, current.complexityScore());
+        assertEquals(80.0d, current.duplicationScore());
+        assertEquals(88.0d, current.qualityScore());
+        assertEquals(125_000_000L, current.analysisElapsedNanos());
+        assertEquals(0, current.parseFailures());
+        assertEquals(1, current.findings().total());
+        assertNull(metrics.latestEvidence().findings().total());
+        assertTrue(metrics.recentActivity().get(0).summary().contains("Git commit"));
+    }
+
+    @Test
     void migratesVersionOneMetricsWithoutInventingCurrentEvidence() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         Path stateRoot = tempDir.resolve("legacy-state");
@@ -164,14 +220,15 @@ class UsageMetricsStoreTest {
 
         UsageMetricsStore store = new UsageMetricsStore(mapper, stateRoot);
         UsageMetricsStore.DashboardMetrics migrated = store.snapshot();
-        assertEquals(2, migrated.schemaVersion());
+        assertEquals(3, migrated.schemaVersion());
         assertEquals(77.0d, migrated.latestEvidence().qualityScore());
+        assertNull(migrated.latestEvidence().currentQuality().qualityScore());
         assertNull(migrated.latestEvidence().findings().total());
         assertNull(migrated.latestEvidence().architecture().complete());
         assertNull(migrated.latestEvidence().gates().passed());
 
         store.record("inspect", 0, Map.of(), Duration.ZERO);
-        assertEquals(2, mapper.readTree(Files.readString(summary)).path("schemaVersion").asInt());
+        assertEquals(3, mapper.readTree(Files.readString(summary)).path("schemaVersion").asInt());
     }
 
     @Test

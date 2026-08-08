@@ -100,8 +100,12 @@ identical scope and build conditions, and keep the raw evidence alongside every 
 
 ## Dashboard aggregation
 
-The local dashboard does not invent an aggregate “better code” score. It presents raw cumulative
-outcomes from applied JAIPilot transactions and the latest independently scored evidence:
+The local dashboard does not invent an aggregate “better code” score. Its default view is the latest
+whole-project source snapshot automatically captured after an observed agent `git commit`: raw
+component scores, source counts, complexity, duplication, debt, parse status, and bounded actionable
+findings. A selected-scope quality command cannot overwrite that project snapshot.
+
+The dashboard separately presents cumulative outcomes from applied JAIPilot transactions:
 
 - coverage change is the sum of per-target after-minus-before line-coverage percentage points;
 - quality change is the sum of selected-source after-minus-before quality-score points;
@@ -110,13 +114,11 @@ outcomes from applied JAIPilot transactions and the latest independently scored 
   mutation and test-execution evidence;
 - changed-code proof counts distinguish attempted proofs from passed proofs.
 
-The current-proof-status section complements those impact totals with the latest analyzed state. It
-shows current findings and severity counts, bounded actionable finding details, the pinned ArchUnit
-ruleset and violations, and the exact failures or warnings returned by the latest validation or
-changed-code proof. This evidence is replaced—not accumulated—when a newer analysis or proof runs,
-and the dashboard displays its source and capture time. The browser polls the owner-private metrics
-store every three seconds, requests current dashboard assets on page load, and never caches API
-responses.
+The ArchUnit and changed-code proof sections show the pinned ruleset, violations, coverage, mutation,
+and exact gate failures or warnings. If their capture time predates the current post-commit quality
+snapshot, the browser marks them stale instead of presenting them as the current state. The browser
+polls the owner-private metrics store every three seconds, requests current dashboard assets on page
+load, and never caches API responses.
 
 Validation can run repeatedly while an agent improves a candidate. Only the latest apply-ready
 validation for that run is credited, and only once, when apply succeeds. Failed commands, failed

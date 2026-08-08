@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /** Persists privacy-preserving local usage and outcome metrics for the dashboard. */
 final class UsageMetricsStore {
 
-    private static final int SCHEMA_VERSION = 2;
+    private static final int SCHEMA_VERSION = 3;
     private static final int MAX_RECENT_ACTIVITY = 40;
     private static final int MAX_PROJECT_IDENTITIES = 10_000;
     private static final int MAX_PENDING_RUNS = 1_000;
@@ -147,7 +147,20 @@ final class UsageMetricsStore {
             case "apply" -> captureApply(json, runs, impact);
             case "discard" -> captureDiscard(json, runs, impact);
             case "prove-diff" -> captureDiffProof(json, impact, evidence, capturedAt);
-            case "quality" -> captureQuality(json.path("quality"), evidence, "Quality analysis", capturedAt);
+            case "quality" -> captureQuality(
+                    json.path("quality"),
+                    evidence,
+                    new QualitySnapshotContext(
+                            size(json.path("targets")),
+                            "selected_scope",
+                            "Quality analysis",
+                            capturedAt,
+                            false,
+                            null,
+                            null
+                    )
+            );
+            case "hook-post-commit" -> capturePostCommitQuality(json, evidence, capturedAt);
             default -> {
                 // The remaining commands contribute usage, latency, project, and activity metrics only.
             }
@@ -282,11 +295,103 @@ final class UsageMetricsStore {
     private void captureQuality(
             JsonNode quality,
             MutableEvidence evidence,
-            String source,
-            String capturedAt
+            QualitySnapshotContext context
     ) {
         evidence.qualityScore = decimal(quality.path("metrics"), "qualityScore");
-        evidence.findings = findings(quality, source, capturedAt);
+        FindingsEvidence analyzedFindings = findings(quality, context.source(), context.capturedAt());
+        if (context.currentProject()) {
+            evidence.currentQuality = currentQuality(
+                    quality,
+                    context,
+                    analyzedFindings
+            );
+            evidence.findings = FindingsEvidence.empty();
+        } else {
+            evidence.findings = analyzedFindings;
+        }
+    }
+
+    private void capturePostCommitQuality(JsonNode json, MutableEvidence evidence, String capturedAt) {
+        JsonNode inspection = json.path("currentQuality");
+        if (!inspection.isObject()) {
+            String status = text(json, "analysisStatus");
+            String source = "failed".equals(status)
+                    ? "Automatic post-commit analysis failed"
+                    : "Automatic post-commit analysis";
+            evidence.qualityScore = null;
+            evidence.currentQuality = CurrentQualityEvidence.unavailable(
+                    source,
+                    capturedAt,
+                    "whole_project",
+                    status,
+                    boundedText(json, "revision"),
+                    boundedText(json, "fingerprint")
+            );
+            return;
+        }
+        captureQuality(
+                inspection.path("quality"),
+                evidence,
+                new QualitySnapshotContext(
+                        size(inspection.path("targets")),
+                        "whole_project",
+                        "Automatic post-commit analysis",
+                        capturedAt,
+                        true,
+                        boundedText(json, "revision"),
+                        boundedText(json, "fingerprint")
+                )
+        );
+    }
+
+    private CurrentQualityEvidence currentQuality(
+            JsonNode quality,
+            QualitySnapshotContext context,
+            FindingsEvidence analyzedFindings
+    ) {
+        JsonNode metrics = quality.path("metrics");
+        if (!metrics.isObject()) {
+            return CurrentQualityEvidence.unavailable(
+                    context.source(),
+                    context.capturedAt(),
+                    context.scope(),
+                    "failed",
+                    context.revision(),
+                    context.fingerprint()
+            );
+        }
+        return new CurrentQualityEvidence(
+                context.source(),
+                context.capturedAt(),
+                context.scope(),
+                context.revision(),
+                context.fingerprint(),
+                "analyzed",
+                context.targetCount(),
+                integer(metrics, "fileCount"),
+                integer(metrics, "linesOfCode"),
+                longValue(metrics, "sourceBytes"),
+                integer(metrics, "methodCount"),
+                integer(metrics, "findingCount"),
+                integer(metrics, "bugRiskCount"),
+                integer(metrics, "codeSmellCount"),
+                integer(metrics, "modernizationOpportunityCount"),
+                integer(metrics, "maximumCyclomaticComplexity"),
+                decimal(metrics, "averageCyclomaticComplexity"),
+                integer(metrics, "maximumCognitiveComplexity"),
+                integer(metrics, "duplicatedLineCount"),
+                decimal(metrics, "duplicationPercent"),
+                integer(metrics, "remediationDebtMinutes"),
+                decimal(metrics, "remediationDebtRatioPercent"),
+                decimal(metrics, "reliabilityScore"),
+                decimal(metrics, "maintainabilityScore"),
+                decimal(metrics, "complexityScore"),
+                decimal(metrics, "duplicationScore"),
+                decimal(metrics, "qualityScore"),
+                longValue(metrics, "analysisElapsedNanos"),
+                size(quality.path("parseFailures")),
+                analyzedFindings
+        );
     }
 
     private FindingsEvidence findings(JsonNode quality, String source, String capturedAt) {
@@ -439,10 +544,20 @@ final class UsageMetricsStore {
                     ? "Changed-code proof passed"
                     : "Changed-code proof found actionable gaps";
             case "hook-stop" -> "Checked the current Java diff";
+            case "hook-post-commit" -> postCommitActivity(json);
             case "quality" -> "Analyzed source quality";
             case "inspect" -> "Inspected a Java project";
             case "dashboard" -> "Opened dashboard status";
             default -> "Completed";
+        };
+    }
+
+    private String postCommitActivity(JsonNode json) {
+        return switch (json.path("analysisStatus").asText("")) {
+            case "analyzed" -> "Refreshed current project quality after a Git commit";
+            case "no_java_sources" -> "Checked a Git commit with no Java production sources";
+            case "failed" -> "Post-commit project quality refresh failed";
+            default -> "Checked an agent Git commit";
         };
     }
 
@@ -710,6 +825,14 @@ final class UsageMetricsStore {
         return value.isNumber() ? value.asInt() : 0;
     }
 
+    private Long longValue(JsonNode node, String name) {
+        if (node == null) {
+            return null;
+        }
+        JsonNode value = node.path(name);
+        return value.isNumber() ? Math.max(0L, value.asLong()) : null;
+    }
+
     private Double decimal(JsonNode node, String name) {
         if (node == null) {
             return null;
@@ -818,6 +941,7 @@ final class UsageMetricsStore {
 
     record LatestEvidence(
             Double qualityScore,
+            CurrentQualityEvidence currentQuality,
             Double testQualityScore,
             Double mutationScore,
             Double lineCoverage,
@@ -830,6 +954,7 @@ final class UsageMetricsStore {
             GateEvidence gates
     ) {
         LatestEvidence {
+            currentQuality = currentQuality == null ? CurrentQualityEvidence.empty() : currentQuality;
             findings = findings == null ? FindingsEvidence.empty() : findings;
             architecture = architecture == null ? ArchitectureEvidence.empty() : architecture;
             gates = gates == null ? GateEvidence.empty() : gates;
@@ -838,6 +963,7 @@ final class UsageMetricsStore {
         private static LatestEvidence empty() {
             return new LatestEvidence(
                     null,
+                    CurrentQualityEvidence.empty(),
                     null,
                     null,
                     null,
@@ -850,6 +976,100 @@ final class UsageMetricsStore {
                     GateEvidence.empty()
             );
         }
+    }
+
+    record CurrentQualityEvidence(
+            String source,
+            String capturedAt,
+            String scope,
+            String revision,
+            String fingerprint,
+            String analysisStatus,
+            int targetCount,
+            Integer fileCount,
+            Integer linesOfCode,
+            Long sourceBytes,
+            Integer methodCount,
+            Integer findingCount,
+            Integer bugRiskCount,
+            Integer codeSmellCount,
+            Integer modernizationOpportunityCount,
+            Integer maximumCyclomaticComplexity,
+            Double averageCyclomaticComplexity,
+            Integer maximumCognitiveComplexity,
+            Integer duplicatedLineCount,
+            Double duplicationPercent,
+            Integer remediationDebtMinutes,
+            Double remediationDebtRatioPercent,
+            Double reliabilityScore,
+            Double maintainabilityScore,
+            Double complexityScore,
+            Double duplicationScore,
+            Double qualityScore,
+            Long analysisElapsedNanos,
+            int parseFailures,
+            FindingsEvidence findings
+    ) {
+        CurrentQualityEvidence {
+            findings = findings == null ? FindingsEvidence.empty() : findings;
+        }
+
+        private static CurrentQualityEvidence empty() {
+            return unavailable(null, null, null, null, null, null);
+        }
+
+        private static CurrentQualityEvidence unavailable(
+                String source,
+                String capturedAt,
+                String scope,
+                String analysisStatus,
+                String revision,
+                String fingerprint
+        ) {
+            return new CurrentQualityEvidence(
+                    source,
+                    capturedAt,
+                    scope,
+                    revision,
+                    fingerprint,
+                    analysisStatus,
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    0,
+                    FindingsEvidence.unavailable(source, capturedAt)
+            );
+        }
+    }
+
+    private record QualitySnapshotContext(
+            int targetCount,
+            String scope,
+            String source,
+            String capturedAt,
+            boolean currentProject,
+            String revision,
+            String fingerprint
+    ) {
     }
 
     record FindingsEvidence(
@@ -1052,6 +1272,7 @@ final class UsageMetricsStore {
 
     private static final class MutableEvidence {
         private Double qualityScore;
+        private CurrentQualityEvidence currentQuality;
         private Double testQualityScore;
         private Double mutationScore;
         private Double lineCoverage;
@@ -1065,6 +1286,7 @@ final class UsageMetricsStore {
 
         private MutableEvidence(LatestEvidence value) {
             this.qualityScore = value.qualityScore();
+            this.currentQuality = value.currentQuality();
             this.testQualityScore = value.testQualityScore();
             this.mutationScore = value.mutationScore();
             this.lineCoverage = value.lineCoverage();
@@ -1080,6 +1302,7 @@ final class UsageMetricsStore {
         private LatestEvidence freeze() {
             return new LatestEvidence(
                     qualityScore,
+                    currentQuality,
                     testQualityScore,
                     mutationScore,
                     lineCoverage,

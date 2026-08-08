@@ -74,9 +74,21 @@ Discarding removes the isolated workspace and leaves the live project unchanged.
 
 ## Automatic review of Java changes
 
-At the end of each agent turn, `diff-gate` checks for new Java changes. On a feature branch, it checks
-everything since the branch split from the local default branch. On the default branch, it checks the
-previous commit. Staged, unstaged, and untracked files are included.
+The plugin listens for completed shell tools used by Codex or Claude Code. After an observed
+`git commit` command, it runs one whole-project source-quality analysis, atomically stores the
+current metrics and findings, and checks the new diff fingerprint. Non-commit shell commands exit
+through a lightweight filter without starting the Java runtime. No user prompt is required.
+
+When the commit contains unproved Java production work, the post-tool hook feeds the current quality
+summary and `$jaipilot-review-diff` instruction back to the agent. The agent must keep working until
+the clean build, coverage, mutation, source-quality, and ArchUnit gates pass. At the end of each
+agent turn, the Stop hook runs `diff-gate` again as a fallback for working-tree changes or commit
+mechanisms the shell hook did not observe.
+
+On a feature branch, the gate checks everything since the branch split from the local default
+branch. On the default branch, it checks the previous commit. Staged, unstaged, and untracked files
+are included. The post-tool hook is scoped to commits observed through the installed coding agent;
+it does not install an operating-system-wide hook into repositories.
 
 This check is quick and does not run a build. If a Java or build-file change has no matching proof
 receipt, the plugin asks the agent to review it. Non-Git projects are ignored. If Git inspection fails,
@@ -107,7 +119,7 @@ Only one run may be active for a project, with at most four active runs across a
 expire after two hours. JAIPilot removes an expired workspace only when its path matches the expected
 temporary-workspace pattern.
 
-## Local impact dashboard
+## Local quality and impact dashboard
 
 Every normal toolkit invocation idempotently ensures that one dashboard process is running. It
 prefers `127.0.0.1:7433`; when that bind reports a port conflict, it binds an operating-system-selected
@@ -125,9 +137,13 @@ hatch for environments that prohibit local listeners.
 Usage and outcome summaries live beneath the same private state root in `metrics/summary.json`.
 Atomic writes plus a file lock make concurrent runner and dashboard access deterministic. The store
 keeps bounded recent activity, aggregate command counts, one-way hashes for distinct-project counts,
-and pending validation evidence. Administrative help, version, and dashboard-status checks are not
+pending validation evidence, and the full numeric whole-project source-quality snapshot from the
+latest observed agent commit, including its Git revision and diff fingerprint. Administrative help,
+version, and dashboard-status checks are not
 counted as product usage. The store never records project paths, class names, source, agent prompts,
-or failure messages. Pending coverage, quality, finding, debt, mutation, and test-execution gains
+or failure messages. The UI presents current quality and findings first, marks older architecture
+or proof evidence stale, and keeps applied impact and local usage secondary. Pending coverage,
+quality, finding, debt, mutation, and test-execution gains
 become cumulative impact only after transactional apply; discard removes the pending evidence. If
 the metrics summary is corrupt, the next write preserves it with a `summary.corrupt-*` name and
 starts a fresh summary instead of blocking the Java workflow or silently deleting evidence.

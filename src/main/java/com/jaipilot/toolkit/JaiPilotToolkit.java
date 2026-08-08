@@ -1,6 +1,7 @@
 package com.jaipilot.toolkit;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -165,6 +166,7 @@ public final class JaiPilotToolkit {
         }
         return switch (args[0]) {
             case "help", "version", "dashboard", "inspect", "diff-gate", "prove-diff", "hook-stop",
+                    "hook-post-commit",
                     "quality", "prepare-tests", "prepare-cleanup", "status", "validate", "apply", "discard" ->
                     args[0];
             default -> "unknown";
@@ -177,6 +179,13 @@ public final class JaiPilotToolkit {
             return 0;
         }
         if (result == NoOutput.INSTANCE) {
+            return 0;
+        }
+        if (result instanceof PostCommitHookResult postCommit) {
+            if (postCommit.response() == null) {
+                return 0;
+            }
+            writeJsonLine(mapper, stdout, postCommit.response());
             return 0;
         }
         if (result instanceof HookResponse response) {
@@ -222,7 +231,7 @@ public final class JaiPilotToolkit {
                 message -> stderr.println("jaipilot: " + message)
         );
         return switch (parsed.command()) {
-            case "inspect", "diff-gate", "prove-diff", "hook-stop" -> executeReviewCommand(
+            case "inspect", "diff-gate", "prove-diff", "hook-stop", "hook-post-commit" -> executeReviewCommand(
                     parsed,
                     mapper,
                     stdin,
@@ -275,6 +284,10 @@ public final class JaiPilotToolkit {
             case "hook-stop" -> {
                 parsed.allow("project");
                 yield stopHook(mapper, stdin, parsed.project(), store);
+            }
+            case "hook-post-commit" -> {
+                parsed.allow("project");
+                yield postCommitHook(mapper, stdin, parsed.project(), store);
             }
             default -> throw new IllegalArgumentException("Unknown review command: " + parsed.command());
         };
@@ -375,6 +388,186 @@ public final class JaiPilotToolkit {
         }
     }
 
+    private static Object postCommitHook(
+            ObjectMapper mapper,
+            InputStream stdin,
+            Path project,
+            ToolkitRunStore store
+    ) {
+        JsonNode input = hookInput(mapper, stdin);
+        if (!isGitCommitToolUse(input)) {
+            return NoOutput.INSTANCE;
+        }
+
+        WorkflowRunService.QualityInspection quality;
+        try {
+            quality = store.currentQuality(project).orElse(null);
+        } catch (RuntimeException exception) {
+            return new PostCommitHookResult(
+                    new HookResponse(
+                            "block",
+                            "JAIPilot could not refresh current Java quality after this Git commit: "
+                                    + rootMessage(exception) + ". Resolve the analysis failure before continuing."
+                    ),
+                    null,
+                    "failed",
+                    null,
+                    null
+            );
+        }
+
+        try {
+            ToolkitRunStore.DiffGateStatus gate = store.diffGate(
+                    project,
+                    DiffVerificationService.DEFAULT_THRESHOLDS
+            );
+            HookResponse response = "review_required".equals(gate.status())
+                    ? new HookResponse("block", postCommitReason(gate, quality))
+                    : null;
+            return new PostCommitHookResult(
+                    response,
+                    quality,
+                    quality == null ? "no_java_sources" : "analyzed",
+                    gate.headCommit(),
+                    gate.fingerprint()
+            );
+        } catch (GitChangeService.NotGitWorktreeException exception) {
+            return NoOutput.INSTANCE;
+        } catch (RuntimeException exception) {
+            return new PostCommitHookResult(
+                    new HookResponse(
+                            "block",
+                            "JAIPilot refreshed current quality but could not safely inspect the committed Java diff: "
+                                    + rootMessage(exception) + ". Run `jaipilot diff-gate --project "
+                                    + shellSafeDisplay(project) + "` and resolve the failure before continuing."
+                    ),
+                    quality,
+                    quality == null ? "no_java_sources" : "analyzed",
+                    null,
+                    null
+            );
+        }
+    }
+
+    private static JsonNode hookInput(ObjectMapper mapper, InputStream stdin) {
+        try {
+            JsonNode input = mapper.readTree(stdin);
+            return input == null ? mapper.createObjectNode() : input;
+        } catch (IOException exception) {
+            return mapper.createObjectNode();
+        }
+    }
+
+    private static boolean isGitCommitToolUse(JsonNode input) {
+        return "PostToolUse".equals(input.path("hook_event_name").asText())
+                && "Bash".equals(input.path("tool_name").asText())
+                && containsGitCommit(input.path("tool_input").path("command").asText(""));
+    }
+
+    private static boolean containsGitCommit(String command) {
+        return new ShellCommandScanner(command).containsGitCommit();
+    }
+
+    private static boolean isGitCommitSegment(List<String> words) {
+        int index = commandIndex(words);
+        if (index >= words.size() || !"git".equals(executableName(words.get(index)))) {
+            return false;
+        }
+        return "commit".equals(gitSubcommand(words, index + 1));
+    }
+
+    private static int commandIndex(List<String> words) {
+        int index = skipCommandPrefixes(words, 0);
+        index = skipEnvironmentAssignments(words, index);
+        if (index < words.size() && "env".equals(executableName(words.get(index)))) {
+            index = skipEnvironmentOptions(words, index + 1);
+        }
+        return skipCommandPrefixes(words, index);
+    }
+
+    private static int skipCommandPrefixes(List<String> words, int start) {
+        int index = start;
+        while (index < words.size() && isCommandPrefix(words.get(index))) {
+            index++;
+        }
+        return index;
+    }
+
+    private static int skipEnvironmentAssignments(List<String> words, int start) {
+        int index = start;
+        while (index < words.size() && isEnvironmentAssignment(words.get(index))) {
+            index++;
+        }
+        return index;
+    }
+
+    private static int skipEnvironmentOptions(List<String> words, int start) {
+        int index = start;
+        while (index < words.size()
+                && (words.get(index).startsWith("-") || isEnvironmentAssignment(words.get(index)))) {
+            index++;
+        }
+        return index;
+    }
+
+    private static String gitSubcommand(List<String> words, int start) {
+        int index = start;
+        while (index < words.size()) {
+            String token = words.get(index);
+            if (!token.startsWith("-") || "-".equals(token)) {
+                return token;
+            }
+            if (gitOptionNeedsValue(token) && !token.contains("=")) {
+                index++;
+            }
+            index++;
+        }
+        return null;
+    }
+
+    private static boolean isCommandPrefix(String token) {
+        return switch (token) {
+            case "!", "{", "if", "then", "do", "time", "command", "builtin", "nohup" -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean isEnvironmentAssignment(String token) {
+        int equals = token.indexOf('=');
+        if (equals <= 0 || !Character.isJavaIdentifierStart(token.charAt(0))) {
+            return false;
+        }
+        for (int index = 1; index < equals; index++) {
+            if (!Character.isJavaIdentifierPart(token.charAt(index))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String executableName(String token) {
+        int slash = Math.max(token.lastIndexOf('/'), token.lastIndexOf('\\'));
+        return token.substring(slash + 1);
+    }
+
+    private static boolean gitOptionNeedsValue(String token) {
+        return switch (token) {
+            case "-C", "-c", "--git-dir", "--work-tree", "--namespace", "--super-prefix", "--config-env" -> true;
+            default -> false;
+        };
+    }
+
+    private static String postCommitReason(
+            ToolkitRunStore.DiffGateStatus gate,
+            WorkflowRunService.QualityInspection quality
+    ) {
+        String qualitySummary = quality == null
+                ? "Current project quality is unavailable because no Java production sources remain. "
+                : "Current project quality is " + quality.quality().metrics().qualityScore() + "/100 with "
+                        + quality.quality().metrics().findingCount() + " active finding(s). ";
+        return "JAIPilot automatically analyzed this Git commit. " + qualitySummary + hookReason(gate);
+    }
+
     private static String hookReason(ToolkitRunStore.DiffGateStatus gate) {
         return "JAIPilot detected " + gate.changedProductionPaths().size()
                 + " changed Java production file(s) since " + gate.baselineDescription()
@@ -449,6 +642,15 @@ public final class JaiPilotToolkit {
     private record HookResponse(String decision, String reason) {
     }
 
+    private record PostCommitHookResult(
+            HookResponse response,
+            WorkflowRunService.QualityInspection currentQuality,
+            String analysisStatus,
+            String revision,
+            String fingerprint
+    ) {
+    }
+
     private record FailedProof(boolean ok, DiffVerificationService.DiffVerification result) {
     }
 
@@ -457,6 +659,98 @@ public final class JaiPilotToolkit {
     }
 
     private record Usage(String text) {
+    }
+
+    private static final class ShellCommandScanner {
+
+        private final String command;
+        private final List<String> segment = new ArrayList<>();
+        private final StringBuilder word = new StringBuilder();
+        private char quote;
+        private boolean escaped;
+
+        private ShellCommandScanner(String command) {
+            this.command = command;
+        }
+
+        private boolean containsGitCommit() {
+            for (int index = 0; index < command.length(); index++) {
+                if (accept(command.charAt(index))) {
+                    return true;
+                }
+            }
+            if (escaped) {
+                word.append('\\');
+            }
+            appendWord();
+            return isGitCommitSegment(segment);
+        }
+
+        private boolean accept(char current) {
+            if (escaped) {
+                word.append(current);
+                escaped = false;
+                return false;
+            }
+            return quote == 0 ? acceptUnquoted(current) : acceptQuoted(current);
+        }
+
+        private boolean acceptQuoted(char current) {
+            if (current == quote) {
+                quote = 0;
+            } else if (current == '\\' && quote == '"') {
+                escaped = true;
+            } else {
+                word.append(current);
+            }
+            return false;
+        }
+
+        private boolean acceptUnquoted(char current) {
+            if (current == '\\') {
+                escaped = true;
+                return false;
+            }
+            if (current == '\'' || current == '"') {
+                quote = current;
+                return false;
+            }
+            if (Character.isWhitespace(current)) {
+                return acceptWhitespace(current);
+            }
+            if (isShellSeparator(current)) {
+                return completeSegment();
+            }
+            word.append(current);
+            return false;
+        }
+
+        private boolean acceptWhitespace(char current) {
+            appendWord();
+            if (current != '\n') {
+                return false;
+            }
+            return completeSegment();
+        }
+
+        private boolean completeSegment() {
+            appendWord();
+            boolean commit = isGitCommitSegment(segment);
+            segment.clear();
+            return commit;
+        }
+
+        private void appendWord() {
+            if (!word.isEmpty()) {
+                segment.add(word.toString());
+                word.setLength(0);
+            }
+        }
+
+        private boolean isShellSeparator(char current) {
+            return current == ';' || current == '&' || current == '|'
+                    || current == '(' || current == ')';
+        }
     }
 
     private static final class ParsedArguments {

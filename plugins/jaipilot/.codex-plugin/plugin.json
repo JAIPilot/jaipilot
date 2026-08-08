@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
   "version": "3.3.2",
-  "description": "Java Enterprise Toolkit Harness for automatic Git diff review, proven unit tests, and scored code cleanup.",
+  "description": "Java Enterprise Toolkit Harness for automatic post-commit quality, Git diff proof, unit tests, and code cleanup.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -22,8 +22,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "Automatic Java diff proof, tests, and cleanup",
-    "longDescription": "Automatically review committed and working-tree Java changes, generate tests proven by coverage and PIT, and clean code with transparent quality scorecards.",
+    "shortDescription": "Post-commit Java quality and diff proof",
+    "longDescription": "Refresh current project quality after coding-agent commits, prove committed and working-tree Java changes, generate tests with coverage and PIT, and clean code with transparent scorecards.",
     "developerName": "JAIPilot",
     "category": "Productivity",
     "capabilities": [],
