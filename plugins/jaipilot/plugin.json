@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "3.3.2",
+  "version": "3.4.0",
   "description": "Java Enterprise Toolkit Harness for automatic post-commit quality, Git diff proof, unit tests, and code cleanup.",
   "author": {
     "name": "JAIPilot",
