@@ -183,6 +183,7 @@ See the [full reproducible evaluation](docs/evaluations/spring-framework-petclin
 
 ## Project links
 
+- [Preventing agent drift: a guide to shipping serious code via vibe coding](https://www.jaipilot.com/blog/preventing-agent-drift-serious-code-vibe-coding)
 - [Releases](https://github.com/JAIPilot/jaipilot/releases)
 - [Contributing](CONTRIBUTING.md)
 - [Support](SUPPORT.md)
