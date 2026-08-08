@@ -64,8 +64,8 @@ public final class JavaBuildVerificationService {
     List<String> buildCommand(Path projectRoot) {
         String executable = projectService.resolveBuildExecutable(projectRoot);
         return switch (projectService.detectBuildTool(projectRoot)) {
-            case MAVEN -> List.of(executable, "-B", "clean", "verify");
-            case GRADLE -> List.of(executable, "--no-daemon", "clean", "test");
+            case MAVEN -> List.of(executable, "-B", "-Dmaven.build.cache.enabled=false", "clean", "verify");
+            case GRADLE -> List.of(executable, "--no-daemon", "--no-build-cache", "--rerun-tasks", "clean", "build");
         };
     }
 

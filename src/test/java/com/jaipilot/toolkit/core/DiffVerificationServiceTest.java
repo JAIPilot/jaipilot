@@ -37,7 +37,7 @@ class DiffVerificationServiceTest {
                         project -> {
                             throw new AssertionError("Coverage proof should own the clean build for existing targets.");
                         },
-                        project -> {
+                        (project, targets) -> {
                             coverageRuns.incrementAndGet();
                             return coverage(project, 95.0d, 90.0d);
                         },
@@ -80,7 +80,7 @@ class DiffVerificationServiceTest {
                 new GitChangeService(),
                 new DiffVerificationService.VerificationGates(
                         project -> null,
-                        project -> coverage(project, 89.0d, 70.0d),
+                        (project, targets) -> coverage(project, 89.0d, 70.0d),
                         new JavaQualityService()::analyze,
                         (project, targets, tests, minimum, lines) -> mutation(minimum, 60.0d, 75.0d, false)
                 )
@@ -141,7 +141,7 @@ class DiffVerificationServiceTest {
     @Test
     void unchangedRepositoryNeedsNoExpensiveEvidence() throws Exception {
         Path root = changedProject("unchanged");
-        git(root, "reset", "--hard", "HEAD^");
+        git(root, "reset", "--hard", "HEAD");
 
         DiffVerificationService.DiffVerification proof = passingService().verify(
                 root,
@@ -158,14 +158,13 @@ class DiffVerificationServiceTest {
     void deletionOnlyDiffRunsTheBuildWithoutInventingCoverage() throws Exception {
         Path root = changedProject("deletion");
         Files.delete(root.resolve("src/main/java/com/example/OrderService.java"));
-        commit(root, "delete production class");
         AtomicInteger builds = new AtomicInteger();
         DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
                 project -> {
                     builds.incrementAndGet();
                     return null;
                 },
-                project -> {
+                (project, targets) -> {
                     throw new AssertionError("Coverage is not applicable to a deletion-only diff.");
                 },
                 new JavaQualityService()::analyze,
@@ -194,7 +193,7 @@ class DiffVerificationServiceTest {
                     builds.incrementAndGet();
                     return null;
                 },
-                project -> {
+                (project, targets) -> {
                     throw new AssertionError("Coverage refresh must not run without JaCoCo configuration.");
                 },
                 new JavaQualityService()::analyze,
@@ -218,7 +217,7 @@ class DiffVerificationServiceTest {
         Path root = changedProject("pit-failure");
         DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
                 project -> null,
-                project -> coverage(project, 100.0d, 100.0d),
+                (project, targets) -> coverage(project, 100.0d, 100.0d),
                 new JavaQualityService()::analyze,
                 (project, targets, tests, minimum, lines) -> {
                     throw new IllegalStateException("wrapper", new java.io.IOException("fixture PIT failure"));
@@ -241,7 +240,7 @@ class DiffVerificationServiceTest {
         DiffVerificationService service = service(
                 new DiffVerificationService.VerificationGates(
                         project -> null,
-                        project -> coverage(project, 100.0d, 100.0d),
+                        (project, targets) -> coverage(project, 100.0d, 100.0d),
                         new JavaQualityService()::analyze,
                         (project, targets, tests, minimum, lines) -> mutation(
                                 minimum,
@@ -296,11 +295,11 @@ class DiffVerificationServiceTest {
     void modeOnlyJavaChangeDoesNotRunPitWithoutChangedSourceLines() throws Exception {
         Path root = changedProject("mode-only");
         Path source = root.resolve("src/main/java/com/example/OrderService.java");
+        git(root, "restore", ".");
         assertTrue(source.toFile().setExecutable(true, false));
-        commit(root, "change source mode only");
         DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
                 project -> null,
-                project -> coverage(project, 100.0d, 100.0d),
+                (project, targets) -> coverage(project, 100.0d, 100.0d),
                 new JavaQualityService()::analyze,
                 (project, targets, tests, minimum, lines) -> {
                     throw new AssertionError("PIT must not run without changed source lines.");
@@ -322,7 +321,7 @@ class DiffVerificationServiceTest {
         Path root = changedProject("declaration-only");
         DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
                 project -> null,
-                project -> coverage(project, 100.0d, 100.0d, 2),
+                (project, targets) -> coverage(project, 100.0d, 100.0d, 2),
                 new JavaQualityService()::analyze,
                 (project, targets, tests, minimum, lines) -> mutation(minimum, 100.0d, 100.0d, true)
         ));
@@ -363,7 +362,7 @@ class DiffVerificationServiceTest {
                 project -> {
                     throw new IllegalStateException("fixture clean-build failure");
                 },
-                project -> {
+                (project, targets) -> {
                     throw new AssertionError("Coverage must not run after a failed build.");
                 },
                 new JavaQualityService()::analyze,
@@ -389,7 +388,7 @@ class DiffVerificationServiceTest {
         DiffVerificationService service = service(
                 new DiffVerificationService.VerificationGates(
                         project -> null,
-                        project -> coverage(project, 100.0d, 100.0d),
+                        (project, targets) -> coverage(project, 100.0d, 100.0d),
                         new JavaQualityService()::analyze,
                         (project, targets, tests, minimum, lines) -> mutation(
                                 minimum,
@@ -433,7 +432,7 @@ class DiffVerificationServiceTest {
         );
         DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
                 project -> null,
-                project -> coverage(project, 100.0d, 100.0d),
+                (project, targets) -> coverage(project, 100.0d, 100.0d),
                 new JavaQualityService()::analyze,
                 (project, targets) -> architectureReport(targets, List.of(violation)),
                 (project, targets, tests, minimum, lines) -> {
@@ -458,7 +457,7 @@ class DiffVerificationServiceTest {
         Path root = changedProject("fair-score");
         DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
                 project -> null,
-                project -> coverage(project, 100.0d, 100.0d),
+                (project, targets) -> coverage(project, 100.0d, 100.0d),
                 new JavaQualityService()::analyze,
                 (project, targets, tests, minimum, lines) -> mutation(minimum, 57.2d, 0.0d, true)
         ));
@@ -476,7 +475,7 @@ class DiffVerificationServiceTest {
         Path goodRoot = changedProject("good-score");
         DiffVerificationService goodService = service(new DiffVerificationService.VerificationGates(
                 project -> null,
-                project -> coverage(project, 100.0d, 100.0d),
+                (project, targets) -> coverage(project, 100.0d, 100.0d),
                 new JavaQualityService()::analyze,
                 (project, targets, tests, minimum, lines) -> mutation(minimum, 60.0d, 75.0d, true)
         ));
@@ -550,7 +549,7 @@ class DiffVerificationServiceTest {
         Path root = changedProject("unscorable-mutation");
         DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
                 project -> null,
-                project -> coverage(project, 100.0d, 100.0d),
+                (project, targets) -> coverage(project, 100.0d, 100.0d),
                 new JavaQualityService()::analyze,
                 (project, targets, tests, minimum, lines) -> new MutationTestingService.MutationReport(
                         MutationTestingService.PITEST_VERSION,
@@ -586,10 +585,59 @@ class DiffVerificationServiceTest {
         assertEquals(50.0d, proof.testQuality().evidenceCompletenessPercent());
     }
 
+    @Test
+    void testOnlyDiffRequiresFreshClassExecutionEvidence() throws Exception {
+        Path root = changedTestProject("missing-test-execution");
+        DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
+                project -> null,
+                (project, targets) -> { throw new AssertionError("Coverage is not applicable to a test-only diff."); },
+                new JavaQualityService()::analyze,
+                (project, targets, tests, minimum, lines) -> {
+                    throw new AssertionError("PIT is not applicable to a test-only diff.");
+                }
+        ));
+
+        DiffVerificationService.DiffVerification proof = service.verify(
+                root, DiffVerificationService.DEFAULT_THRESHOLDS
+        );
+
+        assertFalse(proof.passed());
+        assertTrue(proof.failures().stream().anyMatch(message -> message.contains("OrderServiceTest")));
+    }
+
+    @Test
+    void testOnlyDiffAcceptsReportCreatedByItsCleanBuild() throws Exception {
+        Path root = changedTestProject("fresh-test-execution");
+        DiffVerificationService service = service(new DiffVerificationService.VerificationGates(
+                project -> {
+                    Path report = project.resolve("target/surefire-reports/TEST-com.example.OrderServiceTest.xml");
+                    try {
+                        Files.createDirectories(report.getParent());
+                        Files.writeString(report, "<testsuite tests=\"1\"><testcase name=\"changed\"/></testsuite>\n");
+                    } catch (java.io.IOException exception) {
+                        throw new IllegalStateException(exception);
+                    }
+                    return null;
+                },
+                (project, targets) -> { throw new AssertionError("Coverage is not applicable to a test-only diff."); },
+                new JavaQualityService()::analyze,
+                (project, targets, tests, minimum, lines) -> {
+                    throw new AssertionError("PIT is not applicable to a test-only diff.");
+                }
+        ));
+
+        DiffVerificationService.DiffVerification proof = service.verify(
+                root, DiffVerificationService.DEFAULT_THRESHOLDS
+        );
+
+        assertTrue(proof.passed());
+        assertTrue(proof.warnings().stream().anyMatch(message -> message.contains("execution proved")));
+    }
+
     private DiffVerificationService passingService() {
         return service(new DiffVerificationService.VerificationGates(
                 project -> null,
-                project -> coverage(project, 100.0d, 100.0d),
+                (project, targets) -> coverage(project, 100.0d, 100.0d),
                 new JavaQualityService()::analyze,
                 (project, targets, tests, minimum, lines) -> mutation(minimum, 100.0d, 100.0d, true)
         ));
@@ -636,7 +684,21 @@ class DiffVerificationServiceTest {
         git(root, "config", "user.email", "test@jaipilot.local");
         commit(root, "baseline");
         Files.writeString(source, changed);
-        commit(root, "changed behavior");
+        return root;
+    }
+
+    private Path changedTestProject(String name) throws Exception {
+        Path root = tempDir.resolve(name);
+        Files.createDirectories(root);
+        Files.writeString(root.resolve("pom.xml"), "<project/>\n");
+        Path test = root.resolve("src/test/java/com/example/OrderServiceTest.java");
+        Files.createDirectories(test.getParent());
+        Files.writeString(test, "package com.example; class OrderServiceTest { void baseline() {} }\n");
+        git(root, "init", "-q", "-b", "main");
+        git(root, "config", "user.name", "JAIPilot Test");
+        git(root, "config", "user.email", "test@jaipilot.local");
+        commit(root, "baseline");
+        Files.writeString(test, "package com.example; class OrderServiceTest { @Test void changed() {} }\n");
         return root;
     }
 

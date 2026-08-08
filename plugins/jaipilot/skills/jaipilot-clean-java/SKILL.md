@@ -1,52 +1,30 @@
 ---
 name: jaipilot-clean-java
-description: Analyze, clean, refactor, modernize, and validate Java with JAIPilot's local OpenRewrite-first quality engine. Use for code smells, bug-prone patterns, complexity, duplication, maintainability debt, resource safety, performance cleanup, or IDE-style Java inspections in Maven and Gradle projects.
+description: Analyze, clean, refactor, modernize, and prove Java with JAIPilot's local OpenRewrite-first evidence kernel. Use for code smells, bug risks, complexity, duplication, maintainability debt, resource safety, performance cleanup, or IDE-style Java inspections in Maven and Gradle repositories.
 ---
 
-# Clean and Refactor Java with JAIPilot
+# Clean Java with JAIPilot
 
-Use JAIPilot's deterministic findings and scores to prioritize work. Run pinned, exactly scoped
-OpenRewrite recipes first, then use the host agent's repository context to review and refine the
-candidate. JAIPilot owns isolation, scope enforcement, builds, ArchUnit architecture feedback, test
-and mutation evidence, quality regression gates, drift protection, and transactional apply.
+Let the host agent own the branch or worktree, edits, retries, cancellation, Git, and user decisions.
+Use JAIPilot only for deterministic scope, pinned OpenRewrite, quality evidence, and final proof.
 
 ## Workflow
 
-1. Resolve the plugin root as two directories above this `SKILL.md`, then use
-   `<plugin-root>/bin/jaipilot` for every command.
-2. Run `jaipilot inspect --project <root>`.
-3. Choose `classes`, `changed`, or `all`. Default a general cleanup to `changed`; require explicit
-   user intent before using `all`.
-4. Run `jaipilot quality --project <root> --mode <mode> ...`. Triage critical/high bug risks first,
-   then high-debt complexity and duplication, code smells, performance findings, and modernization.
-5. Run `jaipilot prepare-cleanup --project <root> --mode <mode> ...`. This clean-baselines the
-   project, creates an isolated workspace, and runs the pinned exact-source OpenRewrite bundle only
-   on selected production files.
-6. Work only inside `result.workspaceRoot`. Review `openRewriteChanges`, `qualityBefore`,
-   `qualityAfterOpenRewrite`, and `architectureBefore`; keep useful deterministic fixes and refine or
-   revert inappropriate ones.
-7. Review selected code and directly related tests for evidence-backed improvements:
-   - correctness defects, null handling, exception behavior, and broken contracts;
-   - resource leaks, concurrency hazards, unsafe state, and error recovery;
-   - dead, duplicated, redundant, overly complex, or misleading code;
-   - measurable performance waste without speculative micro-optimization;
-   - readability, cohesion, API clarity, and maintainability.
-8. Preserve behavior unless a regression test proves a defect. Edit only selected production Java
-   and directly relevant Java tests; never change builds, configuration, documentation, generated
-   output, or unselected production files.
-9. Run `jaipilot validate --run <runId>`. Resolve every item in `architecture.violations`, any new
-   critical/high finding, and any quality-score regression. If tests changed, the required 70% PIT
-   gate runs; review survivors and strengthen the tests. Repeat until `readyToApply` is true.
-10. After reviewing the candidate and confirming the requested change, run
-   `jaipilot apply --run <runId> --confirm`. Otherwise discard it.
+1. Inspect the repository with `jaipilot_inspect` or the private runner:
+   `<plugin-root>/bin/jaipilot inspect --project <root>`.
+2. Choose `changed`, `classes`, or `all`. Use `all` only for an explicit whole-project request.
+3. Run `jaipilot_quality`. Prioritize critical/high bug risks, then complexity, duplication, debt,
+   performance, and modernization. Treat parse failures as incomplete evidence.
+4. Ensure the agent controls a clean, recoverable Git branch or worktree. Run `jaipilot_rewrite` for
+   the exact scope so pinned OpenRewrite recipes execute first. Review the resulting Git diff; keep
+   only useful, behavior-preserving edits.
+5. Refine the smallest coherent change. Add a regression test before changing established behavior.
+   Do not lower gates, suppress findings, or broaden scope merely to obtain a pass.
+6. Run the repository's normal focused tests while iterating. When the diff is stable, run
+   `jaipilot_prove_diff` once. Resolve every build, coverage, PIT, quality, and ArchUnit failure.
+7. Recheck `jaipilot_diff_gate`. Continue only when the exact current fingerprint is `passed` or
+   no Java/build input is applicable.
 
-## Quality evidence
-
-Use each finding's rule, severity, file, line, symbol, remediation, estimated effort, and quick-fix
-indicator. Report reliability, maintainability, complexity, duplication, and overall quality scores
-with raw finding counts, code-smell count, modernization opportunities, duplicated lines, remediation
-debt, and parse failures. Scores prioritize review; they do not replace contextual judgment.
-
-Report OpenRewrite changes, findings resolved and introduced, before/after score and debt deltas,
-ArchUnit completeness and violations, changed tests, build and mutation evidence, elapsed timings,
-warnings, and whether the verified candidate was applied.
+Report the selected scope, OpenRewrite edits accepted or reverted, findings and debt changed,
+tests added, proof evidence, warnings, and remaining limitations. JAIPilot never commits or applies
+the patch; the agent follows the user's normal Git and review workflow.

@@ -4,9 +4,7 @@
     <img src="docs/assets/jaipilot-logo.svg" alt="JAIPilot logo" width="140" />
   </picture>
   <h1>JAIPilot</h1>
-  <p><strong>Java Enterprise Harness for Codex and Claude Code.</strong></p>
-  <p>Deterministic guardrails for high-quality agentic Java changes—cutting down agentic drift.</p>
-  <p><a href="#install"><strong>Install JAIPilot</strong></a></p>
+  <p><strong>Deterministic guardrails that cut down agentic drift for high-quality agentic Java changes.</strong></p>
   <p>
     <a href="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml"><img src="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
     <a href="https://github.com/JAIPilot/jaipilot/releases"><img src="https://img.shields.io/github/v/release/JAIPilot/jaipilot?display_name=tag&sort=semver" alt="Latest release" /></a>
@@ -15,16 +13,27 @@
   </p>
 </div>
 
-JAIPilot is the Java Enterprise Harness that cuts down agentic drift so Codex and Claude Code can
-produce and maintain high-quality Java with minimal manual intervention, especially in enterprise
-brownfield projects. It gives coding agents deterministic, local guardrails through automatic Git
-diff review, high-quality unit testing, and safe code cleanup.
+JAIPilot is a local, backend-free Java Enterprise Harness for Codex, Claude Code, and any coding
+tool that supports its stdio MCP server. It helps coding agents produce and maintain high-quality
+code with minimal manual intervention, especially in enterprise brownfield projects.
 
-> **Built for enterprise Java teams:** keep source local, constrain agent edits, and require
-> real-build evidence before apply. In a reproducible Spring Framework Petclinic evaluation,
-> JAIPilot raised line coverage **55% → 95%**, branch coverage **30% → 100%**, killed **14/14 PIT
-> mutations**, and reduced cleanup debt **5 → 0 minutes**. [See the full
-> evaluation](docs/evaluations/spring-framework-petclinic.md).
+JAIPilot is deliberately not another coding agent. The host agent reasons, edits, retries, manages
+Git, and talks to the user. JAIPilot supplies the small deterministic evidence kernel that keeps a
+long coding session anchored to the real repository.
+
+## The boundary
+
+| Host coding agent owns | JAIPilot owns |
+| --- | --- |
+| Planning and architectural judgment | Repository and changed-scope discovery |
+| Source and test edits | Deterministic quality findings and scores |
+| Branches, commits, rebases, and PRs | Pinned, explicitly invoked OpenRewrite cleanup |
+| Focused iteration and retry strategy | Clean-build, test-execution, coverage, PIT, and ArchUnit proof |
+| Cancellation and process supervision | Exact diff fingerprint and local proof receipt |
+| Asking before opening a support issue | Latest per-repository snapshot and local dashboard |
+
+This division keeps JAIPilot lean. It does not maintain a second workflow engine, candidate
+workspace, apply transaction, command history, usage analytics, or agent scheduler.
 
 ## Install
 
@@ -44,152 +53,112 @@ Run these commands inside Claude Code:
 /plugin install jaipilot@jaipilot
 ```
 
-The plugin downloads its private Java runtime on first use. It does not require npm or a globally
-installed JDK. Codex and Claude Code show the bundled post-tool and Stop hooks for trust review;
-approve both once to enable automatic post-commit quality refresh and changed-code proof.
+The plugin downloads a checksum-verified private Java runtime on first use. It does not require a
+globally installed JDK. The stdio MCP server and Agent Skills work together; hooks add background
+repository initialization and direct-commit refresh.
 
-## Built to reduce agentic drift
+## Six deterministic MCP tools
 
-JAIPilot keeps agentic Java work inside a continuous quality ratchet: make the smallest worthwhile
-change, remove avoidable complexity, and prove the result before accepting it. The connected coding
-agent owns reasoning and edits; JAIPilot supplies deterministic scope, isolation, cleanup, execution,
-quality, drift, and apply checks that remain stable across long-running coding sessions.
-
-- **Leanest:** constrain the change to its intended scope, reuse existing code, and reject unrelated
-  files, unsafe paths, deletion, generated-source drift, and unnecessary production changes.
-- **Cleanest:** run pinned, exactly scoped OpenRewrite cleanup first, surface actionable quality debt,
-  and prevent severe findings or overall quality regressions.
-- **Meanest:** require the real clean build, changed-test execution, fresh coverage, targeted mutation
-  strength, ArchUnit architecture proof, exact-diff proof, and drift-safe transactional apply.
-
-The objective is straightforward: coding agents should be able to work autonomously for longer while
-continuously producing and maintaining focused, clean, well-tested Java instead of accumulating
-silent complexity and regressions for a human reviewer to unwind later.
-
-## Core tools
-
-### Automatic changed-code proof
-
-- Detect committed branch work from the local default-branch merge base, plus staged, unstaged, and
-  untracked Java changes.
-- After each `git commit` command observed through the coding agent's shell tool, refresh
-  whole-project source quality and current findings without requiring a prompt.
-- Block the agent after a commit with an unproved production diff and feed the quality summary and
-  `$jaipilot-review-diff` recovery workflow directly back into Codex or Claude Code.
-- Check again at every agent Stop as a fallback, then continue the connected agent into focused
-  remediation and proof until quality, build, test, mutation, and ArchUnit gates pass.
-- Fail closed when an in-scope Git inspection cannot be completed; non-Git workspaces remain quiet.
-- Run expensive proof once per exact diff fingerprint, then reuse the local receipt until relevant
-  Java or build files change.
-- Require a clean full build, fresh changed-line coverage, changed-line PIT, new-code quality,
-  zero new or severity-escalated critical/high findings, and zero ArchUnit package-cycle violations
-  involving changed classes.
-- Default to 90% changed-line coverage, 85% changed-branch coverage, 80% changed-line mutation
-  score, and a 90 new-code quality score.
-
-### High-quality unit testing
-
-- Generate focused JUnit tests for selected, changed, under-covered, or all production classes.
-- Use the project's real Maven or Gradle build.
-- Prove that every changed test executed.
-- Measure fresh JaCoCo line and branch coverage plus targeted PIT mutation strength.
-- Block apply when requested coverage or mutation targets are not met.
-- Report a transparent test-quality score with evidence completeness and raw inputs.
-
-### Java code cleanup
-
-- Detect bug risks, code smells, modernization opportunities, complexity, duplication, and
-  performance hazards with file-and-line remediation guidance.
-- Run pinned, exactly scoped OpenRewrite cleanup first.
-- Let the coding agent review and refine the candidate.
-- Keep production edits limited to selected Java files and related tests.
-- Track reliability, maintainability, complexity, duplication, debt, and overall quality scores.
-- Analyze freshly compiled production bytecode with pinned ArchUnit and return actionable package-cycle
-  findings with classes, source path, line, cycle, and remediation.
-- Reject new severe findings or quality regressions, then verify behavior with the real build.
-- Reject candidate drift, live-worktree drift, deletion, and unsafe paths.
-
-Every score includes its underlying counts and timings. See [quality metrics](docs/quality-metrics.md)
-for the formulas, gates, and interpretation boundaries.
-
-The post-tool hook covers commits performed by the installed coding agent through its observed local
-shell tool. It is intentionally not an operating-system-wide Git hook for commits made by unrelated
-terminals or applications.
-
-## Local quality and impact dashboard
-
-JAIPilot starts a private impact dashboard automatically on the first toolkit invocation and keeps
-it available at `http://127.0.0.1:7433/`. If that port is already occupied, JAIPilot selects a free
-loopback port automatically. Run `jaipilot dashboard` to retrieve the active URL as structured JSON.
-
-The dashboard uses a restrained project-quality layout and refreshes live. It shows, in order:
-
-- current whole-project quality, reliability, maintainability, complexity, duplication, debt, source
-  size, Git revision, and analysis time from the latest agent commit;
-- current findings by severity with actionable rule, remediation, file, and line details;
-- the latest ArchUnit status and violations plus changed-code coverage, mutation, and proof gates;
-- verified applied impact, recent analysis activity, and local operational usage as secondary context.
-
-Improvement totals are credited only after a validated candidate is applied; attempted or discarded
-work never inflates them. Whole-project source state is replaced after every observed agent commit;
-selected-scope analysis cannot overwrite it. Architecture and proof evidence older than that commit
-is explicitly marked stale until the agent proves the current diff. Metrics and one-way project
-identifiers stay in JAIPilot's owner-private local state. The dashboard binds only to IPv4 loopback,
-exposes read-only endpoints, and sends no telemetry, source, paths, or usage data anywhere.
-
-See the [local dashboard startup evaluation](docs/evaluations/local-dashboard-startup.md) for raw
-cold-start, steady-state, and real `inspect` timings, and the [current-status dashboard
-evaluation](docs/evaluations/dashboard-current-status.md) for API and real-browser live-refresh
-evidence.
-
-## Agent Skills
-
-- `jaipilot-generate-tests`
-- `jaipilot-clean-java`
-- `jaipilot-review-diff`
-
-## Example requests
-
-```text
-Generate high-quality unit tests for OrderService and reach 90% line coverage.
-Strengthen PaymentServiceTest until it reaches an 80% mutation score.
-Generate tests for the Java classes changed on this branch.
-Find and fix bug risks, complexity, duplication, and code smells in the changed Java classes.
-Review PaymentService for code cleanup, but show me the candidate before apply.
-Review and prove every Java production change on this branch.
-```
-
-## Workflow
-
-```text
-diff-gate → quality and isolated remediation → prove-diff → fingerprinted local proof
-```
-
-Each remediation transaction remains `prepare-tests` or `prepare-cleanup → edit isolated candidate
-→ validate → apply or discard`. Apply requires an immediately validated candidate and explicit
-confirmation. Final diff proof runs in another isolated copy and never edits live source.
-
-Read [how JAIPilot works](docs/how-it-works.md) for the complete scope, evidence, concurrency, and
-transaction model.
-
-## Verified on Spring Framework Petclinic
-
-The v3.1.2 workflow was tested against the canonical Spring Framework Petclinic repository:
-
-| Check | Result |
+| Tool | Purpose |
 | --- | --- |
-| Baseline | 75 tests passed; zero failures, errors, or skips |
-| Quality analysis | 43 files in 0.217 s median analyzer time; deterministic 97.9 score |
-| `Owner` test generation | 55% → 95% line; 30% → 100% branch coverage |
-| Mutation proof | 14/14 mutations killed; 100% mutation score and test strength |
-| Test score | 98.8 `EXCELLENT`; 100% evidence completeness |
-| Code cleanup | Quality 99.8 → 100.0; debt 5 → 0; exactly one selected file |
+| `jaipilot_inspect` | Discover the Java build, production classes, and available evidence engines. |
+| `jaipilot_snapshot` | Refresh whole-repository quality and the dashboard's current state. |
+| `jaipilot_quality` | Return deterministic findings, debt, complexity, duplication, and scorecards. |
+| `jaipilot_rewrite` | Run pinned OpenRewrite recipes for an exact agent-selected scope. |
+| `jaipilot_diff_gate` | Check whether the current Java/build fingerprint has a valid proof receipt. |
+| `jaipilot_prove_diff` | Run the clean build and every applicable coverage, PIT, quality, and ArchUnit gate. |
 
-See the [full reproducible evaluation](docs/evaluations/spring-framework-petclinic.md).
+All tools are synchronous and return structured evidence. Long builds remain visible to the host,
+which can cancel or retry them using its normal process controls. JAIPilot never commits, pushes,
+opens a PR, or applies a hidden candidate.
+
+## How drift is reduced
+
+At session start JAIPilot registers the detected repository, records its local GitHub origin when
+available, starts the loopback dashboard, and refreshes current quality in a detached process. This
+initialization does not edit the repository or create files inside it.
+
+The direct `git commit` post-tool hook queues the same detached repository snapshot. The Stop hook checks
+the current Java/build diff and returns actionable proof requirements to the host agent. These are
+coding-tool hooks, not operating-system-wide Git hooks; commits made in unrelated terminals or hidden
+inside arbitrary wrapper programs are outside this automatic boundary. The diff gate still catches
+applicable working-tree changes at Stop or whenever the agent invokes it.
+
+The normal loop is intentionally short:
+
+```text
+inspect → edit with the host agent → quality → prove-diff → diff-gate
+```
+
+Proof is cached only for the exact relevant fingerprint. A Java file, test, build descriptor, wrapper,
+symlink, or executable-mode change invalidates the receipt. Defaults are:
+
+- 90% changed-line coverage;
+- 85% changed-branch coverage;
+- 80% changed-line mutation score;
+- 90 changed-code quality score;
+- zero introduced or severity-escalated critical/high findings; and
+- complete ArchUnit evidence with zero package-cycle violations involving changed classes.
+
+Build/test-only and deletion-only diffs still require the clean build. Gates that are genuinely not
+applicable remain explicit rather than being represented as a zero score or a pass.
+
+## Unit tests and cleanup
+
+The `jaipilot-generate-tests` skill asks the host agent to write focused tests, then uses fresh
+JaCoCo, test-execution XML, and targeted PIT evidence to show whether those tests are meaningful.
+
+The `jaipilot-clean-java` skill runs pinned, exactly scoped OpenRewrite recipes first when cleanup is
+useful. The host reviews the resulting Git diff, keeps only worthwhile behavior-preserving changes,
+and adds a regression test before changing established behavior.
+
+`jaipilot-review-diff` ties both paths to the exact Git fingerprint. No skill lowers a gate, changes
+build configuration merely to pass, or treats coverage as a substitute for mutation strength.
+
+## Local current-evidence dashboard
+
+JAIPilot starts an owner-private dashboard on `http://127.0.0.1:7433/`. If that port is occupied, it
+uses another loopback port. The simple repository selector shows:
+
+- current whole-project quality and findings;
+- current proof status and exact-fingerprint freshness;
+- applicable ArchUnit, coverage, mutation, and gate evidence; and
+- observed quality/finding deltas between snapshots.
+
+The dashboard is a view over bounded per-repository snapshots, not a project-management database.
+It has no telemetry, hosted backend, command history, usage analytics, portfolios, or compliance
+workflow. State is stored outside repositories under `JAIPILOT_STATE_HOME`, then
+`$XDG_STATE_HOME/jaipilot`, or `~/.local/state/jaipilot`, with owner-only permissions.
+
+## Privacy and support
+
+Repository inspection and Git-origin lookup are local; JAIPilot never fetches. Source code, prompts,
+findings, paths, and metrics are not uploaded. The dashboard binds only to IPv4 loopback and exposes
+read-only endpoints.
+
+If a structured JAIPilot failure looks like a product defect, the host agent may offer to open a
+[GitHub issue](https://github.com/JAIPilot/jaipilot/issues/new/choose). It must ask first and sanitize
+paths, source, prompts, credentials, environment values, and repository-private details. JAIPilot
+never files or uploads an issue automatically.
+
+## Honest boundaries
+
+JAIPilot complements rather than replaces centralized analysis. SonarQube and similar platforms
+remain stronger for formal security/data-flow analysis, large rule catalogs, centralized governance,
+portfolios, compliance, and long-term organization-wide history.
+
+JAIPilot requires a local Maven or Gradle repository and uses local Git refs without fetching. Fresh
+coverage and mutation evidence depend on the repository's JaCoCo/PIT compatibility. A clean existing
+root commit is treated as repository history; automatic direct-commit observation begins after the
+plugin is active.
+
+See [how JAIPilot works](docs/how-it-works.md), [quality metrics](docs/quality-metrics.md), and the
+[static-analysis boundary](docs/static-analysis-boundary.md). The
+[v4.0 lean-kernel evidence](docs/evaluations/lean-kernel-4.0.0.md) records raw performance and Kafka
+acceptance results, including the failed Kafka test-suite boundary.
 
 ## Project links
 
-- [Preventing agent drift: a guide to shipping serious code via vibe coding](https://www.jaipilot.com/blog/preventing-agent-drift-serious-code-vibe-coding)
 - [Releases](https://github.com/JAIPilot/jaipilot/releases)
 - [Contributing](CONTRIBUTING.md)
 - [Support](SUPPORT.md)

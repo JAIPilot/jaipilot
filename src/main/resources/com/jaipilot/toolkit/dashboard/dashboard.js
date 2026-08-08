@@ -1,380 +1,261 @@
 const byId = (id) => document.getElementById(id);
-const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+const format = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+const severityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+let selectedId = location.hash.slice(1);
+let sequence = 0;
+let request;
 
-function setText(id, value) {
+function text(id, value) {
   const element = byId(id);
   if (element) element.textContent = value;
 }
 
-function finite(value) {
-  return Number.isFinite(value);
+function number(value, suffix = '') {
+  return Number.isFinite(value) ? `${format.format(value)}${suffix}` : '—';
 }
 
-function valueOrDash(value, suffix = '') {
-  return finite(value) ? `${number.format(value)}${suffix}` : '—';
-}
-
-function signed(value) {
-  if (!finite(value)) return '0.0';
-  return `${value > 0 ? '+' : ''}${number.format(value)}`;
-}
-
-function setStatus(id, label, state = 'neutral') {
+function status(id, label, kind = 'neutral') {
   const element = byId(id);
-  if (!element) return;
   element.textContent = label;
-  element.classList.remove('neutral', 'passed', 'warning', 'failed');
-  element.classList.add(state);
+  element.className = `status ${kind}`;
 }
 
-function relativeTime(timestamp) {
-  if (!timestamp || !Number.isFinite(Date.parse(timestamp))) return 'never';
-  const seconds = Math.max(0, Math.round((Date.now() - Date.parse(timestamp)) / 1000));
+function age(timestamp) {
+  const time = Date.parse(timestamp);
+  if (!Number.isFinite(time)) return 'unknown time';
+  const seconds = Math.max(0, Math.round((Date.now() - time) / 1000));
   if (seconds < 10) return 'just now';
   if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return new Date(timestamp).toLocaleDateString();
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return new Date(time).toLocaleDateString();
 }
 
-function olderThan(candidate, reference) {
-  return candidate && reference
-    && Number.isFinite(Date.parse(candidate))
-    && Number.isFinite(Date.parse(reference))
-    && Date.parse(candidate) < Date.parse(reference);
-}
-
-function renderCurrentQuality(evidence) {
-  const quality = evidence.currentQuality || {};
-  const available = finite(quality.qualityScore);
-  setText('quality-score', valueOrDash(quality.qualityScore));
-  setText('reliability-score', valueOrDash(quality.reliabilityScore));
-  setText('maintainability-score', valueOrDash(quality.maintainabilityScore));
-  setText('complexity-score', valueOrDash(quality.complexityScore));
-  setText('duplication-score', valueOrDash(quality.duplicationScore));
-  setText('debt-minutes', finite(quality.remediationDebtMinutes)
-    ? `${number.format(quality.remediationDebtMinutes)} min`
-    : '—');
-  setText('source-lines', valueOrDash(quality.linesOfCode));
-  setText('bug-risk-count', `${valueOrDash(quality.bugRiskCount)} bug risks`);
-  setText('code-smell-count', `${valueOrDash(quality.codeSmellCount)} code smells`);
-  setText('complexity-detail', finite(quality.maximumCyclomaticComplexity)
-    ? `Maximum ${number.format(quality.maximumCyclomaticComplexity)} · cognitive ${valueOrDash(quality.maximumCognitiveComplexity)}`
-    : 'Maximum —');
-  setText('duplication-detail', finite(quality.duplicatedLineCount)
-    ? `${number.format(quality.duplicatedLineCount)} lines · ${valueOrDash(quality.duplicationPercent, '%')}`
-    : '— duplicated lines');
-  setText('debt-ratio', `${valueOrDash(quality.remediationDebtRatioPercent, '%')} debt ratio`);
-  setText('source-detail', finite(quality.fileCount)
-    ? `${number.format(quality.fileCount)} files · ${valueOrDash(quality.methodCount)} methods`
-    : '— files · — methods');
-
-  if (!available) {
-    const revision = quality.revision ? ` · commit ${quality.revision.slice(0, 12)}` : '';
-    if (quality.analysisStatus === 'failed') {
-      setStatus('quality-status', 'FAILED', 'failed');
-      setText('analysis-meta', `Current quality refresh failed${revision} · ${relativeTime(quality.capturedAt)}`);
-    } else if (quality.analysisStatus === 'no_java_sources') {
-      setStatus('quality-status', 'NO JAVA', 'neutral');
-      setText('analysis-meta', `No Java production sources in the current project${revision} · ${relativeTime(quality.capturedAt)}`);
-    } else {
-      setStatus('quality-status', 'NOT ANALYZED', 'neutral');
-      setText('analysis-meta', 'Waiting for the first whole-project analysis after an agent Git commit.');
-    }
-  } else if ((quality.parseFailures || 0) > 0) {
-    setStatus('quality-status', 'INCOMPLETE', 'failed');
-    setText('analysis-meta', `${quality.source || 'Current analysis'} · ${quality.parseFailures} parse failure(s) · ${relativeTime(quality.capturedAt)}`);
-  } else {
-    const score = quality.qualityScore;
-    if (score >= 90) setStatus('quality-status', 'GOOD', 'passed');
-    else if (score >= 75) setStatus('quality-status', 'REVIEW', 'warning');
-    else setStatus('quality-status', 'NEEDS WORK', 'failed');
-    const scope = quality.scope === 'whole_project' ? 'whole project' : 'selected scope';
-    const revision = quality.revision ? ` · commit ${quality.revision.slice(0, 12)}` : '';
-    const elapsed = finite(quality.analysisElapsedNanos)
-      ? ` · ${number.format(quality.analysisElapsedNanos / 1_000_000)} ms analysis`
-      : '';
-    setText(
-      'analysis-meta',
-      `${quality.source || 'Quality analysis'} · ${scope}${revision} · ${relativeTime(quality.capturedAt)}${elapsed}`,
-    );
+function renderRepositories(view) {
+  const select = byId('repository-select');
+  const ids = new Set(view.repositories.map((repository) => repository.id));
+  if (!ids.has(selectedId)) selectedId = view.selectedRepository?.id || '';
+  select.replaceChildren();
+  for (const repository of view.repositories) {
+    const option = document.createElement('option');
+    option.value = repository.id;
+    option.textContent = `${repository.displayName} · ${repository.qualityScore ?? '…'} · ${repository.findings} findings`;
+    option.selected = repository.id === selectedId;
+    select.append(option);
   }
-
-  renderFindings(quality.findings || evidence.findings || {});
-  renderArchitecture(evidence.architecture || {}, quality.capturedAt);
-  renderProof(evidence, quality.capturedAt);
+  select.disabled = view.repositories.length < 2;
 }
 
-function renderFindings(findings) {
-  const available = finite(findings.total);
-  const total = available ? findings.total : null;
-  const allItems = Array.isArray(findings.items) ? findings.items : [];
-  const items = allItems.slice(0, 12);
-  setText('findings-total', total === null ? '—' : number.format(total));
-  setText('findings-critical', number.format(findings.critical || 0));
-  setText('findings-high', number.format(findings.high || 0));
-  setText('findings-medium', number.format(findings.medium || 0));
-  setText('findings-low', number.format(findings.low || 0));
-  if (!available) {
-    setText('findings-meta', 'No current quality analysis has run.');
-  } else {
-    const incomplete = findings.parseFailures ? ` · ${findings.parseFailures} parse failure(s)` : '';
-    const limited = total > items.length ? ` · showing ${items.length} of ${number.format(total)}` : '';
-    setText(
-      'findings-meta',
-      `${findings.source || 'Quality analysis'} · ${relativeTime(findings.capturedAt)}${incomplete}${limited}`,
-    );
-  }
+function renderEmpty() {
+  clearQuality();
+  clearProof();
+  renderImpact({});
+  const link = byId('github-link');
+  link.removeAttribute('href');
+  link.classList.add('hidden');
+  text('repository-path', 'Open a Java repository with your coding agent to initialize JAIPilot.');
+  status('quality-status', 'INITIALIZING');
+  status('proof-status', 'NOT APPLICABLE');
+  status('architecture-status', 'NOT APPLICABLE');
+  text('analysis-meta', 'No repository has been detected on this machine yet.');
+}
 
-  const body = byId('findings-list');
-  if (!body) return;
+function renderRepository(repository) {
+  if (!repository) return renderEmpty();
+  selectedId = repository.id;
+  location.hash = selectedId;
+  text('repository-path', repository.projectRoot);
+  const link = byId('github-link');
+  if (validGitHub(repository.githubUrl)) {
+    link.href = repository.githubUrl;
+    link.classList.remove('hidden');
+  } else {
+    link.removeAttribute('href');
+    link.classList.add('hidden');
+  }
+  if (repository.quality) renderQuality(repository); else clearQuality();
+  renderProof(repository);
+  renderImpact(repository.impact || {});
+  if (repository.analysisStatus === 'initializing') {
+    status('quality-status', 'INITIALIZING');
+    text('analysis-meta', 'JAIPilot detected this repository and is collecting its first current snapshot.');
+  } else if (repository.analysisStatus === 'failed') {
+    status('quality-status', 'FAILED', 'failed');
+    text('analysis-meta', `${repository.error || 'Snapshot failed.'} · ${age(repository.updatedAt)}`);
+  }
+}
+
+function validGitHub(value) {
+  if (typeof value !== 'string') return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname === 'github.com';
+  } catch (_) {
+    return false;
+  }
+}
+
+function renderQuality(repository) {
+  const quality = repository.quality;
+  const metrics = quality?.metrics;
+  if (!metrics) return;
+  text('quality-score', number(metrics.qualityScore));
+  text('reliability', number(metrics.reliabilityScore));
+  text('maintainability', number(metrics.maintainabilityScore));
+  text('complexity', number(metrics.complexityScore));
+  text('duplication', number(metrics.duplicationScore));
+  text('debt', `${number(metrics.remediationDebtMinutes)} min`);
+  text('source-lines', number(metrics.linesOfCode));
+  text('bugs', `${number(metrics.bugRiskCount)} bug risks`);
+  text('smells', `${number(metrics.codeSmellCount)} code smells`);
+  text('complexity-detail', `Maximum ${number(metrics.maximumCyclomaticComplexity)} · cognitive ${number(metrics.maximumCognitiveComplexity)}`);
+  text('duplication-detail', `${number(metrics.duplicatedLineCount)} lines · ${number(metrics.duplicationPercent, '%')}`);
+  text('debt-ratio', `${number(metrics.remediationDebtRatioPercent, '%')} debt ratio`);
+  text('source-detail', `${number(metrics.fileCount)} files · ${number(metrics.methodCount)} methods`);
+  const state = metrics.qualityScore >= 90 ? ['GOOD', 'passed']
+    : metrics.qualityScore >= 75 ? ['REVIEW', 'warning'] : ['NEEDS WORK', 'failed'];
+  status('quality-status', state[0], state[1]);
+  const revision = quality.revision ? ` · ${quality.revision.slice(0, 12)}` : '';
+  text('analysis-meta', `Current whole-project snapshot${revision} · ${age(quality.capturedAt)} · gate ${quality.gateStatus}`);
+  renderFindings(quality);
+}
+
+function renderFindings(quality) {
+  const findings = [...(quality.findings || [])].sort((a, b) =>
+    (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9)
+      || String(a.relativePath).localeCompare(String(b.relativePath))
+      || (a.line || 0) - (b.line || 0)
+      || String(a.id).localeCompare(String(b.id)));
+  const recorded = quality.metrics?.findingsBySeverity || {};
+  const counts = { CRITICAL: recorded.CRITICAL || 0, HIGH: recorded.HIGH || 0,
+    MEDIUM: recorded.MEDIUM || 0, LOW: recorded.LOW || 0 };
+  text('findings-total', quality.totalFindings);
+  text('critical', counts.CRITICAL); text('high', counts.HIGH); text('medium', counts.MEDIUM); text('low', counts.LOW);
+  const shown = Math.min(findings.length, 50);
+  text('findings-meta', `${quality.totalFindings} active · showing ${shown} · ${quality.parseFailures} parse failures`);
+  const body = byId('findings');
   body.replaceChildren();
-  if (!items.length) {
-    const row = document.createElement('tr');
-    row.className = 'empty-row';
-    const cell = document.createElement('td');
-    cell.colSpan = 4;
-    cell.textContent = available && total === 0
-      ? 'No active findings in the current analyzed project.'
-      : 'No findings evidence yet.';
-    row.append(cell);
-    body.append(row);
+  if (!findings.length) {
+    row(body, ['No active findings in the current snapshot.'], true);
     return;
   }
-  for (const finding of items) {
-    const row = document.createElement('tr');
-    const severityCell = document.createElement('td');
-    const severity = document.createElement('b');
-    const severityName = (finding.severity || 'LOW').toLowerCase();
-    severity.className = `severity ${severityName}`;
-    severity.textContent = finding.severity || 'LOW';
-    severityCell.append(severity);
-    const rule = document.createElement('td');
-    rule.className = 'finding-rule';
-    rule.textContent = finding.id || finding.category || 'Quality rule';
-    const message = document.createElement('td');
-    message.className = 'finding-message';
-    message.textContent = finding.message || 'Finding detected.';
-    if (finding.remediation) {
-      const remediation = document.createElement('small');
-      remediation.textContent = finding.remediation;
-      message.append(remediation);
-    }
-    const location = document.createElement('td');
-    location.className = 'finding-location';
-    location.textContent = `${finding.relativePath || finding.symbol || 'Analyzed source'}${finding.line ? `:${finding.line}` : ''}`;
-    row.append(severityCell, rule, message, location);
-    body.append(row);
+  for (const finding of findings.slice(0, 50)) {
+    const tr = document.createElement('tr');
+    const severity = document.createElement('td');
+    const badge = document.createElement('b');
+    badge.className = finding.severity.toLowerCase();
+    badge.textContent = finding.severity;
+    severity.append(badge);
+    const rule = document.createElement('td'); rule.className = 'rule'; rule.textContent = finding.id;
+    const message = document.createElement('td'); message.textContent = finding.message;
+    const location = document.createElement('td'); location.className = 'location';
+    location.textContent = `${finding.relativePath}${finding.line ? `:${finding.line}` : ''}`;
+    tr.append(severity, rule, message, location); body.append(tr);
   }
 }
 
-function replaceIssueList(id, items, emptyMessage, renderer) {
-  const root = byId(id);
-  if (!root) return;
-  root.replaceChildren();
-  if (!items.length) {
-    const empty = document.createElement('li');
-    empty.className = 'empty-item';
-    empty.textContent = emptyMessage;
-    root.append(empty);
+function clearQuality() {
+  for (const id of ['quality-score', 'reliability', 'maintainability', 'complexity', 'duplication',
+    'debt', 'source-lines']) text(id, '—');
+  text('bugs', '— bug risks'); text('smells', '— code smells');
+  text('complexity-detail', 'Maximum —'); text('duplication-detail', '— duplicated lines');
+  text('debt-ratio', '— debt ratio'); text('source-detail', '— files · — methods');
+  text('findings-total', '—'); text('critical', 0); text('high', 0); text('medium', 0); text('low', 0);
+  text('findings-meta', 'Snapshot is initializing.');
+  const body = byId('findings'); body.replaceChildren();
+  row(body, ['Collecting current findings.'], true);
+}
+
+function row(body, values, empty = false) {
+  const tr = document.createElement('tr');
+  for (const value of values) {
+    const td = document.createElement('td');
+    if (empty) { td.colSpan = 4; td.className = 'empty'; }
+    td.textContent = value; tr.append(td);
+  }
+  body.append(tr);
+}
+
+function renderProof(repository) {
+  const proof = repository.proof;
+  const fingerprint = repository.quality?.fingerprint;
+  const required = repository.quality?.gateStatus === 'review_required';
+  const current = proof && fingerprint && proof.fingerprint === fingerprint;
+  if (!proof) {
+    status('proof-status', required ? 'REQUIRED' : 'NOT APPLICABLE', required ? 'warning' : 'neutral');
+    status('architecture-status', required ? 'REQUIRED' : 'NOT APPLICABLE', required ? 'warning' : 'neutral');
+    clearProof();
     return;
   }
-  for (const item of items) root.append(renderer(item));
-}
-
-function issueItem(title, detail, meta, state = 'failed') {
-  const item = document.createElement('li');
-  item.className = `issue-item ${state}`;
-  const heading = document.createElement('strong');
-  heading.textContent = title;
-  const message = document.createElement('span');
-  message.textContent = detail;
-  const context = document.createElement('small');
-  context.textContent = meta;
-  item.append(heading, message, context);
-  return item;
-}
-
-function renderArchitecture(architecture, currentQualityAt) {
-  const available = typeof architecture.complete === 'boolean';
-  const stale = available && olderThan(architecture.capturedAt, currentQualityAt);
-  const violations = finite(architecture.violationCount) ? architecture.violationCount : null;
-  setText('architecture-violations', violations === null ? '—' : number.format(violations));
-  setText('architecture-classes', available ? number.format(architecture.compiledClassCount || 0) : '—');
-  setText('architecture-ruleset', finite(architecture.rulesetVersion) ? `v${architecture.rulesetVersion}` : '—');
-
-  if (!available) {
-    setStatus('architecture-status', 'NOT RUN', 'neutral');
-    setText('architecture-summary', architecture.incompleteReason || 'No architecture proof has run.');
-  } else if (stale) {
-    setStatus('architecture-status', 'STALE', 'warning');
-    setText('architecture-summary', 'The latest ArchUnit proof predates the current commit analysis. Prove the current diff.');
-  } else if (!architecture.complete) {
-    setStatus('architecture-status', 'INCOMPLETE', 'failed');
-    setText('architecture-summary', architecture.incompleteReason || 'Architecture evidence is incomplete.');
-  } else if (architecture.goalMet === true) {
-    setStatus('architecture-status', 'CLEAN', 'passed');
-    setText('architecture-summary', 'No package-cycle violations were found in the changed-code scope.');
-  } else {
-    setStatus('architecture-status', 'VIOLATIONS', 'failed');
-    setText('architecture-summary', `${number.format(violations || 0)} architecture violation(s) require remediation.`);
+  if (!current) {
+    status('proof-status', 'STALE', 'warning');
+    status('architecture-status', 'STALE', 'warning');
+    text('proof-meta', 'The latest proof does not match the current source fingerprint.');
+    clearProofFacts();
+    messages('proof-messages', ['Old proof facts are hidden until the exact current diff is proved.']);
+    messages('architecture-messages', ['Old architecture facts are hidden until the exact current diff is proved.']);
+    return;
   }
-
-  const engine = architecture.engine
-    ? `${architecture.engine}${architecture.engineVersion ? ` ${architecture.engineVersion}` : ''}`
-    : 'ArchUnit';
-  const rules = Array.isArray(architecture.rules) && architecture.rules.length
-    ? architecture.rules.join(', ')
-    : 'rules pending';
-  setText('architecture-meta', available
-    ? `${engine} · ${rules} · ${relativeTime(architecture.capturedAt)}`
-    : 'Pinned ArchUnit evidence will appear here.');
-  const items = Array.isArray(architecture.violations) ? architecture.violations : [];
-  replaceIssueList(
-    'architecture-list',
-    items,
-    available && architecture.goalMet ? 'Architecture proof is clean.' : 'No architecture violations to display.',
-    (violation) => issueItem(
-      `${violation.severity || 'ISSUE'} · ${violation.id || 'Architecture rule'}`,
-      violation.message || 'Architecture violation detected.',
-      `${violation.relativePath || violation.originClass || 'Analyzed class'}${violation.line ? `:${violation.line}` : ''}`,
-    ),
-  );
+  status('proof-status', proof.passed ? 'PASSED' : 'FAILED', proof.passed ? 'passed' : 'failed');
+  text('proof-meta', `Exact fingerprint verified ${age(proof.verifiedAt)}`);
+  text('line-coverage', number(proof.lineCoverage, '%'));
+  text('branch-coverage', number(proof.branchCoverage, '%'));
+  text('mutation', number(proof.mutationScore, '%'));
+  text('test-quality', number(proof.testQualityScore));
+  text('targets', number(proof.targetCount));
+  text('proof-fingerprint', proof.fingerprint.slice(0, 12));
+  messages('proof-messages', [...(proof.failures || []), ...(proof.warnings || [])], 'No proof failures or warnings.');
+  if (proof.targetCount === 0) status('architecture-status', 'NOT APPLICABLE', 'neutral');
+  else if (proof.architectureComplete !== true) status('architecture-status', 'INCOMPLETE', 'failed');
+  else if ((proof.architectureViolations || 0) === 0) status('architecture-status', 'CLEAN', 'passed');
+  else status('architecture-status', 'VIOLATIONS', 'failed');
+  text('architecture-violations', number(proof.architectureViolations));
+  text('architecture-ruleset', proof.architectureRulesetVersion ? `v${proof.architectureRulesetVersion}` : '—');
+  messages('architecture-messages', proof.architectureMessages || [], 'No architecture violations.');
 }
 
-function renderProof(evidence, currentQualityAt) {
-  const gates = evidence.gates || {};
-  const proofAvailable = typeof evidence.lastProofPassed === 'boolean';
-  const stale = proofAvailable && olderThan(evidence.lastProofAt, currentQualityAt);
-  setText('test-score', valueOrDash(evidence.testQualityScore));
-  setText('mutation-score', valueOrDash(evidence.mutationScore, '%'));
-  setText('verified-targets', proofAvailable ? number.format(evidence.verifiedTargetCount || 0) : '—');
-  setText('line-coverage', valueOrDash(evidence.lineCoverage, '%'));
-  setText('branch-coverage', valueOrDash(evidence.branchCoverage, '%'));
-  setText('proof-time', proofAvailable ? `Latest proof ${relativeTime(evidence.lastProofAt)}` : 'No proof has run.');
+function clearProof() {
+  text('proof-meta', 'No current diff proof.'); clearProofFacts();
+  messages('proof-messages', ['No current proof messages.']);
+  messages('architecture-messages', ['No current architecture messages.']);
+}
 
-  if (!proofAvailable) setStatus('proof-status', 'NOT RUN', 'neutral');
-  else if (stale) setStatus('proof-status', 'STALE', 'warning');
-  else if (evidence.lastProofPassed) setStatus('proof-status', 'PASSED', 'passed');
-  else setStatus('proof-status', 'FAILED', 'failed');
+function clearProofFacts() {
+  for (const id of ['line-coverage', 'branch-coverage', 'mutation', 'test-quality', 'targets',
+    'proof-fingerprint', 'architecture-violations', 'architecture-ruleset']) text(id, '—');
+}
 
-  const failures = Array.isArray(gates.failures) ? gates.failures : [];
-  const warnings = Array.isArray(gates.warnings) ? gates.warnings : [];
-  const items = [
-    ...failures.map((message) => ({ label: 'FAILURE', message, state: 'failed' })),
-    ...warnings.map((message) => ({ label: 'WARNING', message, state: 'warning' })),
-  ];
-  setText('gate-message-count', proofAvailable ? items.length : '—');
-  replaceIssueList(
-    'gate-list',
-    items,
-    stale ? 'Proof must be refreshed for the current commit.'
-      : proofAvailable && evidence.lastProofPassed ? 'All changed-code gates passed.'
-        : 'No changed-code proof evidence yet.',
-    (item) => issueItem(item.label, item.message, gates.source || 'Changed-code proof', item.state),
-  );
+function messages(id, values, fallback) {
+  const root = byId(id); root.replaceChildren();
+  for (const value of values.length ? values : [fallback || 'No current evidence.']) {
+    const item = document.createElement('li'); item.textContent = value; root.append(item);
+  }
 }
 
 function renderImpact(impact) {
-  setText('coverage-change', `${signed(impact.coveragePointsChanged)} pts`);
-  setText('findings-resolved', number.format(impact.findingsResolved));
-  setText('debt-removed', `${number.format(impact.debtMinutesRemoved)} debt minutes removed`);
-  setText('mutations-killed', number.format(impact.mutationsKilled));
-  setText('tests-executed', `${number.format(impact.changedTestsExecuted)} changed tests proven`);
-  setText('files-changed', number.format(impact.filesChanged));
-  setText('applied-runs', `${number.format(impact.appliedRuns)} transactional applies`);
-}
-
-function renderUsage(usage, generatedAt) {
-  setText('total-commands', number.format(usage.totalCommands));
-  setText('success-rate', `${number.format(usage.successRatePercent)}%`);
-  setText('projects-seen', number.format(usage.projectsSeen));
-  setText('average-duration', usage.averageCommandDurationMillis >= 1000
-    ? `${number.format(usage.averageCommandDurationMillis / 1000)} s`
-    : `${number.format(usage.averageCommandDurationMillis)} ms`);
-  setText('last-updated', `Dashboard refreshed ${relativeTime(generatedAt)}`);
-}
-
-function renderCommands(commands) {
-  const root = byId('command-bars');
-  if (!root) return;
-  root.replaceChildren();
-  const visible = commands.slice(0, 7);
-  const maximum = Math.max(1, ...visible.map((item) => item.count));
-  for (const item of visible) {
-    const row = document.createElement('div');
-    row.className = 'command-row';
-    const label = document.createElement('span');
-    label.textContent = item.command;
-    label.title = item.command;
-    const track = document.createElement('div');
-    track.className = 'command-track';
-    const bar = document.createElement('i');
-    bar.style.setProperty('--width', `${Math.max(3, item.count / maximum * 100)}%`);
-    track.append(bar);
-    const count = document.createElement('b');
-    count.textContent = number.format(item.count);
-    row.append(label, track, count);
-    root.append(row);
-  }
-  if (!visible.length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-item';
-    empty.textContent = 'Command usage will appear here.';
-    root.append(empty);
-  }
-}
-
-function renderActivity(activity) {
-  const root = byId('activity-list');
-  if (!root) return;
-  root.replaceChildren();
-  for (const item of activity.slice(0, 8)) {
-    const row = document.createElement('li');
-    row.className = `activity-item${item.successful ? '' : ' failed'}`;
-    const detail = document.createElement('div');
-    const summary = document.createElement('strong');
-    summary.textContent = item.summary;
-    const meta = document.createElement('small');
-    meta.textContent = `${item.command} · ${item.durationMillis >= 1000
-      ? `${number.format(item.durationMillis / 1000)} s`
-      : `${item.durationMillis} ms`}`;
-    detail.append(summary, meta);
-    const time = document.createElement('span');
-    time.className = 'activity-time';
-    time.textContent = relativeTime(item.at);
-    row.append(detail, time);
-    root.append(row);
-  }
-  if (!activity.length) {
-    const empty = document.createElement('li');
-    empty.className = 'empty-item';
-    empty.textContent = 'JAIPilot activity will appear here.';
-    root.append(empty);
-  }
+  const signed = (value) => `${value > 0 ? '+' : ''}${number(value || 0)}`;
+  text('quality-change', signed(impact.qualityScoreChange));
+  text('findings-resolved', signed(impact.findingsResolved));
+  text('debt-removed', `${signed(impact.debtMinutesRemoved)} min`);
 }
 
 async function refresh() {
+  const current = ++sequence;
+  request?.abort(); request = new AbortController();
+  const query = selectedId ? `?repository=${encodeURIComponent(selectedId)}` : '';
   try {
-    const response = await fetch('/api/metrics', { cache: 'no-store' });
+    const response = await fetch(`/api/metrics${query}`, { cache: 'no-store', signal: request.signal });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const metrics = await response.json();
-    renderCurrentQuality(metrics.latestEvidence || {});
-    renderImpact(metrics.impact || {});
-    renderUsage(metrics.usage || {}, metrics.generatedAt);
-    renderCommands(metrics.commands || []);
-    renderActivity(metrics.recentActivity || []);
+    const view = await response.json();
+    if (current !== sequence) return;
+    renderRepositories(view); renderRepository(view.selectedRepository); text('version', `JAIPilot ${view.version}`);
   } catch (error) {
-    setText('last-updated', 'Metrics temporarily unavailable');
+    if (error.name !== 'AbortError') text('analysis-meta', 'Local dashboard data is temporarily unavailable.');
   }
 }
 
-fetch('/api/health', { cache: 'no-store' })
-  .then((response) => response.json())
-  .then((health) => setText('dashboard-version', `JAIPilot ${health.version}`))
-  .catch(() => setText('dashboard-version', 'JAIPilot'));
-
-refresh();
-setInterval(refresh, 3000);
+byId('repository-select').addEventListener('change', (event) => {
+  selectedId = event.target.value; location.hash = selectedId; refresh();
+});
+window.addEventListener('hashchange', () => { selectedId = location.hash.slice(1); refresh(); });
+refresh(); setInterval(refresh, 5000);

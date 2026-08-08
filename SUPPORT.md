@@ -23,6 +23,10 @@ whether JaCoCo XML is produced by a clean build.
 
 ## Scope
 
-Community support is best-effort. JAIPilot can diagnose its own orchestration, scope, evidence, and
-apply behavior; project-specific build failures or host-agent behavior may require a minimal
-reproduction to separate the boundaries.
+Community support is best-effort. JAIPilot can diagnose its repository scope, deterministic evidence,
+proof receipt, MCP, hooks, and dashboard behavior. Project-specific build failures or host-agent
+behavior may require a minimal reproduction to separate the boundaries.
+
+The host agent may offer to open an issue when a structured JAIPilot failure appears to be a product
+defect, but it must ask first. Never upload source, prompts, credentials, environment values,
+proprietary paths, or unsanitized logs.

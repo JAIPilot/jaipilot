@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for contributing to the JAIPilot Java Enterprise Toolkit Harness.
+Thanks for contributing to the JAIPilot Java Enterprise Harness.
 
 Before participating, read the [community code of conduct](CODE_OF_CONDUCT.md). For usage questions
 and early ideas, start with [GitHub Discussions](https://github.com/JAIPilot/jaipilot/discussions).
@@ -26,14 +26,15 @@ java -jar target/jaipilot-toolkit-3.4.0-all.jar inspect --project .
 ./scripts/smoke-test-install.sh
 ```
 
-The direct smoke checks structured toolkit-harness discovery. The installer smoke exercises checksum
-verification, the bundled runtime, first plugin launch, and cached launch.
+The direct smoke checks structured evidence-kernel discovery. The installer smoke exercises checksum
+verification, the bundled runtime, MCP, hooks, dashboard health, and cached launch.
 
 ## Pull requests
 
 - Keep changes focused and add deterministic tests for behavior, safety gates, races, timeouts, and failure modes.
 - Preserve structured JSON on runner stdout.
-- Keep model reasoning in the connected coding agent; do not add a provider-specific subprocess.
+- Keep planning, editing, retries, cancellation, Git, and user interaction in the connected coding
+  agent. Do not add another workflow engine or provider-specific model subprocess.
 - Update README, skills, manifests, and project memory when their contract changes.
 - Include repeatable before/after evidence for performance-sensitive changes.
 - Do not commit `target/`, temporary workspaces, or local configuration.

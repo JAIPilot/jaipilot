@@ -37,6 +37,7 @@ public final class MutationTestingService {
     static final String PITEST_VERSION = "1.25.9";
     static final String PITEST_JUNIT5_VERSION = "1.2.3";
     static final String GRADLE_PITEST_PLUGIN_VERSION = "1.19.0";
+    private static final String TARGET_PIT_TASK = "jaipilotTargetPitest";
 
     private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(20);
     private static final int MAX_THREADS = 4;
@@ -90,7 +91,7 @@ public final class MutationTestingService {
         long started = System.nanoTime();
         List<Execution> executions = switch (projectService.detectBuildTool(root)) {
             case MAVEN -> runMaven(root, normalizedTargets, changedTests);
-            case GRADLE -> List.of(runGradle(root, normalizedTargets, changedTests));
+            case GRADLE -> runGradle(root, normalizedTargets, changedTests);
         };
         List<Path> reportPaths = executions.stream().flatMap(execution -> execution.reports().stream()).sorted().toList();
         MutationCounts counts = readReports(reportPaths, includedLines);
@@ -181,31 +182,41 @@ public final class MutationTestingService {
         return List.copyOf(executions);
     }
 
-    private Execution runGradle(
+    private List<Execution> runGradle(
             Path root,
             List<MutationTarget> targets,
             List<Path> changedTests
     ) {
-        List<Path> reportRoots = gradleReportRoots(root, targets);
-        reportRoots.forEach(reportRoot -> clearReportDirectory(root, reportRoot, "build/reports/pitest"));
-        List<String> testGlobs = testGlobs(root, null, targets, changedTests);
+        Map<Path, List<MutationTarget>> byModule = new LinkedHashMap<>();
+        targets.stream().sorted(MutationTarget.ORDER).forEach(target ->
+                byModule.computeIfAbsent(target.moduleRoot(), ignored -> new ArrayList<>()).add(target));
+        Map<Path, List<String>> testsByModule = new LinkedHashMap<>();
+        List<Path> reportRoots = new ArrayList<>();
+        byModule.forEach((module, moduleTargets) -> {
+            Path reportRoot = module.resolve("build/reports/pitest").normalize();
+            clearReportDirectory(root, reportRoot, "build/reports/pitest");
+            reportRoots.add(reportRoot);
+            testsByModule.put(module, testGlobs(root, module, moduleTargets, changedTests));
+        });
         try {
             Path initScript = Files.createTempFile("jaipilot-pitest-", ".gradle");
             try (TemporaryFile ignored = new TemporaryFile(initScript)) {
-                Files.writeString(initScript, gradleInitScript(targets, testGlobs), StandardCharsets.UTF_8);
+                Files.writeString(initScript, gradleInitScript(byModule, testsByModule), StandardCharsets.UTF_8);
                 List<String> command = List.of(
                         buildExecutable(root, JavaProjectService.BuildTool.GRADLE),
                         "--no-daemon",
+                        "--no-build-cache",
+                        "--rerun-tasks",
                         "--init-script",
                         initScript.toAbsolutePath().normalize().toString(),
-                        "pitest"
+                        TARGET_PIT_TASK
                 );
                 execute(command, root);
                 List<Path> reports = reportRoots.stream()
                         .flatMap(path -> findReports(path).stream())
                         .sorted()
                         .toList();
-                return new Execution(command, reports);
+                return List.of(new Execution(command, reports));
             }
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to configure targeted PIT mutation testing for Gradle.", exception);
@@ -299,8 +310,26 @@ public final class MutationTestingService {
     }
 
     String gradleInitScript(List<MutationTarget> targets, List<String> testGlobs) {
-        String targetList = groovyList(targets.stream().map(target -> target.className() + "*").distinct().sorted().toList());
-        String testList = groovyList(testGlobs);
+        Path module = targets.stream().map(MutationTarget::moduleRoot).distinct().findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("At least one Gradle mutation target is required."));
+        if (targets.stream().map(MutationTarget::moduleRoot).distinct().count() != 1) {
+            throw new IllegalArgumentException("A Gradle PIT configuration must target exactly one module.");
+        }
+        return gradleInitScript(Map.of(module, targets), Map.of(module, testGlobs));
+    }
+
+    private String gradleInitScript(
+            Map<Path, List<MutationTarget>> targetsByModule,
+            Map<Path, List<String>> testsByModule
+    ) {
+        String directories = targetsByModule.keySet().stream().sorted()
+                .map(path -> "new File(" + groovyString(path.toString()) + ").canonicalFile")
+                .collect(java.util.stream.Collectors.joining(", "));
+        String configurations = targetsByModule.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .map(entry -> gradleModuleConfiguration(
+                        entry.getKey(), entry.getValue(), testsByModule.getOrDefault(entry.getKey(), List.of())
+                ))
+                .collect(java.util.stream.Collectors.joining(System.lineSeparator()));
         return """
                 initscript {
                     repositories {
@@ -312,28 +341,60 @@ public final class MutationTestingService {
                     }
                 }
 
+                def jaipilotDirectories = [%s] as Set
+                def jaipilotMatched = [] as Set
+                def jaipilotTask = null
+                gradle.projectsLoaded {
+                    jaipilotTask = gradle.rootProject.tasks.register('%s')
+                }
                 allprojects {
                     afterEvaluate { candidate ->
-                        if (candidate.plugins.hasPlugin('java') || candidate.plugins.hasPlugin('java-library')) {
-                            candidate.plugins.apply(info.solidsoft.gradle.pitest.PitestPlugin)
-                            candidate.pitest {
-                                pitestVersion.set('%s')
-                                junit5PluginVersion.set('%s')
-                                targetClasses.set(%s as Set)
-                                %s
-                                threads.set(%d)
-                                outputFormats.set(['XML'] as Set)
-                                timestampedReports.set(false)
-                                mutationThreshold.set(0)
-                                thresholdPrecision.set(1)
-                                failWhenNoMutations.set(false)
-                                verbosity.set('QUIET')
-                            }
-                        }
+                %s
                     }
+                }
+
+                gradle.projectsEvaluated {
+                    def missing = jaipilotDirectories - jaipilotMatched
+                    if (!missing.isEmpty()) throw new GradleException('No Gradle project owns: ' + missing)
                 }
                 """.formatted(
                 GRADLE_PITEST_PLUGIN_VERSION,
+                directories,
+                TARGET_PIT_TASK,
+                configurations.indent(8).stripTrailing()
+        );
+    }
+
+    private String gradleModuleConfiguration(
+            Path module,
+            List<MutationTarget> targets,
+            List<String> testGlobs
+    ) {
+        String targetList = groovyList(targets.stream().map(target -> target.className() + "*")
+                .distinct().sorted().toList());
+        String testList = groovyList(testGlobs);
+        return """
+                if (candidate.projectDir.canonicalFile == new File(%s).canonicalFile &&
+                        (candidate.plugins.hasPlugin('java') || candidate.plugins.hasPlugin('java-library'))) {
+                    candidate.plugins.apply(info.solidsoft.gradle.pitest.PitestPlugin)
+                    candidate.pitest {
+                        pitestVersion.set('%s')
+                        junit5PluginVersion.set('%s')
+                        targetClasses.set(%s as Set)
+                        %s
+                        threads.set(%d)
+                        outputFormats.set(['XML'] as Set)
+                        timestampedReports.set(false)
+                        mutationThreshold.set(0)
+                        thresholdPrecision.set(1)
+                        failWhenNoMutations.set(false)
+                        verbosity.set('QUIET')
+                    }
+                    jaipilotMatched.add(candidate.projectDir.canonicalFile)
+                    jaipilotTask.configure { dependsOn(candidate.tasks.named('pitest')) }
+                }
+                """.formatted(
+                groovyString(module.toAbsolutePath().normalize().toString()),
                 PITEST_VERSION,
                 PITEST_JUNIT5_VERSION,
                 targetList,
@@ -361,14 +422,6 @@ public final class MutationTestingService {
             }
         }
         return tests.stream().sorted().toList();
-    }
-
-    private List<Path> gradleReportRoots(Path root, List<MutationTarget> targets) {
-        LinkedHashSet<Path> roots = new LinkedHashSet<>();
-        roots.add(root.resolve("build/reports/pitest").normalize());
-        targets.stream().map(MutationTarget::moduleRoot).distinct()
-                .map(module -> module.resolve("build/reports/pitest").normalize()).forEach(roots::add);
-        return List.copyOf(roots);
     }
 
     private void clearReportDirectory(Path boundary, Path reportRoot, String expectedSuffix) {
@@ -624,8 +677,12 @@ public final class MutationTestingService {
     }
 
     private String groovyList(List<String> values) {
-        return values.stream().map(value -> "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'")
+        return values.stream().map(this::groovyString)
                 .reduce((left, right) -> left + ", " + right).map(value -> "[" + value + "]").orElse("[]");
+    }
+
+    private String groovyString(String value) {
+        return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'";
     }
 
     private String tail(String output) {

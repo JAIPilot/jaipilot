@@ -97,6 +97,7 @@ require_command jdeps
 require_command jlink
 require_command tar
 require_command grep
+require_command git
 
 SHADOW_JAR="$TARGET_DIR/jaipilot-toolkit-$VERSION-all.jar"
 [ -f "$SHADOW_JAR" ] || die "Missing shaded jar: $SHADOW_JAR. Run ./mvnw package first."
@@ -132,8 +133,16 @@ chmod +x "$APP_DIR/bin/jaipilot"
 cp "$SHADOW_JAR" "$APP_DIR/lib/jaipilot-toolkit.jar"
 cp "$REPO_ROOT/plugins/jaipilot/libexec/install.sh" "$APP_DIR/libexec/install.sh"
 chmod +x "$APP_DIR/libexec/install.sh"
-cp -R "$REPO_ROOT/plugins/jaipilot" "$APP_DIR/plugins/jaipilot"
-cp -R "$RUNTIME_DIR" "$APP_DIR/runtime"
+if git -C "$REPO_ROOT" ls-files -s -- plugins/jaipilot | grep -Eq '^120000 '; then
+  die "Tracked plugin source must not contain symbolic links."
+fi
+PLUGIN_TREE=$(git -C "$REPO_ROOT" write-tree)
+PLUGIN_ARCHIVE="$TARGET_DIR/jaipilot-plugin.tar"
+rm -f "$PLUGIN_ARCHIVE"
+git -C "$REPO_ROOT" archive --format=tar --output="$PLUGIN_ARCHIVE" "$PLUGIN_TREE" plugins/jaipilot
+tar -xf "$PLUGIN_ARCHIVE" -C "$APP_DIR"
+rm -f "$PLUGIN_ARCHIVE"
+cp -RL "$RUNTIME_DIR" "$APP_DIR/runtime"
 
 rm -f "$ARCHIVE_PATH"
 COPYFILE_DISABLE=1 COPY_EXTENDED_ATTRIBUTES_DISABLE=1 tar -czf "$ARCHIVE_PATH" -C "$STAGING_ROOT" "$APP_NAME"

@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -115,14 +116,7 @@ public final class ProcessExecutor {
         if (maxCapturedCharacters <= 0) {
             throw new IllegalArgumentException("maxCapturedCharacters must be positive.");
         }
-        ProcessBuilder processBuilder = new ProcessBuilder(command)
-                .directory(workingDirectory.toFile())
-                .redirectErrorStream(true);
-        if (environmentOverrides != null && !environmentOverrides.isEmpty()) {
-            processBuilder.environment().putAll(environmentOverrides);
-        }
-
-        Process process = processBuilder.start();
+        Process process = processBuilder(command, workingDirectory, environmentOverrides).start();
         try {
             ProgressListener listener = progressListener == null ? ProgressListener.noOp() : progressListener;
             OutputListener lineListener = outputListener == null ? OutputListener.noOp() : outputListener;
@@ -172,10 +166,31 @@ public final class ProcessExecutor {
         }
     }
 
+    static Map<String, String> isolatedEnvironment(Map<String, String> values) {
+        return new IsolatedEnvironment(values);
+    }
+
+    private ProcessBuilder processBuilder(
+            List<String> command,
+            Path workingDirectory,
+            Map<String, String> environmentOverrides
+    ) {
+        ProcessBuilder builder = new ProcessBuilder(command)
+                .directory(workingDirectory.toFile())
+                .redirectErrorStream(true);
+        if (environmentOverrides instanceof IsolatedEnvironment) {
+            builder.environment().clear();
+        }
+        if (environmentOverrides != null && !environmentOverrides.isEmpty()) {
+            builder.environment().putAll(environmentOverrides);
+        }
+        return builder;
+    }
+
     private void writeInput(Process process, String stdinText, AtomicReference<Throwable> inputFailure) {
         try {
             writeInput(process, stdinText);
-        } catch (Throwable failure) {
+        } catch (IOException | RuntimeException | Error failure) {
             inputFailure.compareAndSet(null, failure);
         }
     }
@@ -212,14 +227,9 @@ public final class ProcessExecutor {
         long startedAt = System.nanoTime();
         long gracefulDeadline = startedAt + TimeUnit.MILLISECONDS.toNanos(500);
         long finalDeadline = startedAt + TimeUnit.SECONDS.toNanos(5);
-        boolean interrupted = false;
-
         while (System.nanoTime() < finalDeadline) {
             List<ProcessHandle> alive = handles.stream().filter(ProcessHandle::isAlive).toList();
             if (alive.isEmpty()) {
-                if (interrupted) {
-                    Thread.currentThread().interrupt();
-                }
                 return true;
             }
             for (ProcessHandle handle : alive) {
@@ -236,13 +246,12 @@ public final class ProcessExecutor {
             try {
                 Thread.sleep(50L);
             } catch (InterruptedException exception) {
-                interrupted = true;
+                handles.stream().filter(ProcessHandle::isAlive).forEach(ProcessHandle::destroyForcibly);
+                Thread.currentThread().interrupt();
+                return false;
             }
         }
         handles.stream().filter(ProcessHandle::isAlive).forEach(ProcessHandle::destroyForcibly);
-        if (interrupted) {
-            Thread.currentThread().interrupt();
-        }
         return handles.stream().noneMatch(ProcessHandle::isAlive);
     }
 
@@ -303,14 +312,22 @@ public final class ProcessExecutor {
 
     private static final class CapturedOutput {
 
+        private static final int MAX_FAILURE_SIGNALS = 20;
+        private static final int MAX_FAILURE_SIGNAL_CHARACTERS = 2_048;
         private final int maximumCharacters;
         private final StringBuilder value = new StringBuilder();
+        private final LinkedHashSet<String> failureSignals = new LinkedHashSet<>();
 
         private CapturedOutput(int maximumCharacters) {
             this.maximumCharacters = maximumCharacters;
         }
 
         private void appendLine(String line) {
+            if (isFailureSignal(line) && failureSignals.size() < MAX_FAILURE_SIGNALS) {
+                failureSignals.add(line.length() <= MAX_FAILURE_SIGNAL_CHARACTERS
+                        ? line
+                        : line.substring(0, MAX_FAILURE_SIGNAL_CHARACTERS));
+            }
             String appended = line + System.lineSeparator();
             if (appended.length() >= maximumCharacters) {
                 value.setLength(0);
@@ -325,7 +342,23 @@ public final class ProcessExecutor {
         }
 
         private String value() {
-            return value.toString();
+            if (failureSignals.isEmpty()) {
+                return value.toString();
+            }
+            String prefix = String.join(System.lineSeparator(), failureSignals) + System.lineSeparator();
+            if (prefix.length() >= maximumCharacters) {
+                return prefix.substring(0, maximumCharacters);
+            }
+            int tailStart = Math.max(0, value.length() - (maximumCharacters - prefix.length()));
+            return prefix + value.substring(tailStart);
+        }
+
+        private boolean isFailureSignal(String line) {
+            String normalized = line.strip();
+            return normalized.endsWith(" FAILED")
+                    || normalized.startsWith("FAILURE:")
+                    || normalized.startsWith("Execution failed for task")
+                    || normalized.matches("[0-9]+ tests completed,.*");
         }
     }
 
@@ -336,6 +369,15 @@ public final class ProcessExecutor {
             String output,
             Duration elapsed
     ) {
+    }
+
+    private static final class IsolatedEnvironment extends LinkedHashMap<String, String> {
+
+        private static final long serialVersionUID = 1L;
+
+        private IsolatedEnvironment(Map<String, String> values) {
+            super(values);
+        }
     }
 
     public interface ProgressListener {

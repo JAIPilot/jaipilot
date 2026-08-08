@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "jaipilot": {
+      "type": "stdio",
+      "command": "./bin/jaipilot-mcp",
+      "args": [],
+      "env": {}
+    }
+  }
+}

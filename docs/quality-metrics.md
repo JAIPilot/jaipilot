@@ -1,125 +1,84 @@
 # Quality metrics
 
-JAIPilot reports scores on a 0–100 scale together with raw findings and evidence. Scores prioritize
-work and make changes comparable; they never replace review or behavioral proof.
+JAIPilot returns raw evidence with every 0–100 score. Scores prioritize work; they do not replace
+review or behavioral proof.
 
 ## Source quality
 
-The analyzer reports bug risks, code smells, modernization opportunities, complexity, duplication,
-and performance findings. Each finding includes a stable rule ID, severity, file, line, symbol,
-remediation guidance, estimated effort, and whether a deterministic quick fix is available.
+Each finding has a stable rule ID, severity, file, line, symbol, remediation guidance, estimated
+effort, and deterministic-fix availability.
 
-For the selected production files:
+- **Reliability** subtracts weighted bug-risk density. Critical/high bug risks weigh 20 and
+  medium/low risks weigh 5, normalized by at least one thousand lines.
+- **Maintainability** is `100 - 2 × debt ratio`, where debt is estimated remediation minutes against
+  30 minutes per source line.
+- **Complexity** starts at 100 and penalizes maximum cyclomatic complexity above 10 and average
+  cyclomatic complexity above 5. Cognitive complexity and nesting are also returned directly.
+- **Duplication** is `100 - 2 × duplicated-line percentage`.
+- **Overall quality** is 40% maintainability, 30% reliability, 15% complexity, and 15% duplication.
 
-- **Reliability** = `100 - weighted bug-risk density`. Critical/high bug risks weigh 20 points and
-  medium/low risks weigh 5, normalized by at least one thousand lines of code.
-- **Maintainability** = `100 - 2 × debt ratio`, where debt ratio is estimated remediation minutes as
-  a percentage of 30 minutes per source line.
-- **Complexity** starts at 100 and subtracts 3 points for each maximum cyclomatic point above 10 and
-  2 points for each average cyclomatic point above 5. Cognitive complexity and nesting are also
-  returned per method and as findings.
-- **Duplication** = `100 - 2 × duplicated-line percentage`.
-- **Overall quality** = 40% maintainability + 30% reliability + 15% complexity + 15% duplication.
+Scores are clamped to 0–100 and rounded to one decimal. The result includes source files/bytes/lines,
+method count, severity counts, cyclomatic and cognitive complexity, duplicated lines, debt minutes,
+parse failures, and analyzer time.
 
-All scores are clamped to 0–100 and rounded to one decimal. Results also include source files and
-bytes analyzed, lines of code, method count, severity counts, maximum and average cyclomatic
-complexity, maximum cognitive complexity, duplicated lines, debt minutes, and analyzer time.
+## Changed-code quality
 
-Cleanup validation blocks apply when selected code has a parse failure, introduces a new critical or
-high finding, or reduces the overall quality score by more than rounding tolerance.
+New-code quality compares stable rule, path, symbol, and severity identities with the Git baseline.
+Existing brownfield findings remain visible but do not become new debt. A new or escalated
+critical/high finding subtracts 20 points, medium 3, and low 1 from 100. Proof defaults require a 90
+score, zero new/escalated critical/high findings, and complete parsing.
 
-## Architecture
+## Coverage and test execution
 
-JAIPilot runs pinned ArchUnit 1.4.2 after the real clean build and imports production bytecode from
-Maven `target/classes` and Gradle `build/classes/*/main` directories. Project-authored ArchUnit tests
-also remain part of that clean build. JAIPilot adds the deterministic `JAI-ARCH-001` rule for direct
-package-dependency cycles.
+Coverage is read only from fresh JaCoCo XML produced by the isolated clean build. Module and fully
+qualified class identity must match; missing or ambiguous target evidence fails closed. Proof gates
+only executable added/modified lines and branches, while whole-class coverage remains context.
 
-The built-in rule reports only cycles containing a direct dependency to or from a selected cleanup
-class or changed production class, so unrelated brownfield debt does not block a focused change.
-Each violation includes severity, origin and target class, source path and line, the complete package
-cycle, affected targets, and remediation guidance. Cleanup apply and automatic diff proof require
-complete target bytecode evidence and zero reported architecture violations. Missing target bytecode
-or a truncated cycle search fails closed. Test-only workflows report existing architecture gaps as
-warnings because their production-edit scope cannot repair them.
+Changed sources that map deterministically to an executable test class require matching fresh Maven
+Surefire/Failsafe or Gradle test XML evidence. Plain helpers are reported explicitly. This is
+class-level discovery evidence, not a claim that every changed method ran. Malformed, contradictory,
+skipped-only, stale, or structurally invalid reports do not prove execution.
 
 ## Mutation testing
 
-JAIPilot uses pinned PIT versions and scopes work to the selected production classes and likely or
-changed tests. It reports every mutation status and up to 100 actionable survivors.
+Targeted PIT reports:
 
-- **Mutation score** = killed mutations ÷ actionable mutations. Actionable mutations exclude
-  PIT's `EQUIVALENT`, `NON_VIABLE`, and error/unfinished statuses; timed-out mutations remain in the
-  denominator so timeouts cannot inflate the score.
-- **Test strength** = killed mutations ÷ covered actionable mutations
-  (`killed + survived + timed out`).
-- **Mutation evidence** includes total, killed, survived, no-coverage, timed-out, error, and
-  equivalent and non-viable counts plus class, method, line, mutator, description, reports, commands,
-  and elapsed time.
+- **Mutation score** = killed ÷ actionable mutations;
+- **Test strength** = killed ÷ covered actionable mutations; and
+- totals for killed, survived, no-coverage, timed-out, error, equivalent, and non-viable mutations.
 
-Test generation always runs PIT and defaults to a 70% mutation target. Cleanup uses the same gate
-whenever a directly related test changes. A run with no scorable mutations cannot satisfy a positive
-target, and an error or unfinished PIT status makes the proof incomplete. JAIPilot does not modify
-the project's committed Maven or Gradle configuration.
+Equivalent/non-viable mutations are excluded from the actionable denominator; timeouts remain.
+Unfinished/error PIT evidence is incomplete. No scorable mutation cannot satisfy a positive target.
+The changed-diff default is 80%.
 
-## Test quality
+## Architecture
 
-The composite test-quality score is:
+Pinned ArchUnit analyzes freshly compiled Maven `target/classes` and Gradle
+`build/classes/*/main`. Project-authored architecture tests remain part of the real build. JAIPilot
+adds `JAI-ARCH-001` for direct package dependency cycles involving changed production classes.
 
-- 25% average selected-target line coverage;
-- 20% average selected-target branch coverage;
-- 35% targeted mutation score;
-- 15% test strength;
-- 5% proof that every changed test file executed in the clean build.
+Each violation contains origin/target classes, source path/line, the package cycle, affected target,
+and remediation. Missing target bytecode, ambiguous module identity, or truncated search fails closed.
 
-Missing components contribute zero. `evidenceCompletenessPercent` reports which weighted components
-were actually available, so consumers can distinguish a low score from incomplete evidence. Results
-also include changed and executed test-file counts. Grades are `EXCELLENT` (90+), `STRONG` (80+),
-`GOOD` (70+), `NEEDS_WORK` (50+), and `WEAK` (below 50).
+## Applicability
 
-The automatic diff proof uses the same evidence weights, with the final 5% representing a fresh
-clean full-suite build rather than changed-test-file execution. It scores only executable lines,
-branches, and PIT mutations located on added or modified lines; whole-class coverage remains in the
-report as context. Its defaults are 90% changed-line coverage, 85% changed-branch coverage, and 80%
-changed-line mutation score. A component with no executable changed element is reported as not
-applicable instead of being assigned a fabricated percentage.
+Build/test-only and deletion-only diffs still require a clean build. A gate without an executable or
+production target is `not_applicable`; it is not scored as zero and is not called passed. The proof
+receipt records the applicability decision so the dashboard can distinguish `PASSED`, `FAILED`,
+`REQUIRED`, `STALE`, and `NOT APPLICABLE`.
 
-New-code quality compares stable rule, path, symbol, and severity identity with the Git baseline.
-Existing findings remain visible in the whole-file report but do not become new debt. New or
-severity-escalated critical/high findings subtract 20 points each, medium findings subtract 3, and
-low findings subtract 1 from a 100-point new-code score. The default requires 90 and zero new or
-escalated critical/high findings. Deletion-only diffs require the clean build but report coverage,
-mutation, and new-code findings as not applicable.
+## Dashboard interpretation
 
-## Interpretation boundary
+The dashboard's default is the latest whole-project snapshot: component scores, counts, complexity,
+duplication, debt, parse status, and bounded actionable findings. A matching proof fingerprint reveals
+the proof gates. A mismatch hides old facts.
 
-The source analyzer is fast, local, syntactic, and remediation-oriented. It does not claim formal
-interprocedural taint analysis, vulnerability certification, centralized policy governance,
-portfolios, compliance reporting, or centralized historical dashboards. Compare revisions only with
-identical scope and build conditions, and keep the raw evidence alongside every score.
+Observed impact is only the delta between consecutive repository snapshots. It is not an attribution
+claim, an applied-transaction counter, a usage metric, or an organization-wide history.
 
-## Dashboard aggregation
+## Boundary
 
-The local dashboard does not invent an aggregate “better code” score. Its default view is the latest
-whole-project source snapshot automatically captured after an observed agent `git commit`: raw
-component scores, source counts, complexity, duplication, debt, parse status, and bounded actionable
-findings. A selected-scope quality command cannot overwrite that project snapshot.
-
-The dashboard separately presents cumulative outcomes from applied JAIPilot transactions:
-
-- coverage change is the sum of per-target after-minus-before line-coverage percentage points;
-- quality change is the sum of selected-source after-minus-before quality-score points;
-- resolved findings and removed remediation minutes come directly from validation deltas;
-- killed mutations and execution-proven changed tests come from the applied candidate's final
-  mutation and test-execution evidence;
-- changed-code proof counts distinguish attempted proofs from passed proofs.
-
-The ArchUnit and changed-code proof sections show the pinned ruleset, violations, coverage, mutation,
-and exact gate failures or warnings. If their capture time predates the current post-commit quality
-snapshot, the browser marks them stale instead of presenting them as the current state. The browser
-polls the owner-private metrics store every three seconds, requests current dashboard assets on page
-load, and never caches API responses.
-
-Validation can run repeatedly while an agent improves a candidate. Only the latest apply-ready
-validation for that run is credited, and only once, when apply succeeds. Failed commands, failed
-proofs, and discarded candidates remain visible in usage/activity statistics but add no improvement.
+The analyzer is local, syntactic, and remediation-oriented. It does not claim formal interprocedural
+taint analysis, vulnerability certification, centralized policy governance, portfolios, compliance,
+or long-term centralized history. Compare revisions only with identical scope, build conditions, and
+raw evidence.

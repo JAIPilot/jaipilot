@@ -72,6 +72,24 @@ def main() -> None:
     hooks = payload("plugins/jaipilot/hooks/hooks.json")
     hook_map = hooks.get("hooks")
     require(isinstance(hook_map, dict), "Plugin hooks are required")
+    require("PreToolUse" not in hook_map, "JAIPilot must not intercept every shell command")
+
+    session_hooks = hook_map.get("SessionStart")
+    require(isinstance(session_hooks, list) and len(session_hooks) == 1,
+            "One SessionStart initializer is required")
+    session_command = session_hooks[0].get("hooks", [{}])[0].get("command")
+    require(
+        isinstance(session_command, str)
+        and "${PLUGIN_ROOT}" in session_command
+        and "${CLAUDE_PLUGIN_ROOT}" in session_command
+        and "session-start.sh" in session_command,
+        "SessionStart must use the provider-neutral detached initializer",
+    )
+    session_script = ROOT / "plugins/jaipilot/hooks/session-start.sh"
+    require(session_script.is_file(), "SessionStart script is required")
+    require(session_script.stat().st_mode & 0o111 != 0,
+            "SessionStart script must be executable")
+
     post_hooks = hook_map.get("PostToolUse")
     require(isinstance(post_hooks, list) and len(post_hooks) == 1, "One PostToolUse hook is required")
     require(post_hooks[0].get("matcher") == "Bash", "PostToolUse hook must match Bash")
@@ -82,24 +100,56 @@ def main() -> None:
     )
     require(
         isinstance(post_command, str)
-        and "${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.sh" in post_command,
+        and "${PLUGIN_ROOT}" in post_command
+        and "${CLAUDE_PLUGIN_ROOT}" in post_command
+        and "post-tool-use.sh" in post_command,
         "PostToolUse hook must use the portable commit filter",
     )
     post_filter = ROOT / "plugins/jaipilot/hooks/post-tool-use.sh"
     require(post_filter.is_file(), "PostToolUse commit filter is required")
     require(post_filter.stat().st_mode & 0o111 != 0, "PostToolUse commit filter must be executable")
-    require("hook-post-commit" in text("plugins/jaipilot/hooks/post-tool-use.sh"),
-            "PostToolUse commit filter must run automatic quality analysis")
+    require("session-start.sh" in text("plugins/jaipilot/hooks/post-tool-use.sh"),
+            "PostToolUse commit filter must queue the detached snapshot refresh")
 
     stop_hooks = hook_map.get("Stop")
     require(isinstance(stop_hooks, list) and len(stop_hooks) == 1, "One automatic Stop hook is required")
     command = stop_hooks[0].get("hooks", [{}])[0].get("command") if isinstance(stop_hooks[0], dict) else None
     require(
         isinstance(command, str)
-        and "${CLAUDE_PLUGIN_ROOT}/bin/jaipilot" in command
+        and "${PLUGIN_ROOT}" in command
+        and "${CLAUDE_PLUGIN_ROOT}" in command
+        and "/bin/jaipilot" in command
         and "hook-stop" in command,
         "Stop hook must use the portable plugin runner",
     )
+
+    mcp = payload("plugins/jaipilot/.mcp.json")
+    servers = mcp.get("mcpServers")
+    require(isinstance(servers, dict) and set(servers) == {"jaipilot"},
+            "Plugin must publish exactly one JAIPilot MCP server")
+    server = servers["jaipilot"]
+    require(
+        isinstance(server, dict)
+        and server.get("type") == "stdio"
+        and server.get("command") == "./bin/jaipilot-mcp",
+        "JAIPilot MCP server must use the self-contained plugin launcher",
+    )
+    mcp_launcher = ROOT / "plugins/jaipilot/bin/jaipilot-mcp"
+    require(mcp_launcher.is_file(), "MCP launcher is required")
+    require(mcp_launcher.stat().st_mode & 0o111 != 0, "MCP launcher must be executable")
+
+    mcp_source = text("src/main/java/com/jaipilot/toolkit/JaiPilotMcpTools.java")
+    tool_names = set(re.findall(r'tool\("(jaipilot_[a-z_]+)"', mcp_source))
+    expected_tools = {
+        "jaipilot_inspect",
+        "jaipilot_snapshot",
+        "jaipilot_quality",
+        "jaipilot_rewrite",
+        "jaipilot_diff_gate",
+        "jaipilot_prove_diff",
+    }
+    require(tool_names == expected_tools,
+            f"MCP tool surface must be exactly the lean six tools; found {sorted(tool_names)}")
 
     codex_marketplace = payload(".agents/plugins/marketplace.json")
     codex_entries = codex_marketplace.get("plugins")
@@ -146,6 +196,11 @@ def main() -> None:
         require(
             re.search(r"\b(?:TODO|TBD)\b", skill, re.IGNORECASE) is None,
             f"{directory}/SKILL.md: unresolved placeholder found",
+        )
+        require(
+            re.search(r"\bprepare-(?:tests|cleanup)\b|\bapply or discard\b", skill, re.IGNORECASE)
+            is None,
+            f"{directory}/SKILL.md: obsolete workflow orchestration found",
         )
         openai = text(f"{directory}/agents/openai.yaml")
         for field in ("display_name", "short_description", "default_prompt"):

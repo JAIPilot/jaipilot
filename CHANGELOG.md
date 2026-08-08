@@ -2,7 +2,23 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
-## Unreleased
+## [4.0.0] - 2026-08-08
+
+### Changed
+
+- Reduced JAIPilot to a local deterministic evidence kernel and delegated planning, edits, retries,
+  cancellation, Git workflow, and support escalation to the host coding agent.
+- Replaced the run/workspace transaction engine and machine usage history with six synchronous MCP
+  tools, bounded per-repository snapshots, exact proof receipts, and a current-evidence dashboard.
+- Made repository initialization and direct-commit refresh detached, read-only snapshot tasks, with
+  automatic commit detection deliberately scoped to direct coding-agent `git commit` shell calls.
+- Simplified all three Agent Skills around host-owned editing plus JAIPilot-owned inspection,
+  OpenRewrite, quality, and final proof.
+
+### Removed
+
+- Removed candidate preparation, validation, apply/discard orchestration, asynchronous MCP operation
+  queues, command activity history, and usage analytics.
 
 ## [3.4.0] - 2026-08-08
 

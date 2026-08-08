@@ -76,12 +76,14 @@ public final class OpenRewriteCleanupService {
             return new RewriteResult(List.copyOf(command), result.elapsed());
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("OpenRewrite cleanup was interrupted; the isolated candidate was discarded.", exception);
+            throw new IllegalStateException(
+                    "OpenRewrite cleanup was interrupted; inspect the agent-managed Git worktree before continuing.",
+                    exception
+            );
         } catch (IOException exception) {
-            throw new IllegalStateException("Failed to run OpenRewrite cleanup in the isolated workspace.", exception);
+            throw new IllegalStateException("Failed to run OpenRewrite cleanup in the agent-managed Git worktree.", exception);
         } finally {
-            deleteTemporaryFile(gradleInitScript);
-            deleteTemporaryFile(recipeConfig);
+            deleteTemporaryFiles(gradleInitScript, recipeConfig);
         }
     }
 
@@ -228,14 +230,14 @@ public final class OpenRewriteCleanupService {
         if (result.timedOut()) {
             throw new IllegalStateException(
                     "OpenRewrite cleanup timed out after " + timeout.toMinutes()
-                            + " minutes; the isolated candidate was discarded."
+                            + " minutes; inspect the agent-managed Git worktree before continuing."
             );
         }
         if (result.exitCode() != 0) {
             String details = System.lineSeparator() + tail(result.output());
             throw new IllegalStateException(
                     "OpenRewrite cleanup failed with exit code " + result.exitCode()
-                            + "; the isolated candidate was discarded." + details
+                            + "; inspect the agent-managed Git worktree before continuing." + details
             );
         }
     }
@@ -276,14 +278,28 @@ public final class OpenRewriteCleanupService {
         return String.join(System.lineSeparator(), lines.subList(start, lines.size()));
     }
 
-    private void deleteTemporaryFile(Path path) {
-        if (path == null) {
-            return;
+    private void deleteTemporaryFiles(Path... paths) {
+        IllegalStateException failure = null;
+        for (Path path : paths) {
+            if (path == null) {
+                continue;
+            }
+            try {
+                Files.deleteIfExists(path);
+            } catch (IOException exception) {
+                IllegalStateException cleanupFailure = new IllegalStateException(
+                        "Failed to remove a temporary OpenRewrite file.",
+                        exception
+                );
+                if (failure == null) {
+                    failure = cleanupFailure;
+                } else {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
         }
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException ignored) {
-            // The recipe files contain no credentials or project data and live in the OS temp directory.
+        if (failure != null) {
+            throw failure;
         }
     }
 

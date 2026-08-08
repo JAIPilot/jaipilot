@@ -295,6 +295,7 @@ acquire_install_lock
 ARCHIVE_PATH="$TMP_DIR/jaipilot.tar.gz"
 CHECKSUM_PATH="$TMP_DIR/jaipilot.tar.gz.sha256"
 ARCHIVE_LIST="$TMP_DIR/archive.list"
+ARCHIVE_DETAILS="$TMP_DIR/archive.details"
 curl -fsSL "$ARCHIVE_URL" -o "$ARCHIVE_PATH"
 curl -fsSL "$CHECKSUM_URL" -o "$CHECKSUM_PATH"
 
@@ -303,18 +304,28 @@ ACTUAL_SHA256=$(compute_sha256 "$ARCHIVE_PATH")
 [ "$EXPECTED_SHA256" = "$ACTUAL_SHA256" ] || die "SHA-256 mismatch for downloaded archive."
 
 tar -tzf "$ARCHIVE_PATH" > "$ARCHIVE_LIST"
+tar -tvzf "$ARCHIVE_PATH" > "$ARCHIVE_DETAILS"
+if awk 'substr($1, 1, 1) != "-" && substr($1, 1, 1) != "d" { unsafe=1 } END { exit unsafe ? 0 : 1 }' \
+  "$ARCHIVE_DETAILS"; then
+  die "Release archive contains a link or special entry."
+fi
+EXPECTED_ROOT="jaipilot-toolkit-$RESOLVED_VERSION-$RESOLVED_PLATFORM"
 while IFS= read -r entry; do
   case "$entry" in
     /*|../*|*/../*|*/..)
       die "Release archive contains an unsafe path: $entry"
       ;;
   esac
+  case "$entry" in
+    "$EXPECTED_ROOT"|"$EXPECTED_ROOT/"|"$EXPECTED_ROOT/"*) ;;
+    *) die "Release archive contains an unexpected top-level path: $entry" ;;
+  esac
 done < "$ARCHIVE_LIST"
 
 tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
 
-EXTRACTED_DIR=$(find "$TMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n 1)
-[ -n "${EXTRACTED_DIR:-}" ] || die "Failed to unpack the JAIPilot archive."
+EXTRACTED_DIR="$TMP_DIR/$EXPECTED_ROOT"
+[ -d "$EXTRACTED_DIR" ] || die "Failed to unpack the expected JAIPilot archive root."
 [ -f "$EXTRACTED_DIR/lib/jaipilot-toolkit.jar" ] || die "Downloaded archive is missing lib/jaipilot-toolkit.jar."
 [ -x "$EXTRACTED_DIR/bin/jaipilot" ] || die "Downloaded archive is missing bin/jaipilot."
 [ -x "$EXTRACTED_DIR/runtime/bin/java" ] || die "Downloaded archive is missing the bundled Java runtime."
@@ -352,7 +363,7 @@ EOF
 chmod +x "$APP_DIR/bin/jaipilot"
 
 {
-  echo "Installed JAIPilot Java Enterprise Toolkit Harness"
+  echo "Installed JAIPilot Java Enterprise Harness"
   echo "  Version: $RESOLVED_VERSION"
   echo "  Archive: $ARCHIVE_URL"
   echo "  SHA-256: $ACTUAL_SHA256"
