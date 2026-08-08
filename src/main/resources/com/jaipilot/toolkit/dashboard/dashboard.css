@@ -234,9 +234,10 @@ body::before {
 .status-item.warning { border-left-color: var(--amber); background: rgba(255,191,105,.045); }
 .status-item strong { font-size: 9px; letter-spacing: .04em; }
 .status-item span { color: #c3cad6; font-size: 10px; line-height: 1.5; }
-.status-item small { overflow: hidden; color: #6f7b8d; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.status-item small { overflow: hidden; color: #6f7b8d; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .empty-status { padding: 18px 10px; color: var(--muted); text-align: center; font-size: 10px; }
 .gate-status { display: grid; grid-template-columns: minmax(170px, .33fr) 1fr; gap: 22px; align-items: start; margin-top: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: rgba(7,10,16,.35); }
+.gate-message-count { min-height: 0; margin-bottom: 0; }
 .gate-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .gate-list .empty-status { grid-column: 1 / -1; padding: 6px 10px; text-align: left; }
 

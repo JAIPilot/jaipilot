@@ -1,5 +1,6 @@
 package com.jaipilot.toolkit;
 
+import static com.jaipilot.toolkit.DashboardProofFixture.proof;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -17,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,12 +46,14 @@ class DashboardServerTest {
             assertEquals(200, page.status());
             assertTrue(page.body().contains("JAIPilot Impact Dashboard"));
             assertTrue(page.body().contains("current-status-panel"));
+            assertTrue(page.body().contains("gate-message-count"));
             assertTrue(page.contentSecurityPolicy().contains("default-src 'self'"));
             assertEquals("no-cache", page.cacheControl());
 
             Response script = get(dashboard.status().url() + "assets/dashboard.js");
             assertEquals(200, script.status());
             assertTrue(script.body().contains("renderCurrentStatus"));
+            assertTrue(script.body().contains("Showing ${items.length} of ${total} gate messages"));
             assertEquals("no-cache", script.cacheControl());
 
             Response styles = get(dashboard.status().url() + "assets/dashboard.css");
@@ -134,55 +136,6 @@ class DashboardServerTest {
 
     private JsonNode metrics(ObjectMapper mapper, String dashboardUrl) throws Exception {
         return mapper.readTree(get(dashboardUrl + "api/metrics").body());
-    }
-
-    private Map<String, Object> proof(boolean passed) {
-        List<Map<String, Object>> findings = passed
-                ? List.of()
-                : List.of(Map.of(
-                        "id", "JAI-QUAL-001",
-                        "category", "COMPLEXITY",
-                        "severity", "HIGH",
-                        "relativePath", "src/main/java/com/example/PaymentService.java",
-                        "line", 42,
-                        "message", "Method complexity exceeds the deterministic limit."
-                ));
-        List<Map<String, Object>> violations = passed
-                ? List.of()
-                : List.of(Map.of(
-                        "id", "JAI-ARCH-001",
-                        "severity", "HIGH",
-                        "relativePath", "src/main/java/com/example/PaymentService.java",
-                        "line", 17,
-                        "message", "A package cycle crosses the changed class."
-                ));
-        return Map.of(
-                "ok", passed,
-                "result", Map.of(
-                        "passed", passed,
-                        "targets", List.of("com.example.PaymentService"),
-                        "changedQuality", Map.of("score", passed ? 96.0d : 88.0d),
-                        "quality", Map.of(
-                                "findings", findings,
-                                "parseFailures", List.of(),
-                                "metrics", Map.of(
-                                        "findingCount", findings.size(),
-                                        "findingsBySeverity", passed ? Map.of() : Map.of("HIGH", 1)
-                                )
-                        ),
-                        "architecture", Map.of(
-                                "engine", "ArchUnit",
-                                "engineVersion", "1.4.2",
-                                "rulesetVersion", 1,
-                                "rules", List.of("JAI-ARCH-001"),
-                                "complete", true,
-                                "compiledClassCount", 17,
-                                "violations", violations
-                        ),
-                        "failures", passed ? List.of() : List.of("ArchUnit found one package cycle."),
-                        "warnings", List.of()
-                )
-        );
     }
 
     private Response get(String url) throws Exception {

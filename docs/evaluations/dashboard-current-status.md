@@ -34,3 +34,8 @@ completed with zero console or page errors and no horizontal overflow.
 This evaluation separates dashboard/API time from Java build, agent, dependency-resolution, and
 proof time. It demonstrates presentation freshness; the underlying analysis correctness remains
 covered by the quality, validation, and changed-code proof test suites.
+
+A post-review browser check seeded seven failures and two warnings to exercise bounded gate
+feedback. Chromium rendered exactly six rows plus `Showing 6 of 9 gate messages`, exposed the
+severity counters as an accessible group, retained 10-pixel action context, and had zero console
+errors or mobile horizontal overflow.

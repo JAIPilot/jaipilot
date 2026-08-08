@@ -115,7 +115,7 @@ shows current findings and severity counts, bounded actionable finding details, 
 ruleset and violations, and the exact failures or warnings returned by the latest validation or
 changed-code proof. This evidence is replaced—not accumulated—when a newer analysis or proof runs,
 and the dashboard displays its source and capture time. The browser polls the owner-private metrics
-store every three seconds, revalidates dashboard assets on every request, and never caches API
+store every three seconds, requests current dashboard assets on page load, and never caches API
 responses.
 
 Validation can run repeatedly while an agent improves a candidate. Only the latest apply-ready
