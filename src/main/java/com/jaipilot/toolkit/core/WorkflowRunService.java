@@ -168,22 +168,32 @@ public final class WorkflowRunService implements AutoCloseable {
     }
 
     public QualityInspection inspectQuality(Path requestedRoot, TargetSelection selection) {
+        return inspectQualityIfPresent(requestedRoot, selection)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No Java production classes matched the requested quality scope."
+                ));
+    }
+
+    public Optional<QualityInspection> inspectQualityIfPresent(
+            Path requestedRoot,
+            TargetSelection selection
+    ) {
         Path root = resolveRoot(requestedRoot);
         TargetSelection normalized = Objects.requireNonNull(selection, "selection")
                 .normalizedFor(WorkflowKind.CLEAN_JAVA);
         List<JavaProjectService.JavaClassDescriptor> targets = selectTargets(root, normalized, null);
         if (targets.isEmpty()) {
-            throw new IllegalStateException("No Java production classes matched the requested quality scope.");
+            return Optional.empty();
         }
         JavaQualityService.QualityReport quality = qualityGate.analyze(
                 root,
                 targets.stream().map(JavaProjectService.JavaClassDescriptor::cutPath).toList()
         );
-        return new QualityInspection(
+        return Optional.of(new QualityInspection(
                 root,
                 targets.stream().map(JavaProjectService.JavaClassDescriptor::fullyQualifiedName).toList(),
                 quality
-        );
+        ));
     }
 
     public PreparedRun prepareTestGeneration(

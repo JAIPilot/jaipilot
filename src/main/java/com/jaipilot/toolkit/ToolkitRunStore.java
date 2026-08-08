@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -101,6 +102,14 @@ final class ToolkitRunStore {
     ) {
         pruneExpired();
         return new WorkflowRunService().inspectQuality(requestedRoot, selection);
+    }
+
+    Optional<WorkflowRunService.QualityInspection> currentQuality(Path requestedRoot) {
+        pruneExpired();
+        return new WorkflowRunService().inspectQualityIfPresent(
+                requestedRoot,
+                WorkflowRunService.TargetSelection.all()
+        );
     }
 
     DiffGateStatus diffGate(

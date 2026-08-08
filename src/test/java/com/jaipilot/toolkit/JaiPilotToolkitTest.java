@@ -2,6 +2,7 @@ package com.jaipilot.toolkit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -76,6 +78,121 @@ class JaiPilotToolkitTest {
         assertTrue(json.path("reason").asText().contains("$jaipilot-review-diff"));
         assertFalse(json.has("ok"));
         assertEquals("", result.stderr());
+    }
+
+    @Test
+    void postCommitHookRefreshesWholeProjectQualityAndContinuesUnprovedJavaWork() throws Exception {
+        Path project = changedProject();
+        Captured result = runWithInput(
+                postToolUse("git add . && git commit -m \"change production code\""),
+                "hook-post-commit",
+                "--project",
+                project.toString()
+        );
+        JsonNode response = new ObjectMapper().readTree(result.stdout());
+        UsageMetricsStore.LatestEvidence evidence = new UsageMetricsStore(
+                new ObjectMapper(),
+                tempDir.resolve("cli-state")
+        ).snapshot().latestEvidence();
+
+        assertEquals(0, result.status());
+        assertEquals("block", response.path("decision").asText());
+        assertTrue(response.path("reason").asText().contains("automatically analyzed this Git commit"));
+        assertTrue(response.path("reason").asText().contains("$jaipilot-review-diff"));
+        assertEquals("Automatic post-commit analysis", evidence.currentQuality().source());
+        assertEquals("whole_project", evidence.currentQuality().scope());
+        assertFalse(evidence.currentQuality().revision().isBlank());
+        assertFalse(evidence.currentQuality().fingerprint().isBlank());
+        assertEquals(1, evidence.currentQuality().fileCount());
+        assertEquals(1, evidence.currentQuality().targetCount());
+        assertEquals(evidence.currentQuality().qualityScore(), evidence.qualityScore());
+        assertEquals("", result.stderr());
+    }
+
+    @Test
+    void postCommitHookRecognizesPortableGitInvocationsButRejectsTextualFalsePositives() throws Exception {
+        Path project = changedProject();
+        Captured globalOptions = runWithInput(
+                postToolUse("env LANG=C git -C . -c user.name=Agent commit --amend --no-edit"),
+                "hook-post-commit",
+                "--project",
+                project.toString()
+        );
+        Captured echo = runWithInput(
+                postToolUse("echo 'run git commit when ready'"),
+                "hook-post-commit",
+                "--project",
+                project.toString()
+        );
+        Captured status = runWithInput(
+                postToolUse("git status --short"),
+                "hook-post-commit",
+                "--project",
+                project.toString()
+        );
+        Captured wrongEvent = runWithInput(
+                "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Bash\","
+                        + "\"tool_input\":{\"command\":\"git commit -m test\"}}",
+                "hook-post-commit",
+                "--project",
+                project.toString()
+        );
+
+        assertEquals("block", new ObjectMapper().readTree(globalOptions.stdout()).path("decision").asText());
+        assertEquals("", echo.stdout());
+        assertEquals("", status.stdout());
+        assertEquals("", wrongEvent.stdout());
+    }
+
+    @Test
+    void postCommitHookKeepsCurrentMetricsFreshWhenNoProductionDiffRemains() throws Exception {
+        Path project = changedProject();
+        git(project, "reset", "--hard", "HEAD^");
+
+        Captured result = runWithInput(
+                postToolUse("git commit --allow-empty -m metrics"),
+                "hook-post-commit",
+                "--project",
+                project.toString()
+        );
+        UsageMetricsStore.CurrentQualityEvidence quality = new UsageMetricsStore(
+                new ObjectMapper(),
+                tempDir.resolve("cli-state")
+        ).snapshot().latestEvidence().currentQuality();
+
+        assertEquals(0, result.status());
+        assertEquals("", result.stdout());
+        assertEquals(1, quality.fileCount());
+        assertTrue(quality.qualityScore() > 0.0d);
+        assertEquals("whole_project", quality.scope());
+    }
+
+    @Test
+    void postCommitHookReplacesStaleScoresWhenNoProductionSourcesRemain() throws Exception {
+        Path project = changedProject();
+        runWithInput(postToolUse("git commit -m analyzed"), "hook-post-commit", "--project", project.toString());
+        Files.delete(project.resolve("src/main/java/com/example/OrderService.java"));
+        git(project, "add", "-A");
+        git(project, "commit", "-qm", "remove production sources");
+
+        Captured result = runWithInput(
+                postToolUse("git commit -m remove"),
+                "hook-post-commit",
+                "--project",
+                project.toString()
+        );
+        UsageMetricsStore.CurrentQualityEvidence quality = new UsageMetricsStore(
+                new ObjectMapper(),
+                tempDir.resolve("cli-state")
+        ).snapshot().latestEvidence().currentQuality();
+
+        assertEquals(0, result.status());
+        assertEquals("block", new ObjectMapper().readTree(result.stdout()).path("decision").asText());
+        assertEquals("no_java_sources", quality.analysisStatus());
+        assertEquals("whole_project", quality.scope());
+        assertFalse(quality.revision().isBlank());
+        assertNull(quality.qualityScore());
+        assertNull(quality.findings().total());
     }
 
     @Test
@@ -320,6 +437,14 @@ class JaiPilotToolkitTest {
                 stdout.toString(StandardCharsets.UTF_8),
                 stderr.toString(StandardCharsets.UTF_8)
         );
+    }
+
+    private String postToolUse(String command) throws Exception {
+        return new ObjectMapper().writeValueAsString(Map.of(
+                "hook_event_name", "PostToolUse",
+                "tool_name", "Bash",
+                "tool_input", Map.of("command", command)
+        ));
     }
 
     private Path changedProject() throws Exception {

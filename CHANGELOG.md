@@ -4,6 +4,19 @@ Notable user-facing changes to JAIPilot are recorded here. Releases follow seman
 
 ## Unreleased
 
+### Added
+
+- Added a portable coding-agent `PostToolUse` hook that automatically refreshes whole-project Java
+  quality after observed `git commit` commands and feeds unproved diffs back into the agent's review
+  workflow without a user prompt.
+
+### Changed
+
+- Rebuilt the local dashboard as a restrained, current-quality-first project view with source
+  scores, active findings, ArchUnit/proof freshness, verified impact, and activity in that order.
+- Persisted complete current source metrics after each observed agent commit and prevented later
+  selected-scope analysis from replacing that whole-project snapshot.
+
 ## [3.3.2] - 2026-08-08
 
 ### Fixed

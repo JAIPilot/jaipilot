@@ -45,8 +45,8 @@ Run these commands inside Claude Code:
 ```
 
 The plugin downloads its private Java runtime on first use. It does not require npm or a globally
-installed JDK. Codex and Claude Code show the bundled Stop hook for trust review; approve it to
-enable automatic changed-code proof.
+installed JDK. Codex and Claude Code show the bundled post-tool and Stop hooks for trust review;
+approve both once to enable automatic post-commit quality refresh and changed-code proof.
 
 ## Built to reduce agentic drift
 
@@ -72,8 +72,12 @@ silent complexity and regressions for a human reviewer to unwind later.
 
 - Detect committed branch work from the local default-branch merge base, plus staged, unstaged, and
   untracked Java changes.
-- Check at every agent Stop, block completion for an unproved production diff, and continue the
-  connected agent into focused remediation and proof.
+- After each `git commit` command observed through the coding agent's shell tool, refresh
+  whole-project source quality and current findings without requiring a prompt.
+- Block the agent after a commit with an unproved production diff and feed the quality summary and
+  `$jaipilot-review-diff` recovery workflow directly back into Codex or Claude Code.
+- Check again at every agent Stop as a fallback, then continue the connected agent into focused
+  remediation and proof until quality, build, test, mutation, and ArchUnit gates pass.
 - Fail closed when an in-scope Git inspection cannot be completed; non-Git workspaces remain quiet.
 - Run expensive proof once per exact diff fingerprint, then reuse the local receipt until relevant
   Java or build files change.
@@ -108,28 +112,30 @@ silent complexity and regressions for a human reviewer to unwind later.
 Every score includes its underlying counts and timings. See [quality metrics](docs/quality-metrics.md)
 for the formulas, gates, and interpretation boundaries.
 
-## Local impact dashboard
+The post-tool hook covers commits performed by the installed coding agent through its observed local
+shell tool. It is intentionally not an operating-system-wide Git hook for commits made by unrelated
+terminals or applications.
+
+## Local quality and impact dashboard
 
 JAIPilot starts a private impact dashboard automatically on the first toolkit invocation and keeps
 it available at `http://127.0.0.1:7433/`. If that port is already occupied, JAIPilot selects a free
 loopback port automatically. Run `jaipilot dashboard` to retrieve the active URL as structured JSON.
 
-The dashboard refreshes live and shows:
+The dashboard uses a restrained project-quality layout and refreshes live. It shows, in order:
 
-- local workflow invocation counts, success rate, projects seen, command mix, and recent activity;
-- applied coverage and quality-score change, resolved findings, removed remediation debt, killed
-  mutations, executed changed tests, and transactionally applied files;
-- the latest changed-code quality, test-quality, coverage, mutation, and proof evidence;
-- current findings by severity with actionable file-and-line details, the latest ArchUnit ruleset
-  status and violations, and the actual blocking failures or warnings from the latest proof gate;
-- prepared, validated, applied, and safely discarded workflow counts.
+- current whole-project quality, reliability, maintainability, complexity, duplication, debt, source
+  size, Git revision, and analysis time from the latest agent commit;
+- current findings by severity with actionable rule, remediation, file, and line details;
+- the latest ArchUnit status and violations plus changed-code coverage, mutation, and proof gates;
+- verified applied impact, recent analysis activity, and local operational usage as secondary context.
 
 Improvement totals are credited only after a validated candidate is applied; attempted or discarded
-work never inflates them. Current status is replaced by each new quality analysis, validation, or
-changed-code proof, with its source and capture time shown so stale evidence is not presented as
-live. Metrics and one-way project identifiers stay in JAIPilot's owner-private local state. The
-dashboard binds only to IPv4 loopback, exposes read-only endpoints, and sends no telemetry, source,
-paths, or usage data anywhere.
+work never inflates them. Whole-project source state is replaced after every observed agent commit;
+selected-scope analysis cannot overwrite it. Architecture and proof evidence older than that commit
+is explicitly marked stale until the agent proves the current diff. Metrics and one-way project
+identifiers stay in JAIPilot's owner-private local state. The dashboard binds only to IPv4 loopback,
+exposes read-only endpoints, and sends no telemetry, source, paths, or usage data anywhere.
 
 See the [local dashboard startup evaluation](docs/evaluations/local-dashboard-startup.md) for raw
 cold-start, steady-state, and real `inspect` timings, and the [current-status dashboard

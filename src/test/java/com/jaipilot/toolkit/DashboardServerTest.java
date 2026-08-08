@@ -1,6 +1,7 @@
 package com.jaipilot.toolkit;
 
 import static com.jaipilot.toolkit.DashboardProofFixture.proof;
+import static com.jaipilot.toolkit.DashboardProofFixture.postCommitQuality;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -44,21 +45,27 @@ class DashboardServerTest {
 
             Response page = get(dashboard.status().url());
             assertEquals(200, page.status());
-            assertTrue(page.body().contains("JAIPilot Impact Dashboard"));
-            assertTrue(page.body().contains("current-status-panel"));
+            assertTrue(page.body().contains("JAIPilot Project Quality"));
+            assertTrue(page.body().contains("Current quality"));
+            assertTrue(page.body().contains("findings-table"));
             assertTrue(page.body().contains("gate-message-count"));
+            assertFalse(page.body().contains("proof-orbit"));
             assertTrue(page.contentSecurityPolicy().contains("default-src 'self'"));
             assertEquals("no-cache", page.cacheControl());
 
             Response script = get(dashboard.status().url() + "assets/dashboard.js");
             assertEquals(200, script.status());
-            assertTrue(script.body().contains("renderCurrentStatus"));
-            assertTrue(script.body().contains("Showing ${items.length} of ${total} gate messages"));
+            assertTrue(script.body().contains("renderCurrentQuality"));
+            assertTrue(script.body().contains("olderThan(architecture.capturedAt, currentQualityAt)"));
+            assertTrue(script.body().contains("allItems.slice(0, 12)"));
+            assertTrue(script.body().contains("quality.revision.slice(0, 12)"));
             assertEquals("no-cache", script.cacheControl());
 
             Response styles = get(dashboard.status().url() + "assets/dashboard.css");
             assertEquals(200, styles.status());
-            assertTrue(styles.body().contains(".current-status-grid"));
+            assertTrue(styles.body().contains(".metric-grid"));
+            assertFalse(styles.body().contains("linear-gradient"));
+            assertFalse(styles.body().contains("@keyframes"));
             assertEquals("no-cache", styles.cacheControl());
 
             Response metrics = get(dashboard.status().url() + "api/metrics");
@@ -118,6 +125,14 @@ class DashboardServerTest {
         try (DashboardServer.RunningDashboard dashboard = DashboardServer.start(mapper, stateRoot, 0)) {
             JsonNode initial = metrics(mapper, dashboard.status().url());
             assertFalse(initial.path("latestEvidence").path("findings").path("total").isNumber());
+            assertFalse(initial.path("latestEvidence").path("currentQuality").path("qualityScore").isNumber());
+
+            writer.record("hook-post-commit", 0, postCommitQuality(false), Duration.ZERO);
+            JsonNode current = metrics(mapper, dashboard.status().url());
+            assertEquals(88.0d, current.path("latestEvidence").path("currentQuality")
+                    .path("qualityScore").asDouble());
+            assertEquals(1, current.path("latestEvidence").path("currentQuality")
+                    .path("findings").path("total").asInt());
 
             writer.record("prove-diff", 1, proof(false), Duration.ZERO);
             JsonNode gaps = metrics(mapper, dashboard.status().url());
@@ -131,6 +146,15 @@ class DashboardServerTest {
             assertEquals(0, clean.path("latestEvidence").path("architecture").path("violationCount").asInt());
             assertTrue(clean.path("latestEvidence").path("architecture").path("goalMet").asBoolean());
             assertTrue(clean.path("latestEvidence").path("gates").path("passed").asBoolean());
+            assertEquals(1, clean.path("latestEvidence").path("currentQuality")
+                    .path("findings").path("total").asInt());
+
+            writer.record("hook-post-commit", 0, postCommitQuality(true), Duration.ZERO);
+            JsonNode refreshed = metrics(mapper, dashboard.status().url());
+            assertEquals(96.0d, refreshed.path("latestEvidence").path("currentQuality")
+                    .path("qualityScore").asDouble());
+            assertEquals(0, refreshed.path("latestEvidence").path("currentQuality")
+                    .path("findings").path("total").asInt());
         }
     }
 

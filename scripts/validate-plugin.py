@@ -70,7 +70,28 @@ def main() -> None:
         "Plugin-local installer is required",
     )
     hooks = payload("plugins/jaipilot/hooks/hooks.json")
-    stop_hooks = hooks.get("hooks", {}).get("Stop") if isinstance(hooks.get("hooks"), dict) else None
+    hook_map = hooks.get("hooks")
+    require(isinstance(hook_map, dict), "Plugin hooks are required")
+    post_hooks = hook_map.get("PostToolUse")
+    require(isinstance(post_hooks, list) and len(post_hooks) == 1, "One PostToolUse hook is required")
+    require(post_hooks[0].get("matcher") == "Bash", "PostToolUse hook must match Bash")
+    post_command = (
+        post_hooks[0].get("hooks", [{}])[0].get("command")
+        if isinstance(post_hooks[0], dict)
+        else None
+    )
+    require(
+        isinstance(post_command, str)
+        and "${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.sh" in post_command,
+        "PostToolUse hook must use the portable commit filter",
+    )
+    post_filter = ROOT / "plugins/jaipilot/hooks/post-tool-use.sh"
+    require(post_filter.is_file(), "PostToolUse commit filter is required")
+    require(post_filter.stat().st_mode & 0o111 != 0, "PostToolUse commit filter must be executable")
+    require("hook-post-commit" in text("plugins/jaipilot/hooks/post-tool-use.sh"),
+            "PostToolUse commit filter must run automatic quality analysis")
+
+    stop_hooks = hook_map.get("Stop")
     require(isinstance(stop_hooks, list) and len(stop_hooks) == 1, "One automatic Stop hook is required")
     command = stop_hooks[0].get("hooks", [{}])[0].get("command") if isinstance(stop_hooks[0], dict) else None
     require(

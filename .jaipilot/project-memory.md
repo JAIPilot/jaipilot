@@ -21,6 +21,8 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
 - `jaipilot quality`: report deterministic findings, method complexity, duplication, debt, and scores.
 - `jaipilot diff-gate`: discover committed and working-tree Java changes and check the exact local
   proof receipt without running a build.
+- `jaipilot hook-post-commit`: internal post-tool entry point that recognizes agent shell commits,
+  refreshes whole-project quality, persists current metrics, and continues unproved Java work.
 - `jaipilot prove-diff`: prove the exact Git fingerprint in a fresh isolated workspace with a clean
   build, ArchUnit, changed-line JaCoCo, changed-line PIT, and new-code quality evidence.
 - `jaipilot prepare-tests`: clean-baseline and isolate named, changed, all, or fresh-coverage targets.
@@ -50,18 +52,18 @@ facts here, stable repository rules in `AGENTS.md`, and reusable agent procedure
   test strength, survivors, evidence completeness, and a composite test-quality score.
 - Validation rejects deletion, symbolic paths, invalid scope, build-time source drift, and missing
   execution evidence. Apply rejects post-validation candidate drift and live-worktree drift.
-- The shared plugin Stop hook runs the cheap diff gate at the end of every agent turn. It ignores
-  non-Git workspaces, fails closed on unexpected inspection errors, and continues an agent when a
-  changed Java production fingerprint lacks a sufficiently strict receipt.
+- The shared plugin PostToolUse hook filters Bash completions cheaply and, after an observed
+  `git commit`, refreshes whole-project quality before running the diff gate. Its block response
+  continues unproved Java work without a user prompt. The Stop hook remains the end-of-turn fallback.
 - Changed-code proof defaults are 90% executable-line coverage, 85% changed-branch coverage, 80%
   changed-line PIT score, 90 new-code quality, and zero new or severity-escalated critical/high
   findings plus zero changed-class architecture violations. Deletion-only diffs still require a
   clean full build.
 - Run-state schema 4 and proof-receipt schema 2 require architecture evidence; older validated runs
   must revalidate and older proof receipts are ignored.
-- Dashboard metrics schema 2 keeps cumulative impact separate from replace-on-analysis current
-  evidence: bounded source findings, ArchUnit status and violations, and latest gate messages. The
-  loopback UI polls the persisted state every three seconds and revalidates all static assets.
+- Dashboard metrics schema 3 keeps cumulative impact separate from the whole-project quality snapshot
+  refreshed after each observed agent commit. Current source metrics and findings are primary;
+  older ArchUnit/proof evidence is visibly stale. The loopback UI polls every three seconds.
 - Direct runs persist beneath `JAIPILOT_STATE_HOME`, `XDG_STATE_HOME/jaipilot`, or the user's local
   state directory. Metadata writes are atomic, directories are owner-only where POSIX permissions
   exist, run operations are file-locked, and creation uses a brief global registry lock.
