@@ -216,6 +216,26 @@ class JavaProjectServiceTest {
     }
 
     @Test
+    void productionDiscoverySupportsGradleModulesDeclaredOnlyByTheRootBuild() throws Exception {
+        Path projectRoot = tempDir.resolve("sample-root-declared-modules");
+        Files.createDirectories(projectRoot);
+        Files.writeString(projectRoot.resolve("settings.gradle"), "include 'clients'\n");
+        Path source = projectRoot.resolve("clients/src/main/java/com/example/Client.java");
+        Path test = projectRoot.resolve("clients/src/test/java/com/example/ClientTest.java");
+        writeJava(source, "Client");
+        writeJava(test, "ClientTest");
+        JavaProjectService service = new JavaProjectService(new ProjectFileService(), new CoverageReportService());
+
+        JavaProjectService.JavaClassDescriptor production = service.resolveClass(projectRoot, source.toString());
+        JavaProjectService.JavaTestDescriptor testDescriptor = service.describeTestClass(test, projectRoot);
+
+        assertEquals(projectRoot.resolve("clients"), production.moduleRoot());
+        assertEquals("com.example.Client", production.fullyQualifiedName());
+        assertEquals(projectRoot.resolve("clients"), testDescriptor.moduleRoot());
+        assertEquals("com.example.ClientTest", testDescriptor.fullyQualifiedName());
+    }
+
+    @Test
     void wrapperIsOptionalWhenWrapperMetadataIsMissing() throws Exception {
         Path projectRoot = tempDir.resolve("sample-incomplete-wrapper");
         Files.createDirectories(projectRoot);

@@ -27,10 +27,11 @@ public final class DiffVerificationService {
     private final JavaProjectService projectService;
     private final CoverageReportService coverageReportService;
     private final GitChangeService gitChangeService;
-    private final WorkflowRunService.BuildGate buildGate;
-    private final WorkflowRunService.CoverageGate coverageGate;
-    private final WorkflowRunService.QualityGate qualityGate;
-    private final WorkflowRunService.ArchitectureGate architectureGate;
+    private final TestExecutionReportService testReports;
+    private final BuildGate buildGate;
+    private final CoverageGate coverageGate;
+    private final QualityGate qualityGate;
+    private final ArchitectureGate architectureGate;
     private final DiffMutationGate mutationGate;
     private final Consumer<String> progress;
 
@@ -87,6 +88,7 @@ public final class DiffVerificationService {
         this.projectService = Objects.requireNonNull(projectService, "projectService");
         this.coverageReportService = Objects.requireNonNull(coverageReportService, "coverageReportService");
         this.gitChangeService = Objects.requireNonNull(gitChangeService, "gitChangeService");
+        this.testReports = new TestExecutionReportService(projectService);
         VerificationGates configured = Objects.requireNonNull(gates, "gates");
         this.buildGate = Objects.requireNonNull(configured.build(), "build gate");
         this.coverageGate = Objects.requireNonNull(configured.coverage(), "coverage gate");
@@ -101,9 +103,10 @@ public final class DiffVerificationService {
             JavaProjectService projectService,
             CoverageReportService coverageReportService
     ) {
+        CoverageRefreshService coverage = new CoverageRefreshService(projectService, coverageReportService);
         return new VerificationGates(
                 new JavaBuildVerificationService(projectService)::verify,
-                new CoverageRefreshService(projectService, coverageReportService)::refresh,
+                coverage::refresh,
                 new JavaQualityService()::analyze,
                 new ArchitectureService(projectService)::analyze,
                 new MutationTestingService(projectService, fileService)::run
@@ -114,7 +117,7 @@ public final class DiffVerificationService {
         Objects.requireNonNull(thresholds, "thresholds");
         Path root = realProjectRoot(requestedRoot);
         GitChangeService.DiffSnapshot before = gitChangeService.snapshot(root);
-        if (!before.hasProductionChanges()) {
+        if (before.proofRelevantPaths().isEmpty()) {
             return emptyVerification(before, thresholds);
         }
         long started = System.nanoTime();
@@ -144,7 +147,7 @@ public final class DiffVerificationService {
                 null,
                 null,
                 List.of(),
-                List.of("No changed Java production files require proof."),
+                List.of("No changed Java production files or build inputs require proof."),
                 Duration.ZERO
         );
     }
@@ -153,12 +156,24 @@ public final class DiffVerificationService {
         List<JavaProjectService.JavaClassDescriptor> liveTargets = diff.existingProductionPaths().stream()
                 .map(path -> projectService.resolveClass(root, path.toString()))
                 .toList();
+        rejectDuplicateClassNames(liveTargets);
         Map<Path, List<GitChangeService.LineRange>> changedLineRanges = gitChangeService.changedLineRanges(diff);
         Map<String, List<GitChangeService.LineRange>> rangesByClass = rangesByClass(root, liveTargets, changedLineRanges);
         List<String> targetNames = liveTargets.stream()
                 .map(JavaProjectService.JavaClassDescriptor::fullyQualifiedName)
                 .toList();
-        return new ProofScope(root, diff, liveTargets, changedLineRanges, rangesByClass, targetNames);
+        List<Path> changedTests = diff.changedJavaPaths().stream()
+                .filter(this::isTestPath)
+                .filter(path -> Files.isRegularFile(root.resolve(path)))
+                .filter(path -> !Files.isSymbolicLink(root.resolve(path)))
+                .map(root::resolve)
+                .toList();
+        long deletedTests = diff.changedJavaPaths().stream()
+                .filter(this::isTestPath)
+                .filter(path -> Files.notExists(root.resolve(path)))
+                .count();
+        return new ProofScope(root, diff, liveTargets, changedTests, deletedTests,
+                changedLineRanges, rangesByClass, targetNames);
     }
 
     private void reportScope(GitChangeService.DiffSnapshot diff) {
@@ -178,7 +193,7 @@ public final class DiffVerificationService {
                     scope.liveTargets
             );
             analyzeQuality(scope, sandbox, sandboxTargets, thresholds, evidence);
-            runBuildEvidence(sandbox, sandboxTargets, scope.rangesByClass, thresholds, evidence);
+            runBuildEvidence(scope, sandbox, sandboxTargets, scope.rangesByClass, thresholds, evidence);
         } catch (RuntimeException | IOException exception) {
             evidence.failures.add("Isolated diff verification failed: " + rootMessage(exception));
         } finally {
@@ -215,6 +230,7 @@ public final class DiffVerificationService {
     }
 
     private void runBuildEvidence(
+            ProofScope scope,
             Path sandbox,
             List<JavaProjectService.JavaClassDescriptor> sandboxTargets,
             Map<String, List<GitChangeService.LineRange>> rangesByClass,
@@ -222,16 +238,17 @@ public final class DiffVerificationService {
             VerificationEvidence evidence
     ) {
         if (sandboxTargets.isEmpty()) {
-            runDeletionBuild(sandbox, evidence);
+            runNoProductionBuild(scope, sandbox, evidence);
             return;
         }
         if (!projectService.supportsCoverage(sandbox)) {
-            runBuildWithoutCoverage(sandbox, sandboxTargets, evidence);
+            runBuildWithoutCoverage(scope, sandbox, sandboxTargets, evidence);
             return;
         }
         progress.accept("Running the clean full-suite build and fresh JaCoCo coverage.");
-        evidence.coverage = coverageGate.refresh(sandbox);
+        evidence.coverage = coverageGate.refresh(sandbox, sandboxTargets);
         evidence.buildPassed = true;
+        verifyChangedTests(scope, sandbox, evidence);
         evidence.changedCoverage = changedCoverage(evidence.coverage, sandboxTargets, rangesByClass);
         evaluateCoverage(evidence.changedCoverage, thresholds, evidence.failures, evidence.warnings);
         runArchitectureEvidence(sandbox, sandboxTargets, evidence);
@@ -241,27 +258,69 @@ public final class DiffVerificationService {
         runMutationEvidence(sandbox, sandboxTargets, rangesByClass, thresholds, evidence);
     }
 
-    private void runDeletionBuild(Path sandbox, VerificationEvidence evidence) {
-        progress.accept("Running the clean full-suite build for a deletion-only diff.");
-        buildGate.verify(sandbox);
-        evidence.buildPassed = true;
+    private void runNoProductionBuild(ProofScope scope, Path sandbox, VerificationEvidence evidence) {
+        runCleanBuild(
+                scope,
+                sandbox,
+                evidence,
+                "Running the clean full-suite build for changed test, build, or deleted production inputs."
+        );
         evidence.warnings.add(
-                "The diff only deletes production code or changes package metadata; coverage and PIT are not applicable."
+                "The diff only deletes production code or changes tests/build inputs; "
+                        + "coverage, PIT, and ArchUnit are not applicable."
         );
     }
 
     private void runBuildWithoutCoverage(
+            ProofScope scope,
             Path sandbox,
             List<JavaProjectService.JavaClassDescriptor> targets,
             VerificationEvidence evidence
     ) {
-        progress.accept("Running the clean full-suite build; JaCoCo is unavailable.");
-        buildGate.verify(sandbox);
-        evidence.buildPassed = true;
+        runCleanBuild(scope, sandbox, evidence, "Running the clean full-suite build; JaCoCo is unavailable.");
         runArchitectureEvidence(sandbox, targets, evidence);
         evidence.failures.add(
                 "The clean build passed, but fresh JaCoCo XML coverage is unavailable for the changed classes."
         );
+    }
+
+    private void runCleanBuild(
+            ProofScope scope,
+            Path sandbox,
+            VerificationEvidence evidence,
+            String progressMessage
+    ) {
+        progress.accept(progressMessage);
+        buildGate.verify(sandbox);
+        evidence.buildPassed = true;
+        verifyChangedTests(scope, sandbox, evidence);
+    }
+
+    private void verifyChangedTests(ProofScope scope, Path sandbox, VerificationEvidence evidence) {
+        List<Path> sandboxTests = scope.changedTests.stream()
+                .map(path -> sandbox.resolve(scope.root.relativize(path)))
+                .toList();
+        TestExecutionReportService.ExecutionEvidence execution = testReports.inspect(sandbox, sandboxTests);
+        if (!execution.missingClasses().isEmpty()) {
+            evidence.failures.add("Changed executable test classes have no fresh execution report: "
+                    + execution.missingClasses() + ".");
+        } else if (!execution.expectedClasses().isEmpty()) {
+            evidence.warnings.add("Fresh test execution proved for "
+                    + execution.expectedClasses().size() + " changed test class(es).");
+        }
+        if (!execution.helperSources().isEmpty()) {
+            evidence.warnings.add("Changed non-executable test helper sources were clean-build verified: "
+                    + execution.helperSources() + ".");
+        }
+        if (scope.deletedTests > 0) {
+            evidence.warnings.add(scope.deletedTests
+                    + " deleted test source(s) were verified by the clean build.");
+        }
+    }
+
+    private boolean isTestPath(Path path) {
+        String portable = "/" + path.normalize().toString().replace('\\', '/');
+        return portable.contains("/src/test/java/") && portable.endsWith(".java");
     }
 
     private void runArchitectureEvidence(
@@ -486,18 +545,26 @@ public final class DiffVerificationService {
             List<JavaProjectService.JavaClassDescriptor> targets,
             Map<String, List<GitChangeService.LineRange>> rangesByClass
     ) {
-        Map<String, Map<Integer, CoverageReportService.LineCoverage>> sourceLines =
-                coverageReportService.readSourceLineCoverage(coverage.reportPath());
+        Map<Path, Map<String, Map<Integer, CoverageReportService.LineCoverage>>> sourceLinesByReport =
+                new LinkedHashMap<>();
         Map<String, ChangedCodeCoverage> values = new LinkedHashMap<>();
         for (JavaProjectService.JavaClassDescriptor target : targets) {
-            CoverageReportService.ClassCoverage wholeClass = coverage.classCoverageByName().getOrDefault(
-                    target.fullyQualifiedName(),
-                    new CoverageReportService.ClassCoverage(target.fullyQualifiedName(), 0.0d, 0.0d)
-            );
+            Path report = coverage.reportPathForClass(target.fullyQualifiedName());
+            Map<String, Map<Integer, CoverageReportService.LineCoverage>> sourceLines =
+                    sourceLinesByReport.computeIfAbsent(report, coverageReportService::readSourceLineCoverage);
+            CoverageReportService.ClassCoverage wholeClass = coverage.classCoverageByName()
+                    .get(target.fullyQualifiedName());
+            if (wholeClass == null) {
+                throw new IllegalStateException("Fresh JaCoCo XML omitted changed class "
+                        + target.fullyQualifiedName() + ".");
+            }
             String sourceKey = target.packageName().isBlank()
                     ? target.cutPath().getFileName().toString()
                     : target.packageName().replace('.', '/') + "/" + target.cutPath().getFileName();
-            Map<Integer, CoverageReportService.LineCoverage> lines = sourceLines.getOrDefault(sourceKey, Map.of());
+            Map<Integer, CoverageReportService.LineCoverage> lines = sourceLines.get(sourceKey);
+            if (lines == null) {
+                throw new IllegalStateException("Fresh JaCoCo XML omitted changed source " + sourceKey + ".");
+            }
             List<GitChangeService.LineRange> ranges = rangesByClass.getOrDefault(
                     target.fullyQualifiedName(),
                     List.of()
@@ -526,6 +593,22 @@ public final class DiffVerificationService {
             ));
         }
         return Map.copyOf(values);
+    }
+
+    private void rejectDuplicateClassNames(List<JavaProjectService.JavaClassDescriptor> targets) {
+        Map<String, Long> counts = targets.stream().collect(Collectors.groupingBy(
+                JavaProjectService.JavaClassDescriptor::fullyQualifiedName,
+                LinkedHashMap::new,
+                Collectors.counting()
+        ));
+        List<String> duplicates = counts.entrySet().stream()
+                .filter(entry -> entry.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .toList();
+        if (!duplicates.isEmpty()) {
+            throw new IllegalStateException("Changed classes have duplicate fully qualified names across modules: "
+                    + duplicates + ". JAIPilot refuses ambiguous coverage and mutation attribution.");
+        }
     }
 
     private void evaluateCoverage(
@@ -785,6 +868,8 @@ public final class DiffVerificationService {
             Path root,
             GitChangeService.DiffSnapshot diff,
             List<JavaProjectService.JavaClassDescriptor> liveTargets,
+            List<Path> changedTests,
+            long deletedTests,
             Map<Path, List<GitChangeService.LineRange>> changedLineRanges,
             Map<String, List<GitChangeService.LineRange>> rangesByClass,
             List<String> targetNames
@@ -807,20 +892,56 @@ public final class DiffVerificationService {
     }
 
     record VerificationGates(
-            WorkflowRunService.BuildGate build,
-            WorkflowRunService.CoverageGate coverage,
-            WorkflowRunService.QualityGate quality,
-            WorkflowRunService.ArchitectureGate architecture,
+            BuildGate build,
+            CoverageGate coverage,
+            QualityGate quality,
+            ArchitectureGate architecture,
             DiffMutationGate mutation
     ) {
         VerificationGates(
-                WorkflowRunService.BuildGate build,
-                WorkflowRunService.CoverageGate coverage,
-                WorkflowRunService.QualityGate quality,
+                BuildGate build,
+                CoverageGate coverage,
+                QualityGate quality,
                 DiffMutationGate mutation
         ) {
-            this(build, coverage, quality, WorkflowRunService::skippedArchitectureReport, mutation);
+            this(build, coverage, quality, (projectRoot, targets) -> new ArchitectureService.ArchitectureReport(
+                    "ArchUnit",
+                    ArchitectureService.ARCHUNIT_VERSION,
+                    ArchitectureService.RULESET_VERSION,
+                    List.of(ArchitectureService.PACKAGE_CYCLE_RULE),
+                    true,
+                    targets.size(),
+                    List.of(),
+                    List.copyOf(targets),
+                    List.of(),
+                    List.of(),
+                    null,
+                    0L
+            ), mutation);
         }
+    }
+
+    @FunctionalInterface
+    interface BuildGate {
+        JavaBuildVerificationService.VerificationResult verify(Path projectRoot);
+    }
+
+    @FunctionalInterface
+    interface CoverageGate {
+        CoverageReportService.CoverageSnapshot refresh(
+                Path projectRoot,
+                List<JavaProjectService.JavaClassDescriptor> targets
+        );
+    }
+
+    @FunctionalInterface
+    interface QualityGate {
+        JavaQualityService.QualityReport analyze(Path projectRoot, List<Path> targets);
+    }
+
+    @FunctionalInterface
+    interface ArchitectureGate {
+        ArchitectureService.ArchitectureReport analyze(Path projectRoot, List<String> targetClasses);
     }
 
     @FunctionalInterface

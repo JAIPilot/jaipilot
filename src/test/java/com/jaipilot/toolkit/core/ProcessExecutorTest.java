@@ -153,6 +153,25 @@ class ProcessExecutorTest {
         assertEquals(ProcessExecutor.DEFAULT_MAX_CAPTURED_CHARACTERS, result.output().length());
     }
 
+    @Test
+    void boundedCaptureRetainsFailureSignalsBeforeANoisyTail() throws Exception {
+        ProcessExecutor.ExecutionResult result = new ProcessExecutor().execute(
+                List.of("sh", "-c", "echo 'OrderTest > rejectsInvalidOrder() FAILED'; yes passing | head -n 500"),
+                Path.of("").toAbsolutePath(),
+                Duration.ofSeconds(5),
+                false,
+                new PrintWriter(new StringWriter(), true),
+                null,
+                ProcessExecutor.ProgressListener.noOp(),
+                ProcessExecutor.OutputListener.noOp(),
+                Map.of(),
+                256
+        );
+
+        assertTrue(result.output().contains("OrderTest > rejectsInvalidOrder() FAILED"));
+        assertTrue(result.output().length() <= 256);
+    }
+
     private List<String> childCommand(Path pidFile, boolean closeStdin) {
         String script = (closeStdin ? "exec 0<&-; " : "")
                 + "sleep 60 & child=$!; printf '%s\\n' \"$child\" > \"$1\"; wait";

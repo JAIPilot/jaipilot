@@ -1,15 +1,28 @@
 {
-  "description": "Refresh current Java quality after agent Git commits and require fresh proof for changed production diffs.",
+  "description": "Initialize current repository evidence, refresh direct agent commits, and require exact Java diff proof.",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jaipilot_plugin_root=\"${PLUGIN_ROOT}\"; [ -n \"$jaipilot_plugin_root\" ] || jaipilot_plugin_root=\"${CLAUDE_PLUGIN_ROOT}\"; exec \"$jaipilot_plugin_root/hooks/session-start.sh\"",
+            "timeout": 10,
+            "statusMessage": "Initializing JAIPilot evidence"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.sh\"",
-            "timeout": 60,
-            "statusMessage": "Analyzing committed Java"
+            "command": "jaipilot_plugin_root=\"${PLUGIN_ROOT}\"; [ -n \"$jaipilot_plugin_root\" ] || jaipilot_plugin_root=\"${CLAUDE_PLUGIN_ROOT}\"; exec \"$jaipilot_plugin_root/hooks/post-tool-use.sh\"",
+            "timeout": 300,
+            "statusMessage": "Refreshing committed Java evidence"
           }
         ]
       }
@@ -19,9 +32,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/jaipilot\" hook-stop --project .",
-            "timeout": 60,
-            "statusMessage": "Checking changed Java proof"
+            "command": "jaipilot_plugin_root=\"${PLUGIN_ROOT}\"; [ -n \"$jaipilot_plugin_root\" ] || jaipilot_plugin_root=\"${CLAUDE_PLUGIN_ROOT}\"; exec \"$jaipilot_plugin_root/bin/jaipilot\" hook-stop --project .",
+            "timeout": 300,
+            "statusMessage": "Checking exact Java diff proof"
           }
         ]
       }

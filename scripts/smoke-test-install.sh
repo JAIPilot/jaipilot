@@ -205,6 +205,10 @@ grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/active-lock.log" \
 [ -x "$SMOKE_DIR/app/current/libexec/install.sh" ] || die "Distribution did not include the self-update installer"
 [ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh" ] \
   || die "Distribution did not include the executable post-tool hook"
+[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/session-start.sh" ] \
+  || die "Distribution did not include the executable SessionStart initializer"
+[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/bin/jaipilot-mcp" ] \
+  || die "Distribution did not include the executable MCP launcher"
 "$SMOKE_DIR/app/bin/jaipilot" version > "$SMOKE_DIR/version.json"
 grep -Fq "\"version\" : \"$INSTALL_VERSION\"" "$SMOKE_DIR/version.json" \
   || die "Installed toolkit harness did not report version $INSTALL_VERSION"
@@ -217,17 +221,41 @@ printf '%s' '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"
     > "$SMOKE_DIR/non-commit-hook.json"
 [ ! -s "$SMOKE_DIR/non-commit-hook.json" ] || die "Post-tool hook emitted output for a non-commit command"
 
+PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
+JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+JAIPILOT_DASHBOARD_DISABLED=1 \
+  "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/session-start.sh"
+attempt=0
+while [ "$attempt" -lt 100 ]; do
+  REPOSITORY_SNAPSHOT=$(
+    find "$SMOKE_DIR/state/repositories" -type f -name '*.json' -print 2>/dev/null \
+      | head -n 1 || true
+  )
+  if [ -n "${REPOSITORY_SNAPSHOT:-}" ] && grep -Fq '"analysisStatus" : "ready"' "$REPOSITORY_SNAPSHOT"; then
+    break
+  fi
+  attempt=$((attempt + 1))
+  sleep 0.1
+done
+[ -n "${REPOSITORY_SNAPSHOT:-}" ] || die "SessionStart did not register the repository"
+grep -Fq '"analysisStatus" : "ready"' "$REPOSITORY_SNAPSHOT" \
+  || die "SessionStart did not initialize current quality in the background"
+
 printf '%s' '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"git commit -m smoke"}}' \
   | PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
     JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
     JAIPILOT_DASHBOARD_DISABLED=1 \
     "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh" \
     > "$SMOKE_DIR/post-commit-hook.json"
-grep -Fq '"source" : "Automatic post-commit analysis"' \
-  "$SMOKE_DIR/state/metrics/summary.json" \
-  || die "Installed post-tool hook did not persist current project quality"
-grep -Fq '"revision"' "$SMOKE_DIR/state/metrics/summary.json" \
+[ -n "${REPOSITORY_SNAPSHOT:-}" ] || die "Installed post-tool hook did not persist repository state"
+grep -Fq '"analysisStatus" : "ready"' "$REPOSITORY_SNAPSHOT" \
+  || die "Installed post-tool hook did not persist ready current quality"
+grep -Fq '"revision"' "$REPOSITORY_SNAPSHOT" \
   || die "Installed post-tool hook did not persist the analyzed Git revision"
+
+JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+  python3 "$REPO_ROOT/scripts/smoke-test-mcp.py" \
+  "$SMOKE_DIR/app/current/plugins/jaipilot/bin/jaipilot-mcp"
 
 STABLE_RUNNER_SHA256=$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")
 "$SMOKE_DIR/app/current/libexec/install.sh" \

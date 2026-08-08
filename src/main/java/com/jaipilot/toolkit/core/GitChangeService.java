@@ -235,7 +235,10 @@ public final class GitChangeService {
 
         Optional<String> defaultRef = defaultBranchRef(root);
         String currentBranch = gitOptional(root, "branch", "--show-current").orElse("").trim();
-        if (defaultRef.isPresent() && !isDefaultBranch(currentBranch, defaultRef.get())) {
+        if (defaultRef.isPresent()) {
+            if (isDefaultBranch(currentBranch, defaultRef.get())) {
+                return new BaseRevision(headCommit, "HEAD");
+            }
             Optional<String> mergeBase = mergeBase(root, defaultRef.get(), headCommit);
             if (mergeBase.isPresent()) {
                 return new BaseRevision(mergeBase.get(), "merge-base(" + shortRef(defaultRef.get()) + ",HEAD)");
@@ -285,8 +288,9 @@ public final class GitChangeService {
     private String fingerprint(Path root, String base, List<Path> paths) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            update(digest, "schema=1\nbase=" + value(base) + "\n");
+            update(digest, "schema=3\n");
             for (Path relative : paths) {
+                fingerprintBaseline(root, base, relative, digest);
                 fingerprintPath(root, relative, digest);
             }
             return HexFormat.of().formatHex(digest.digest());
@@ -295,6 +299,15 @@ public final class GitChangeService {
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to fingerprint the changed Java scope under " + root, exception);
         }
+    }
+
+    private void fingerprintBaseline(Path root, String base, Path relative, MessageDigest digest) {
+        if (base == null) {
+            update(digest, "baseline=missing\n");
+            return;
+        }
+        String entry = gitOptional(root, "ls-tree", base, "--", portable(relative)).orElse("").strip();
+        update(digest, entry.isEmpty() ? "baseline=missing\n" : "baseline=" + entry + "\n");
     }
 
     private void fingerprintPath(Path root, Path relative, MessageDigest digest) throws IOException {
@@ -308,7 +321,7 @@ public final class GitChangeService {
             return;
         }
         if (Files.isRegularFile(resolved)) {
-            update(digest, "file\n");
+            update(digest, "file\nexecutable=" + Files.isExecutable(resolved) + "\n");
             digest.update(Files.readAllBytes(resolved));
             update(digest, "\n");
             return;
@@ -318,10 +331,6 @@ public final class GitChangeService {
 
     private void update(MessageDigest digest, String value) {
         digest.update(value.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private String value(String value) {
-        return value == null ? "none" : value;
     }
 
     private String gitRequired(Path root, String... arguments) {
@@ -352,10 +361,12 @@ public final class GitChangeService {
     private Process startGit(Path root, String[] arguments) throws IOException {
         List<String> command = new ArrayList<>(List.of("git", "-c", "core.quotepath=false"));
         command.addAll(List.of(arguments));
-        return new ProcessBuilder(command)
+        ProcessBuilder builder = new ProcessBuilder(command)
                 .directory(root.toFile())
-                .redirectErrorStream(true)
-                .start();
+                .redirectErrorStream(true);
+        builder.environment().clear();
+        builder.environment().putAll(GitProcessEnvironment.sanitizedCopy());
+        return builder.start();
     }
 
     private Optional<String> captureGit(Process process) throws InterruptedException {

@@ -79,7 +79,7 @@ jobs:
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          name: JAIPilot Java Enterprise Toolkit Harness ${{ github.ref_name }}
+          name: JAIPilot Java Enterprise Harness ${{ github.ref_name }}
           generate_release_notes: true
           files: |
             target/release-assets/*.tar.gz

@@ -2,25 +2,17 @@ package com.jaipilot.toolkit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jaipilot.toolkit.core.ArchitectureService;
 import com.jaipilot.toolkit.core.DiffVerificationService;
-import com.jaipilot.toolkit.core.WorkflowRunService;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -30,220 +22,137 @@ class ToolkitRunStoreTest {
     Path tempDir;
 
     @Test
-    void inspectsProjectWithoutCreatingAnActiveRun() throws Exception {
-        Path project = tempDir.resolve("project");
-        Path source = project.resolve("src/main/java/com/example/OrderService.java");
-        Files.createDirectories(source.getParent());
-        Files.writeString(project.resolve("pom.xml"), minimalPom());
-        Files.writeString(source, "package com.example; class OrderService {}\n");
+    void inspectAndQualityExposeOnlyCurrentRepositoryEvidence() throws Exception {
+        Path project = TestProject.maven(tempDir, "inspect");
+        ToolkitRunStore store = store("state");
 
-        ToolkitRunStore store = new ToolkitRunStore(new ObjectMapper(), tempDir.resolve("state"));
-        WorkflowRunService.ProjectInspection inspection = store.inspect(project);
+        ToolkitRunStore.Inspection inspection = store.inspect(project);
+        ToolkitRunStore.QualityInspection quality = store.quality(project, ToolkitRunStore.TargetSelection.all());
 
         assertEquals(project.toRealPath(), inspection.projectRoot());
         assertEquals("maven", inspection.buildTool());
         assertEquals(1, inspection.productionClassCount());
-        assertNull(inspection.activeRunId());
-        assertFalse(Files.exists(tempDir.resolve("state/runs/unknown.json")));
+        assertEquals(1, quality.targets().size());
+        assertEquals(1, quality.quality().metrics().fileCount());
+        assertTrue(Files.isDirectory(tempDir.resolve("state/proofs")));
+        assertFalse(Files.exists(tempDir.resolve("state/runs")));
+        assertFalse(Files.exists(tempDir.resolve("state/workspaces")));
     }
 
     @Test
-    void rejectsNonUuidRunIdentifiersBeforeResolvingStateFiles() {
-        ToolkitRunStore store = new ToolkitRunStore(new ObjectMapper(), tempDir.resolve("state"));
+    void nestedModuleInvocationUsesTheCanonicalGitWorktreeBoundary() throws Exception {
+        Path project = tempDir.resolve("multi-module");
+        Files.createDirectories(project);
+        Files.writeString(project.resolve("pom.xml"), """
+                <project xmlns="http://maven.apache.org/POM/4.0.0">
+                  <modelVersion>4.0.0</modelVersion>
+                  <groupId>com.example</groupId><artifactId>root</artifactId><version>1</version>
+                  <packaging>pom</packaging><modules><module>one</module><module>two</module></modules>
+                </project>
+                """);
+        createModule(project.resolve("one"), "OneService");
+        createModule(project.resolve("two"), "TwoService");
+        TestProject.git(project, "init", "-q", "-b", "main");
+        TestProject.git(project, "config", "user.name", "JAIPilot Test");
+        TestProject.git(project, "config", "user.email", "test@jaipilot.local");
+        TestProject.commit(project, "baseline");
 
-        assertThrows(IllegalArgumentException.class, () -> store.status("../outside"));
+        ToolkitRunStore.Inspection inspection = store("nested-state").inspect(
+                project.resolve("one/src/main/java")
+        );
+
+        assertEquals(project.toRealPath(), inspection.projectRoot());
+        assertEquals(2, inspection.productionClassCount());
     }
 
     @Test
-    void rejectsStateWhoseEmbeddedRunIdDoesNotMatchItsSafeFilename() throws Exception {
-        Path project = tempDir.resolve("project");
+    void targetSelectionRejectsAmbiguousOrMissingScope() throws Exception {
+        Path project = TestProject.maven(tempDir, "selection");
+        ToolkitRunStore store = store("selection-state");
+
+        assertThrows(IllegalArgumentException.class, () -> new ToolkitRunStore.TargetSelection(
+                ToolkitRunStore.TargetMode.CLASSES, List.of(), 80
+        ));
+        assertThrows(IllegalStateException.class, () -> store.quality(project,
+                new ToolkitRunStore.TargetSelection(
+                        ToolkitRunStore.TargetMode.CLASSES, List.of("com.example.Missing"), 80
+                )));
+    }
+
+    @Test
+    void unchangedRepositoryIsNotApplicableAndChangedSourceRequiresProof() throws Exception {
+        Path project = TestProject.gitMaven(tempDir, "gate");
+        ToolkitRunStore store = store("gate-state");
+
+        assertEquals("not_applicable", gate(store, project).status());
         Path source = project.resolve("src/main/java/com/example/OrderService.java");
-        Files.createDirectories(source.getParent());
-        Files.writeString(project.resolve("pom.xml"), minimalPom());
-        Files.writeString(source, "package com.example; class OrderService {}\n");
-        Path stateRoot = tempDir.resolve("state");
-        ToolkitRunStore store = new ToolkitRunStore(new ObjectMapper(), stateRoot);
-        String safeFilename = UUID.randomUUID().toString();
-        Files.writeString(
-                stateRoot.resolve("runs").resolve(safeFilename + ".json"),
-                "{\"schemaVersion\":1,\"runId\":\"../../escape\"}"
-        );
+        Files.writeString(source, "package com.example; public class OrderService { int total() { return 2; } }\n");
 
-        assertThrows(IllegalStateException.class, () -> store.inspect(project));
-        assertFalse(Files.exists(tempDir.resolve("escape.lock")));
+        ToolkitRunStore.DiffGateStatus gate = gate(store, project);
+        assertEquals("review_required", gate.status());
+        assertEquals(1, gate.changedProductionPaths().size());
+        assertTrue(gate.fingerprint().matches("[0-9a-f]{64}"));
     }
 
     @Test
-    void passingProofReceiptIsExactAndRelevantChangesInvalidateIt() throws Exception {
-        Path project = tempDir.resolve("proof-project");
-        Path source = project.resolve("src/main/java/com/example/DeletedService.java");
-        Files.createDirectories(source.getParent());
-        Files.writeString(project.resolve("pom.xml"), minimalPom());
-        Files.writeString(source, "package com.example; class DeletedService {}\n");
-        Path wrapper = project.resolve("mvnw");
-        Files.writeString(wrapper, "#!/bin/sh\nexit 0\n");
-        assertTrue(wrapper.toFile().setExecutable(true, false));
-        Path wrapperMetadata = project.resolve(".mvn/wrapper/maven-wrapper.properties");
-        Files.createDirectories(wrapperMetadata.getParent());
-        Files.writeString(wrapperMetadata, "distributionUrl=https://repo.maven.apache.org/maven2\n");
-        initializeGit(project);
-        commit(project, "baseline");
-        Files.delete(source);
-        commit(project, "delete obsolete production class");
+    void buildOnlyProofRunsCleanBuildAndCreatesExactReceipt() throws Exception {
+        Path project = TestProject.gitMaven(tempDir, "build-only");
+        TestProject.successfulWrapper(project);
+        TestProject.commit(project, "add wrapper");
+        Files.writeString(project.resolve("pom.xml"), TestProject.pom().replace("1.0.0", "1.0.1"));
+        ToolkitRunStore store = store("proof-state");
 
-        List<String> progress = new ArrayList<>();
-        ToolkitRunStore store = new ToolkitRunStore(
-                new ObjectMapper(),
-                tempDir.resolve("proof-state"),
-                progress::add
-        );
-        DiffVerificationService.VerificationThresholds thresholds = DiffVerificationService.DEFAULT_THRESHOLDS;
-
-        assertEquals("review_required", store.diffGate(project, thresholds).status());
-        assertTrue(store.proveDiff(project, thresholds).passed());
-        assertTrue(progress.stream().anyMatch(value -> value.contains("deletion-only diff")));
-        assertEquals("Changed-code proof passed.", progress.get(progress.size() - 1));
-        assertEquals("passed", store.diffGate(project, thresholds).status());
-        assertEquals(
-                "review_required",
-                store.diffGate(project, new DiffVerificationService.VerificationThresholds(91, 85, 80, 90)).status()
-        );
-        assertEquals(
-                "review_required",
-                store.diffGate(project, new DiffVerificationService.VerificationThresholds(90, 86, 80, 90)).status()
-        );
-        assertEquals(
-                "review_required",
-                store.diffGate(project, new DiffVerificationService.VerificationThresholds(90, 85, 81, 90)).status()
-        );
-        assertEquals(
-                "review_required",
-                store.diffGate(project, new DiffVerificationService.VerificationThresholds(90, 85, 80, 91)).status()
-        );
-        assertEquals(
-                "passed",
-                store.diffGate(project, new DiffVerificationService.VerificationThresholds(89, 84, 79, 89)).status()
-        );
-        String projectHash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                .digest(project.toRealPath().toString().getBytes(StandardCharsets.UTF_8)));
-        Path receipt = tempDir.resolve("proof-state/proofs/" + projectHash + ".json");
-        String validReceipt = Files.readString(receipt);
-        ObjectMapper mapper = new ObjectMapper();
-        var validNode = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(validReceipt);
-        assertEquals(2, validNode.path("schemaVersion").asInt());
-        assertEquals(0, validNode.path("architectureViolationCount").asInt());
-        assertEquals(
-                ArchitectureService.RULESET_VERSION,
-                validNode.path("architectureRulesetVersion").asInt()
-        );
-        Files.writeString(receipt, "{not-json");
-        assertEquals("review_required", store.diffGate(project, thresholds).status());
-        var invalidSchema = validNode.deepCopy();
-        invalidSchema.put("schemaVersion", 3);
-        Files.writeString(receipt, mapper.writeValueAsString(invalidSchema));
-        assertEquals("review_required", store.diffGate(project, thresholds).status());
-        invalidSchema.put("schemaVersion", 1);
-        invalidSchema.putNull("thresholds");
-        Files.writeString(receipt, mapper.writeValueAsString(invalidSchema));
-        assertEquals("review_required", store.diffGate(project, thresholds).status());
-        var staleArchitecture = validNode.deepCopy();
-        staleArchitecture.put("architectureRulesetVersion", ArchitectureService.RULESET_VERSION + 1);
-        Files.writeString(receipt, mapper.writeValueAsString(staleArchitecture));
-        assertEquals("review_required", store.diffGate(project, thresholds).status());
-        staleArchitecture = validNode.deepCopy();
-        staleArchitecture.put("architectureViolationCount", 1);
-        Files.writeString(receipt, mapper.writeValueAsString(staleArchitecture));
-        assertEquals("review_required", store.diffGate(project, thresholds).status());
-        Files.writeString(receipt, validReceipt);
-
-        Files.writeString(project.resolve("pom.xml"), minimalPom().replace("1.0.0", "1.0.1"));
-
-        assertEquals("review_required", store.diffGate(project, thresholds).status());
-    }
-
-    @Test
-    void unchangedRepositoryMakesTheDiffGateNotApplicable() throws Exception {
-        Path project = tempDir.resolve("unchanged-project");
-        Path source = project.resolve("src/main/java/com/example/OrderService.java");
-        Files.createDirectories(source.getParent());
-        Files.writeString(project.resolve("pom.xml"), minimalPom());
-        Files.writeString(source, "package com.example; class OrderService {}\n");
-        initializeGit(project);
-        commit(project, "baseline");
-        ToolkitRunStore store = new ToolkitRunStore(new ObjectMapper(), tempDir.resolve("unchanged-state"));
-
-        ToolkitRunStore.DiffGateStatus gate = store.diffGate(
-                project,
-                DiffVerificationService.DEFAULT_THRESHOLDS
-        );
-
-        assertEquals("not_applicable", gate.status());
-        assertTrue(gate.changedProductionPaths().isEmpty());
+        assertEquals("review_required", gate(store, project).status());
         assertTrue(store.proveDiff(project, DiffVerificationService.DEFAULT_THRESHOLDS).passed());
+        assertEquals("passed", gate(store, project).status());
+
+        Files.writeString(project.resolve("pom.xml"), TestProject.pom().replace("1.0.0", "1.0.2"));
+        assertEquals("review_required", gate(store, project).status());
     }
 
     @Test
-    void concurrentProofForTheSameProjectFailsFast() throws Exception {
-        Path project = tempDir.resolve("locked-project");
-        Path source = project.resolve("src/main/java/com/example/OrderService.java");
-        Files.createDirectories(source.getParent());
-        Files.writeString(project.resolve("pom.xml"), minimalPom());
-        Files.writeString(source, "package com.example; class OrderService {}\n");
-        initializeGit(project);
-        commit(project, "baseline");
+    void stricterThresholdsInvalidateOtherwiseCurrentReceipt() throws Exception {
+        Path project = TestProject.gitMaven(tempDir, "threshold");
+        TestProject.successfulWrapper(project);
+        TestProject.commit(project, "add wrapper");
+        Files.writeString(project.resolve("pom.xml"), TestProject.pom().replace("1.0.0", "1.0.1"));
+        ToolkitRunStore store = store("threshold-state");
+        store.proveDiff(project, DiffVerificationService.DEFAULT_THRESHOLDS);
+
+        assertEquals("review_required", store.diffGate(project,
+                new DiffVerificationService.VerificationThresholds(91, 85, 80, 90)).status());
+        assertEquals("passed", store.diffGate(project,
+                new DiffVerificationService.VerificationThresholds(89, 84, 79, 89)).status());
+    }
+
+    @Test
+    void sameRepositoryProofLockFailsFast() throws Exception {
+        Path project = TestProject.gitMaven(tempDir, "locked");
+        Files.writeString(project.resolve("pom.xml"), TestProject.pom().replace("1.0.0", "1.0.1"));
         Path state = tempDir.resolve("locked-state");
         ToolkitRunStore store = new ToolkitRunStore(new ObjectMapper(), state);
-        String projectHash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                .digest(project.toRealPath().toString().getBytes(StandardCharsets.UTF_8)));
-        Path lockPath = state.resolve("locks/proof-" + projectHash + ".lock");
+        Path lock = state.resolve("locks/proof-" + ToolkitRunStore.repositoryId(project.toRealPath()) + ".lock");
 
-        try (FileChannel channel = FileChannel.open(lockPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        try (FileChannel channel = FileChannel.open(lock, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
              FileLock ignored = channel.lock()) {
-            IllegalStateException failure = assertThrows(
-                    IllegalStateException.class,
-                    () -> store.proveDiff(project, DiffVerificationService.DEFAULT_THRESHOLDS)
-            );
+            IllegalStateException failure = assertThrows(IllegalStateException.class,
+                    () -> store.proveDiff(project, DiffVerificationService.DEFAULT_THRESHOLDS));
             assertTrue(failure.getMessage().contains("already running"));
         }
     }
 
-    @Test
-    void proofProgressReporterIsRequired() {
-        assertThrows(
-                NullPointerException.class,
-                () -> new ToolkitRunStore(new ObjectMapper(), tempDir.resolve("null-progress"), null)
-        );
+    private ToolkitRunStore store(String name) {
+        return new ToolkitRunStore(new ObjectMapper(), tempDir.resolve(name));
     }
 
-    private void initializeGit(Path project) throws Exception {
-        git(project, "init", "-q", "-b", "main");
-        git(project, "config", "user.name", "JAIPilot Test");
-        git(project, "config", "user.email", "test@jaipilot.local");
+    private ToolkitRunStore.DiffGateStatus gate(ToolkitRunStore store, Path project) {
+        return store.diffGate(project, DiffVerificationService.DEFAULT_THRESHOLDS);
     }
 
-    private void commit(Path project, String message) throws Exception {
-        git(project, "add", "-A");
-        git(project, "commit", "-qm", message);
-    }
-
-    private void git(Path project, String... arguments) throws Exception {
-        List<String> command = new ArrayList<>();
-        command.add("git");
-        command.addAll(List.of(arguments));
-        Process process = new ProcessBuilder(command).directory(project.toFile()).start();
-        int status = process.waitFor();
-        String errors = new String(process.getErrorStream().readAllBytes());
-        assertEquals(0, status, errors);
-    }
-
-    private String minimalPom() {
-        return """
-                <project xmlns="http://maven.apache.org/POM/4.0.0">
-                  <modelVersion>4.0.0</modelVersion>
-                  <groupId>com.example</groupId>
-                  <artifactId>fixture</artifactId>
-                  <version>1.0.0</version>
-                </project>
-                """;
+    private void createModule(Path module, String className) throws Exception {
+        Files.createDirectories(module.resolve("src/main/java/com/example"));
+        Files.writeString(module.resolve("pom.xml"), TestProject.pom().replace("fixture", className.toLowerCase()));
+        Files.writeString(module.resolve("src/main/java/com/example/" + className + ".java"),
+                "package com.example; public class " + className + " {}\n");
     }
 }

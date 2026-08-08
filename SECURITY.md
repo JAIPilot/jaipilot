@@ -27,6 +27,7 @@ JAIPilot is local and backend-free, but it intentionally executes the target pro
 Gradle build and pinned OpenRewrite tooling. Treat repository build scripts, wrappers, plugins, and
 dependencies as executable code. Review untrusted projects before running them.
 
-JAIPilot's scope, symlink, deletion, drift, and transactional-write controls protect the apply
-boundary. They are not a sandbox for malicious build scripts and do not replace operating-system
-isolation for untrusted repositories.
+JAIPilot's scope, symlink, drift, isolated-proof, and exact-receipt controls protect its evidence
+boundary. OpenRewrite intentionally edits the user-selected live worktree, which must remain under the
+host agent's Git/recovery control. These controls are not a sandbox for malicious build scripts and do
+not replace operating-system isolation for untrusted repositories.

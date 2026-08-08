@@ -3,6 +3,7 @@ package com.jaipilot.toolkit;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jaipilot.toolkit.core.OwnerPermissions;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -101,7 +103,7 @@ final class DashboardServer {
             return DashboardStatus.stopped(preferred);
         }
         if (!awaitReady) {
-            stderr.println("jaipilot: dashboard starting on localhost; run `jaipilot dashboard` for its URL");
+            stderr.println("jaipilot: dashboard starting on loopback; query the private runner's dashboard command for its URL");
             return DashboardStatus.stopped(preferred);
         }
         for (int attempt = 0; attempt < START_ATTEMPTS; attempt++) {
@@ -228,8 +230,8 @@ final class DashboardServer {
                     Instant.now().toString(),
                     implementationVersion()
             );
-            UsageMetricsStore metrics = new UsageMetricsStore(mapper, stateRoot);
-            configureRoutes(server, mapper, metrics, metadata);
+            RepositorySnapshotStore snapshots = new RepositorySnapshotStore(mapper, stateRoot);
+            configureRoutes(server, mapper, snapshots, metadata);
             server.start();
             writeMetadata(mapper, directory.resolve(METADATA_FILE), metadata);
             writeReadyMarker(directory.resolve(READY_FILE), metadata);
@@ -260,12 +262,13 @@ final class DashboardServer {
     private static void configureRoutes(
             HttpServer server,
             ObjectMapper mapper,
-            UsageMetricsStore metrics,
+            RepositorySnapshotStore snapshots,
             ServerMetadata metadata
     ) throws IOException {
         byte[] index = resource("index.html");
         byte[] stylesheet = resource("dashboard.css");
         byte[] script = resource("dashboard.js");
+        byte[] logo = resource("logo.svg");
         server.createContext("/", exchange -> staticResponse(exchange, "/", "text/html; charset=utf-8", index));
         server.createContext(
                 "/assets/dashboard.css",
@@ -280,6 +283,10 @@ final class DashboardServer {
                         script
                 )
         );
+        server.createContext(
+                "/logo.svg",
+                exchange -> staticResponse(exchange, "/logo.svg", "image/svg+xml", logo)
+        );
         server.createContext("/api/health", exchange -> jsonResponse(exchange, mapper, new Health(
                 SERVICE_NAME,
                 "ok",
@@ -288,11 +295,27 @@ final class DashboardServer {
         )));
         server.createContext("/api/metrics", exchange -> {
             try {
-                jsonResponse(exchange, mapper, metrics.snapshot());
+                jsonResponse(exchange, mapper, snapshots.view(repositoryId(exchange.getRequestURI())));
+            } catch (IllegalArgumentException exception) {
+                jsonError(exchange, mapper, 400, "unknown_repository");
             } catch (RuntimeException exception) {
                 jsonError(exchange, mapper, 500, "metrics_unavailable");
             }
         });
+    }
+
+    private static String repositoryId(URI uri) {
+        String query = uri.getRawQuery();
+        if (query == null || query.isBlank()) {
+            return null;
+        }
+        for (String pair : query.split("&")) {
+            int equals = pair.indexOf('=');
+            if (equals > 0 && "repository".equals(pair.substring(0, equals))) {
+                return URLDecoder.decode(pair.substring(equals + 1), StandardCharsets.UTF_8);
+            }
+        }
+        return null;
     }
 
     private static void staticResponse(
@@ -444,18 +467,23 @@ final class DashboardServer {
         if (configured == null || configured.isBlank()) {
             return DEFAULT_PORT;
         }
-        try {
-            int port = Integer.parseInt(configured);
-            if (port >= 1 && port <= 65_535) {
-                return port;
-            }
-        } catch (NumberFormatException ignored) {
-            // Report the invalid setting below and retain the safe default.
+        Integer parsed = validPort(configured);
+        if (parsed != null) {
+            return parsed;
         }
         if (stderr != null) {
             stderr.println("jaipilot: JAIPILOT_DASHBOARD_PORT must be between 1 and 65535; using " + DEFAULT_PORT);
         }
         return DEFAULT_PORT;
+    }
+
+    private static Integer validPort(String configured) {
+        try {
+            int port = Integer.parseInt(configured);
+            return port >= 1 && port <= 65_535 ? port : null;
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 
     private static boolean disabled() {
@@ -485,11 +513,7 @@ final class DashboardServer {
         Path temporary = Files.createTempFile(destination.getParent(), ".jaipilot-dashboard-", ".tmp");
         try {
             mapper.writerWithDefaultPrettyPrinter().writeValue(temporary.toFile(), metadata);
-            try {
-                Files.setPosixFilePermissions(temporary, OWNER_FILE);
-            } catch (UnsupportedOperationException ignored) {
-                // Retain portable filesystem behavior where POSIX permissions are unavailable.
-            }
+            OwnerPermissions.set(temporary, OWNER_FILE);
             try {
                 Files.move(
                         temporary,
@@ -520,11 +544,7 @@ final class DashboardServer {
                     StandardOpenOption.TRUNCATE_EXISTING,
                     StandardOpenOption.WRITE
             );
-            try {
-                Files.setPosixFilePermissions(temporary, OWNER_FILE);
-            } catch (UnsupportedOperationException ignored) {
-                // Retain portable filesystem behavior where POSIX permissions are unavailable.
-            }
+            OwnerPermissions.set(temporary, OWNER_FILE);
             try {
                 Files.move(
                         temporary,
@@ -565,11 +585,7 @@ final class DashboardServer {
     private static void createPrivateDirectory(Path directory) {
         try {
             Files.createDirectories(directory);
-            try {
-                Files.setPosixFilePermissions(directory, OWNER_DIRECTORY);
-            } catch (UnsupportedOperationException ignored) {
-                // Retain portable filesystem behavior where POSIX permissions are unavailable.
-            }
+            OwnerPermissions.set(directory, OWNER_DIRECTORY);
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to create JAIPilot dashboard state directory.", exception);
         }
@@ -679,7 +695,7 @@ final class DashboardServer {
             lockChannel.close();
         }
 
-        private void deleteOwnMetadata() {
+        private void deleteOwnMetadata() throws IOException {
             try {
                 if (!Files.isRegularFile(metadataPath)) {
                     return;
@@ -692,8 +708,9 @@ final class DashboardServer {
                         Files.deleteIfExists(readyPath);
                     }
                 }
-            } catch (IOException | RuntimeException ignored) {
-                // Stale metadata is rejected by instance-aware health checks on the next invocation.
+            } catch (RuntimeException invalidMetadata) {
+                Files.deleteIfExists(metadataPath);
+                Files.deleteIfExists(readyPath);
             }
         }
     }

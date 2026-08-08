@@ -22,11 +22,12 @@ class JavaBuildVerificationServiceTest {
         );
         JavaBuildVerificationService service = new JavaBuildVerificationService(projectService);
 
-        assertEquals(List.of("mvn", "-B", "clean", "verify"), service.buildCommand(tempDir));
+        assertEquals(List.of("mvn", "-B", "-Dmaven.build.cache.enabled=false", "clean", "verify"),
+                service.buildCommand(tempDir));
     }
 
     @Test
-    void gradleVerificationUsesNoDaemonCleanTest() throws Exception {
+    void gradleVerificationUsesFreshFullBuild() throws Exception {
         Files.writeString(tempDir.resolve("build.gradle"), "plugins { id 'java' }\n");
         JavaProjectService projectService = new JavaProjectService(
                 new ProjectFileService(),
@@ -34,6 +35,7 @@ class JavaBuildVerificationServiceTest {
         );
         JavaBuildVerificationService service = new JavaBuildVerificationService(projectService);
 
-        assertEquals(List.of("gradle", "--no-daemon", "clean", "test"), service.buildCommand(tempDir));
+        assertEquals(List.of("gradle", "--no-daemon", "--no-build-cache", "--rerun-tasks", "clean", "build"),
+                service.buildCommand(tempDir));
     }
 }

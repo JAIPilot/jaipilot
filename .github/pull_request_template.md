@@ -19,8 +19,8 @@ Summarize relevant test counts, coverage, fixture/revision, or failure-recovery 
 
 ## Safety and scope
 
-Describe effects on source allowlists, clean-build proof, execution evidence, privacy, determinism,
-cancellation, recovery, drift detection, and transactional apply. Write “no change” where applicable.
+Describe effects on clean-build proof, execution evidence, privacy, determinism, cancellation,
+recovery, drift detection, and exact receipts. Write “no change” where applicable.
 
 ## Reviewer notes
 

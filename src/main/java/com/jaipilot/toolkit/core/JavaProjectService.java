@@ -224,7 +224,7 @@ public final class JavaProjectService {
         if (!Files.isRegularFile(cutPath)) {
             throw new IllegalStateException("Class file not found: " + cutPath);
         }
-        Path moduleRoot = Optional.ofNullable(fileService.findNearestBuildProjectRoot(cutPath)).orElse(projectRoot);
+        Path moduleRoot = sourceModuleRoot(projectRoot, cutPath, "main");
         Path relative = moduleRoot.relativize(cutPath).normalize();
         if (relative.getNameCount() < 4) {
             throw new IllegalStateException("Unsupported Java source layout for " + cutPath);
@@ -257,7 +257,7 @@ public final class JavaProjectService {
         if (!Files.isRegularFile(testPath)) {
             throw new IllegalStateException("Test file not found: " + testPath);
         }
-        Path moduleRoot = Optional.ofNullable(fileService.findNearestBuildProjectRoot(testPath)).orElse(projectRoot);
+        Path moduleRoot = sourceModuleRoot(projectRoot, testPath, "test");
         String className = fileService.stripJavaExtension(testPath.getFileName().toString());
         String packageName = readPackageName(testPath);
         String fullyQualifiedName = packageName.isBlank() ? className : packageName + "." + className;
@@ -268,6 +268,23 @@ public final class JavaProjectService {
                 className,
                 fullyQualifiedName
         );
+    }
+
+    private Path sourceModuleRoot(Path projectRoot, Path sourcePath, String sourceSet) {
+        Path root = projectRoot.toAbsolutePath().normalize();
+        Path source = sourcePath.toAbsolutePath().normalize();
+        if (!source.startsWith(root)) {
+            throw new IllegalStateException("Java source is outside the project root: " + sourcePath);
+        }
+        Path relative = root.relativize(source);
+        for (int index = 0; index + 2 < relative.getNameCount(); index++) {
+            if ("src".equals(relative.getName(index).toString())
+                    && sourceSet.equals(relative.getName(index + 1).toString())
+                    && "java".equals(relative.getName(index + 2).toString())) {
+                return index == 0 ? root : root.resolve(relative.subpath(0, index));
+            }
+        }
+        throw new IllegalStateException("Expected class under src/" + sourceSet + "/java: " + sourcePath);
     }
 
     private List<JavaClassDescriptor> sorted(Collection<JavaClassDescriptor> descriptors) {

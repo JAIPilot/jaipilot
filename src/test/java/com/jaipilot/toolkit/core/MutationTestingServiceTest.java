@@ -161,7 +161,47 @@ class MutationTestingServiceTest {
         assertTrue(script.contains("targetClasses.set(['com.example.OrderService*'] as Set)"));
         assertTrue(script.contains("targetTests.set(['com.example.OrderServiceTest*'] as Set)"));
         assertTrue(script.contains("outputFormats.set(['XML'] as Set)"));
+        assertTrue(script.contains("jaipilotTargetPitest"));
+        assertTrue(script.contains(tempDir.toAbsolutePath().normalize().toString()));
         assertFalse(script.contains("timestampedReports.set(true)"));
+    }
+
+    @Test
+    void gradlePitRunsOnlyTheQualifiedModuleAggregateTask() throws Exception {
+        Path module = tempDir.resolve("clients");
+        Files.createDirectories(module.resolve("src/main/java/com/example"));
+        Files.writeString(tempDir.resolve("build.gradle"), "plugins { id 'base' }\n");
+        Files.writeString(module.resolve("build.gradle"), "plugins { id 'java' }\n");
+        Path wrapperProperties = tempDir.resolve("gradle/wrapper/gradle-wrapper.properties");
+        Files.createDirectories(wrapperProperties.getParent());
+        Files.writeString(wrapperProperties, "distributionUrl=fixture\n");
+        Path wrapper = tempDir.resolve("gradlew");
+        Files.writeString(wrapper, """
+                #!/bin/sh
+                set -eu
+                case " $* " in *" --no-build-cache "*) ;; *) exit 7 ;; esac
+                case " $* " in *" --rerun-tasks "*) ;; *) exit 8 ;; esac
+                case " $* " in *" jaipilotTargetPitest "*) ;; *) exit 9 ;; esac
+                case " $* " in *" pitest "*) exit 10 ;; *) ;; esac
+                mkdir -p clients/build/reports/pitest
+                cat > clients/build/reports/pitest/mutations.xml <<'XML'
+                <mutations><mutation status="KILLED"><mutatedClass>com.example.Client</mutatedClass><mutatedMethod>send</mutatedMethod><lineNumber>4</lineNumber><mutator>Math</mutator><description>fixture</description></mutation></mutations>
+                XML
+                """);
+        assertTrue(wrapper.toFile().setExecutable(true, false));
+
+        MutationTestingService.MutationReport report = service().run(
+                tempDir,
+                List.of(new MutationTestingService.MutationTarget(module, "com.example.Client", List.of())),
+                List.of(),
+                80,
+                Map.of("com.example.Client", Set.of(4))
+        );
+
+        assertTrue(report.goalMet());
+        assertEquals(1, report.killed());
+        assertEquals(1, report.commands().size());
+        assertTrue(report.commands().get(0).contains("jaipilotTargetPitest"));
     }
 
     @Test

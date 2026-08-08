@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "3.4.0",
-  "description": "Java Enterprise Toolkit Harness for automatic post-commit quality, Git diff proof, unit tests, and code cleanup.",
+  "version": "4.0.0",
+  "description": "Deterministic guardrails that cut down agentic drift for high-quality agentic Java changes.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -22,8 +22,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "Post-commit Java quality and diff proof",
-    "longDescription": "Refresh current project quality after coding-agent commits, prove committed and working-tree Java changes, generate tests with coverage and PIT, and clean code with transparent scorecards.",
+    "shortDescription": "Deterministic local Java evidence",
+    "longDescription": "Cut down agentic drift with local repository inspection, quality findings, pinned OpenRewrite cleanup, clean-build diff proof, exact receipts, and a current-evidence dashboard.",
     "developerName": "JAIPilot",
     "category": "Productivity",
     "capabilities": [],

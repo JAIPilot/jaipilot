@@ -22,7 +22,7 @@ Prepares a new JAIPilot release by:
   1. Updating the Maven and cross-agent plugin versions.
   2. Running the full Java and plugin verification gates.
   3. Smoke-testing checksum-verified plugin installation for that version.
-  4. Creating a release commit (including current worktree changes) and annotated git tag.
+  4. Creating a version-only release commit and annotated git tag.
 
 Options:
   --version <version>  Release version such as 1.0.0.
@@ -92,10 +92,37 @@ ensure_tag_absent() {
 
 commit_and_tag() {
   version=$1
-  git add -A
   git diff --cached --quiet --ignore-submodules -- && die "No changes to commit for release $version."
   git commit -m "Release $version"
   git tag -a "v$version" -m "Release $version"
+}
+
+ensure_clean_tree() {
+  [ -z "$(git status --porcelain --untracked-files=all)" ] \
+    || die "Release preparation requires a clean main worktree."
+}
+
+stage_release_versions() {
+  git add -- \
+    pom.xml \
+    plugins/jaipilot/plugin.json \
+    plugins/jaipilot/.codex-plugin/plugin.json \
+    plugins/jaipilot/.claude-plugin/plugin.json \
+    .claude-plugin/marketplace.json \
+    plugins/jaipilot/bin/jaipilot
+}
+
+ensure_release_scope() {
+  unexpected=$(git ls-files --others --exclude-standard)
+  [ -z "$unexpected" ] || die "Release gates created unexpected untracked files: $unexpected"
+  for changed in $(git diff --name-only HEAD); do
+    case "$changed" in
+      pom.xml|plugins/jaipilot/plugin.json|plugins/jaipilot/.codex-plugin/plugin.json|\
+      plugins/jaipilot/.claude-plugin/plugin.json|.claude-plugin/marketplace.json|\
+      plugins/jaipilot/bin/jaipilot) ;;
+      *) die "Release gates changed an unexpected tracked path: $changed" ;;
+    esac
+  done
 }
 
 while [ "$#" -gt 0 ]; do
@@ -130,6 +157,7 @@ validate_version "$VERSION"
 
 cd "$REPO_ROOT"
 [ "$(current_branch)" = "main" ] || die "Release script must be run from the main branch."
+ensure_clean_tree
 
 CURRENT_VERSION=$(current_version)
 [ -n "$CURRENT_VERSION" ] || die "Could not determine the current project version."
@@ -138,15 +166,17 @@ ensure_tag_absent "v$VERSION"
 
 update_versions "$VERSION"
 ensure_version_applied "$VERSION"
+stage_release_versions
 
 ./mvnw -B clean verify
 python3 ./scripts/validate-plugin.py
 ./scripts/smoke-test-install.sh --version "$VERSION"
+ensure_release_scope
 
 commit_and_tag "$VERSION"
 
 if [ "$PUSH_CHANGES" -eq 1 ]; then
-  git push origin main "v$VERSION"
+  git push --atomic origin main "v$VERSION"
   echo "Released JAIPilot $VERSION"
   echo "  Commit: $(git rev-parse --short HEAD)"
   echo "  Tag: v$VERSION"

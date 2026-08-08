@@ -40,7 +40,7 @@ class GitChangeServiceTest {
     }
 
     @Test
-    void defaultBranchUsesLastCommitAndIncludesWorkingAndUntrackedJava() throws Exception {
+    void defaultBranchUsesHeadAndIncludesOnlyWorkingAndUntrackedJava() throws Exception {
         Path root = project("main");
         Path source = source(root);
         commit(root, "baseline");
@@ -53,7 +53,7 @@ class GitChangeServiceTest {
 
         GitChangeService.DiffSnapshot snapshot = new GitChangeService().snapshot(root);
 
-        assertEquals("HEAD^", snapshot.baselineDescription());
+        assertEquals("HEAD", snapshot.baselineDescription());
         assertTrue(snapshot.changedJavaPaths().contains(root.relativize(source)));
         assertTrue(snapshot.changedJavaPaths().contains(root.relativize(test)));
     }
@@ -121,6 +121,7 @@ class GitChangeServiceTest {
         Path root = project("deleted");
         Path source = source(root);
         commit(root, "baseline");
+        git(root, "switch", "-qc", "feature/delete");
         Files.delete(source);
         commit(root, "delete source");
 
@@ -178,6 +179,7 @@ class GitChangeServiceTest {
         Path root = project("symlink");
         Path source = source(root);
         commit(root, "baseline");
+        git(root, "switch", "-qc", "feature/symlink");
         Files.delete(source);
         Files.createSymbolicLink(source, Path.of("../../../../../pom.xml"));
         commit(root, "replace source with symlink");
@@ -228,6 +230,7 @@ class GitChangeServiceTest {
         Path source = source(root);
         Files.writeString(source, numberedSource("one", "two", "three", "four", "five", "six", "seven"));
         commit(root, "baseline");
+        git(root, "switch", "-qc", "feature/line-ranges");
         Files.writeString(source, numberedSource("one", "TWO", "THREE", "four", "five", "SIX", "seven"));
         commit(root, "separate hunks");
         GitChangeService service = new GitChangeService();

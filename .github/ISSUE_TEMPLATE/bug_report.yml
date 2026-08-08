@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible JAIPilot workflow failure
+description: Report a reproducible JAIPilot evidence, MCP, hook, or dashboard failure
 title: "bug: "
 labels:
   - bug
@@ -23,8 +23,10 @@ body:
       options:
         - Generate Java tests
         - Clean or refactor Java
-        - Validate candidate
-        - Apply or discard
+        - Diff proof or proof receipt
+        - MCP server or tool
+        - Session or commit hook
+        - Local dashboard
         - Plugin installation or update
         - Project inspection
         - Other
@@ -36,10 +38,10 @@ body:
       label: Minimal reproduction
       description: Share the smallest project shape, request, and sequence that reproduces the issue.
       placeholder: |
-        1. Use JAIPilot v3.3.0 in Codex or Claude Code.
+        1. Use JAIPilot v3.4.0 in Codex, Claude Code, or another stdio MCP host.
         2. Open a clean Maven project with ...
         3. Ask "..."
-        4. Validation returns ...
+        4. The structured result returns ...
     validations:
       required: true
   - type: textarea
@@ -52,7 +54,7 @@ body:
     id: version
     attributes:
       label: JAIPilot version
-      placeholder: v3.3.0
+      placeholder: v3.4.0
     validations:
       required: true
   - type: input

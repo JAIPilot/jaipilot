@@ -4,186 +4,98 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta name="description" content="Current local Java quality, findings, architecture, and proof evidence">
-  <title>JAIPilot Project Quality</title>
+  <meta name="description" content="Current local JAIPilot quality and proof evidence">
+  <title>JAIPilot Local Quality</title>
   <link rel="stylesheet" href="/assets/dashboard.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-inner">
-      <a class="brand" href="/" aria-label="JAIPilot project quality home">JAIPilot</a>
-      <span>Project Quality</span>
-      <span class="local-label">LOCAL · NO TELEMETRY</span>
+  <header>
+    <div class="bar">
+      <a class="brand" href="/"><img src="/logo.svg" alt=""><strong>JAIPilot</strong></a>
+      <span>Local Java quality</span>
+      <b>LOCAL · NO TELEMETRY</b>
     </div>
   </header>
 
-  <main class="page">
-    <section class="project-heading" aria-labelledby="page-title">
+  <main>
+    <section class="repository">
       <div>
-        <p class="breadcrumb">PROJECT / CURRENT STATE</p>
-        <h1 id="page-title">Current quality</h1>
-        <p id="analysis-meta" class="meta">Waiting for the first whole-project analysis.</p>
+        <label for="repository-select">Repository</label>
+        <select id="repository-select" aria-label="Repository"></select>
+        <a id="github-link" class="github hidden" rel="noreferrer" target="_blank">GitHub</a>
+        <p id="repository-path">Waiting for repository detection.</p>
       </div>
-      <div class="analysis-state">
-        <span>Current score</span>
-        <strong id="quality-score">—</strong>
-        <b id="quality-status" class="status neutral">NOT ANALYZED</b>
+      <div class="score">
+        <span>Quality</span><strong id="quality-score">—</strong>
+        <b id="quality-status" class="status neutral">INITIALIZING</b>
       </div>
     </section>
 
-    <section class="metric-grid" aria-label="Current quality metrics">
-      <article class="metric-cell">
-        <span>Reliability</span>
-        <strong id="reliability-score">—</strong>
-        <small id="bug-risk-count">— bug risks</small>
-      </article>
-      <article class="metric-cell">
-        <span>Maintainability</span>
-        <strong id="maintainability-score">—</strong>
-        <small id="code-smell-count">— code smells</small>
-      </article>
-      <article class="metric-cell">
-        <span>Complexity</span>
-        <strong id="complexity-score">—</strong>
-        <small id="complexity-detail">Maximum —</small>
-      </article>
-      <article class="metric-cell">
-        <span>Duplication</span>
-        <strong id="duplication-score">—</strong>
-        <small id="duplication-detail">— duplicated lines</small>
-      </article>
-      <article class="metric-cell">
-        <span>Debt</span>
-        <strong id="debt-minutes">—</strong>
-        <small id="debt-ratio">— debt ratio</small>
-      </article>
-      <article class="metric-cell">
-        <span>Analyzed source</span>
-        <strong id="source-lines">—</strong>
-        <small id="source-detail">— files · — methods</small>
-      </article>
+    <p id="analysis-meta" class="notice">JAIPilot is collecting the first current snapshot.</p>
+
+    <section class="metrics" aria-label="Current quality metrics">
+      <article><span>Reliability</span><strong id="reliability">—</strong><small id="bugs">— bug risks</small></article>
+      <article><span>Maintainability</span><strong id="maintainability">—</strong><small id="smells">— code smells</small></article>
+      <article><span>Complexity</span><strong id="complexity">—</strong><small id="complexity-detail">Maximum —</small></article>
+      <article><span>Duplication</span><strong id="duplication">—</strong><small id="duplication-detail">— duplicated lines</small></article>
+      <article><span>Debt</span><strong id="debt">—</strong><small id="debt-ratio">— debt ratio</small></article>
+      <article><span>Source</span><strong id="source-lines">—</strong><small id="source-detail">— files · — methods</small></article>
     </section>
 
-    <section class="panel findings-panel" aria-labelledby="findings-title">
-      <div class="panel-header">
-        <div>
-          <h2 id="findings-title">Current findings</h2>
-          <p id="findings-meta" class="meta">No current quality analysis has run.</p>
-        </div>
-        <div class="finding-total">
-          <strong id="findings-total">—</strong>
-          <span>active</span>
-        </div>
+    <section class="panel">
+      <div class="panel-title">
+        <div><h1>Current findings</h1><p id="findings-meta">Snapshot is initializing.</p></div>
+        <strong id="findings-total">—</strong>
       </div>
-      <div class="severity-summary" aria-label="Findings by severity">
-        <span><b id="findings-critical" class="severity critical">0</b> Critical</span>
-        <span><b id="findings-high" class="severity high">0</b> High</span>
-        <span><b id="findings-medium" class="severity medium">0</b> Medium</span>
-        <span><b id="findings-low" class="severity low">0</b> Low</span>
+      <div class="severities">
+        <span><b class="critical" id="critical">0</b> Critical</span>
+        <span><b class="high" id="high">0</b> High</span>
+        <span><b class="medium" id="medium">0</b> Medium</span>
+        <span><b class="low" id="low">0</b> Low</span>
       </div>
       <div class="table-wrap">
-        <table class="findings-table">
-          <thead>
-            <tr><th>Severity</th><th>Rule</th><th>Finding</th><th>Location</th></tr>
-          </thead>
-          <tbody id="findings-list">
-            <tr class="empty-row"><td colspan="4">No findings evidence yet.</td></tr>
-          </tbody>
+        <table>
+          <thead><tr><th>Severity</th><th>Rule</th><th>Finding</th><th>Location</th></tr></thead>
+          <tbody id="findings"><tr><td colspan="4" class="empty">Collecting current findings.</td></tr></tbody>
         </table>
       </div>
     </section>
 
-    <div class="two-column">
-      <section class="panel" aria-labelledby="architecture-title">
-        <div class="panel-header compact">
-          <div>
-            <h2 id="architecture-title">Architecture</h2>
-            <p class="meta">ArchUnit changed-code proof</p>
-          </div>
-          <b id="architecture-status" class="status neutral">NOT RUN</b>
-        </div>
-        <p id="architecture-summary" class="summary">No architecture proof has run.</p>
-        <dl class="fact-grid">
-          <div><dt>Violations</dt><dd id="architecture-violations">—</dd></div>
-          <div><dt>Classes</dt><dd id="architecture-classes">—</dd></div>
-          <div><dt>Ruleset</dt><dd id="architecture-ruleset">—</dd></div>
-        </dl>
-        <p id="architecture-meta" class="meta detail-meta">Pinned ArchUnit evidence will appear here.</p>
-        <ol id="architecture-list" class="issue-list">
-          <li class="empty-item">No architecture evidence yet.</li>
-        </ol>
-      </section>
-
-      <section class="panel" aria-labelledby="proof-title">
-        <div class="panel-header compact">
-          <div>
-            <h2 id="proof-title">Changed-code proof</h2>
-            <p id="proof-time" class="meta">No proof has run.</p>
-          </div>
-          <b id="proof-status" class="status neutral">NOT RUN</b>
-        </div>
-        <dl class="fact-grid proof-facts">
-          <div><dt>Test quality</dt><dd id="test-score">—</dd></div>
-          <div><dt>Mutation</dt><dd id="mutation-score">—</dd></div>
-          <div><dt>Targets</dt><dd id="verified-targets">—</dd></div>
+    <div class="columns">
+      <section class="panel">
+        <div class="panel-title"><div><h1>Changed-code proof</h1><p id="proof-meta">No current diff proof.</p></div><b id="proof-status" class="status neutral">PENDING</b></div>
+        <dl class="facts">
           <div><dt>Line coverage</dt><dd id="line-coverage">—</dd></div>
           <div><dt>Branch coverage</dt><dd id="branch-coverage">—</dd></div>
-          <div><dt>Gate messages</dt><dd id="gate-message-count">—</dd></div>
+          <div><dt>Mutation</dt><dd id="mutation">—</dd></div>
+          <div><dt>Test quality</dt><dd id="test-quality">—</dd></div>
+          <div><dt>Targets</dt><dd id="targets">—</dd></div>
+          <div><dt>Fingerprint</dt><dd id="proof-fingerprint">—</dd></div>
         </dl>
-        <ol id="gate-list" class="issue-list">
-          <li class="empty-item">No changed-code proof evidence yet.</li>
-        </ol>
+        <ul id="proof-messages" class="messages"><li>No proof messages.</li></ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title"><div><h1>Architecture</h1><p>ArchUnit proof for the exact diff</p></div><b id="architecture-status" class="status neutral">PENDING</b></div>
+        <dl class="facts architecture">
+          <div><dt>Violations</dt><dd id="architecture-violations">—</dd></div>
+          <div><dt>Ruleset</dt><dd id="architecture-ruleset">—</dd></div>
+        </dl>
+        <ul id="architecture-messages" class="messages"><li>No architecture messages.</li></ul>
       </section>
     </div>
 
-    <section class="panel" aria-labelledby="impact-title">
-      <div class="panel-header compact">
-        <div>
-          <h2 id="impact-title">Verified impact</h2>
-          <p class="meta">Cumulative outcomes from applied JAIPilot transactions</p>
-        </div>
-      </div>
-      <dl class="impact-grid">
-        <div><dt>Coverage change</dt><dd id="coverage-change">0.0 pts</dd></div>
-        <div><dt>Findings resolved</dt><dd id="findings-resolved">0</dd><small id="debt-removed">0 debt minutes removed</small></div>
-        <div><dt>Mutations killed</dt><dd id="mutations-killed">0</dd><small id="tests-executed">0 changed tests proven</small></div>
-        <div><dt>Files applied</dt><dd id="files-changed">0</dd><small id="applied-runs">0 transactional applies</small></div>
+    <section class="panel impact">
+      <div class="panel-title"><div><h1>Observed impact</h1><p>Change between the two latest current snapshots; attribution remains with the coding agent.</p></div></div>
+      <dl class="facts">
+        <div><dt>Quality score</dt><dd id="quality-change">0</dd></div>
+        <div><dt>Findings resolved</dt><dd id="findings-resolved">0</dd></div>
+        <div><dt>Debt removed</dt><dd id="debt-removed">0 min</dd></div>
       </dl>
     </section>
-
-    <div class="two-column lower-grid">
-      <section class="panel" aria-labelledby="activity-title">
-        <div class="panel-header compact">
-          <div>
-            <h2 id="activity-title">Recent analysis</h2>
-            <p id="last-updated" class="meta">Waiting for data</p>
-          </div>
-        </div>
-        <ol id="activity-list" class="activity-list">
-          <li class="empty-item">JAIPilot activity will appear here.</li>
-        </ol>
-      </section>
-      <section class="panel" aria-labelledby="usage-title">
-        <div class="panel-header compact">
-          <div>
-            <h2 id="usage-title">Local usage</h2>
-            <p class="meta">Operational context, not a quality result</p>
-          </div>
-        </div>
-        <dl class="fact-grid usage-facts">
-          <div><dt>Commands</dt><dd id="total-commands">0</dd></div>
-          <div><dt>Success rate</dt><dd id="success-rate">0%</dd></div>
-          <div><dt>Projects</dt><dd id="projects-seen">0</dd></div>
-          <div><dt>Average time</dt><dd id="average-duration">0 ms</dd></div>
-        </dl>
-        <div id="command-bars" class="command-list" aria-label="Commands by usage"></div>
-      </section>
-    </div>
   </main>
 
-  <footer class="site-footer">
-    <div><strong id="dashboard-version">JAIPilot</strong> · localhost only · source and paths never leave this machine</div>
-  </footer>
+  <footer><span id="version">JAIPilot</span> · localhost only · current evidence, not agent activity telemetry</footer>
   <script src="/assets/dashboard.js" defer></script>
 </body>
 </html>

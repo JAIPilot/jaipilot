@@ -9,7 +9,7 @@ body:
     attributes:
       label: Affected journey
       description: Identify the complete operation and the slow phase if known.
-      placeholder: prepare-cleanup for one class; baseline build is 12s and OpenRewrite adds 95s.
+      placeholder: jaipilot_prove_diff for one changed class; clean build is 12s and proof adds 8s.
     validations:
       required: true
   - type: textarea

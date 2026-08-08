@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "3.4.0",
-  "description": "Java Enterprise Toolkit Harness for automatic post-commit quality, Git diff proof, unit tests, and code cleanup.",
+  "version": "4.0.0",
+  "description": "Deterministic guardrails that cut down agentic drift for high-quality agentic Java changes.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"

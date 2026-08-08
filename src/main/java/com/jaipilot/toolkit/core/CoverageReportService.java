@@ -11,12 +11,15 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.xml.XMLConstants;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -24,6 +27,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXParseException;
+import org.xml.sax.SAXException;
 
 public final class CoverageReportService {
 
@@ -109,8 +113,73 @@ public final class CoverageReportService {
                 reportPath,
                 readCoverage(document.getDocumentElement(), "LINE"),
                 readCoverage(document.getDocumentElement(), "BRANCH"),
-                Map.copyOf(coverageByClass)
+                Map.copyOf(coverageByClass),
+                coverageByClass.keySet().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(
+                        className -> className,
+                        ignored -> reportPath
+                ))
         );
+    }
+
+    /** Merges only selected module reports while retaining report provenance for each target class. */
+    public CoverageSnapshot readTargetSnapshot(Path projectRoot, Map<Path, List<String>> targetsByModule) {
+        if (targetsByModule == null || targetsByModule.isEmpty()) {
+            throw new IllegalArgumentException("At least one module-qualified coverage target is required.");
+        }
+        Path root = projectRoot.toAbsolutePath().normalize();
+        Map<String, ClassCoverage> coverage = new LinkedHashMap<>();
+        Map<String, Path> provenance = new LinkedHashMap<>();
+        LinkedHashSet<Path> reports = new LinkedHashSet<>();
+        targetsByModule.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
+            Path module = entry.getKey().toAbsolutePath().normalize();
+            if (!module.startsWith(root)) {
+                throw new IllegalArgumentException("Coverage target module is outside the project: " + module);
+            }
+            Path report = moduleReport(module);
+            CoverageSnapshot snapshot = readReportSnapshot(report);
+            reports.add(report);
+            for (String className : entry.getValue().stream().distinct().sorted().toList()) {
+                if (provenance.containsKey(className)) {
+                    throw new IllegalStateException("Coverage target class is duplicated across selected modules: "
+                            + className);
+                }
+                ClassCoverage value = snapshot.classCoverage(className).orElseThrow(() -> new IllegalStateException(
+                        "JaCoCo report " + root.relativize(report) + " for module " + root.relativize(module)
+                                + " does not contain target class " + className + "."
+                ));
+                coverage.put(className, value);
+                provenance.put(className, report);
+            }
+        });
+        if (coverage.isEmpty()) {
+            throw new IllegalArgumentException("At least one target class is required.");
+        }
+        return new CoverageSnapshot(
+                reports.iterator().next(),
+                average(coverage.values().stream().map(ClassCoverage::lineCoverage).toList()),
+                average(coverage.values().stream().map(ClassCoverage::branchCoverage).toList()),
+                coverage,
+                provenance
+        );
+    }
+
+    private Path moduleReport(Path module) {
+        Path reportRoot = module.resolve("build/reports/jacoco");
+        List<Path> reports = Files.isDirectory(reportRoot) ? findCoverageReports(reportRoot) : List.of();
+        Path conventional = module.resolve("build/reports/jacoco/test/jacocoTestReport.xml").normalize();
+        if (reports.contains(conventional)) {
+            return conventional;
+        }
+        if (reports.size() == 1) {
+            return reports.get(0);
+        }
+        throw new IllegalStateException(reports.isEmpty()
+                ? "No JaCoCo XML report was generated for module " + module + "."
+                : "Multiple JaCoCo XML reports were generated for module " + module + ": " + reports);
+    }
+
+    private double average(List<Double> values) {
+        return values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0d);
     }
 
     /** Reads executable-line and branch counters keyed by JaCoCo package/source path. */
@@ -176,7 +245,7 @@ public final class CoverageReportService {
                 }
             });
             return builder.parse(inputStream);
-        } catch (Exception exception) {
+        } catch (IOException | ParserConfigurationException | SAXException | IllegalArgumentException exception) {
             throw new IllegalStateException("Failed to parse JaCoCo report " + reportPath, exception);
         }
     }
@@ -247,10 +316,32 @@ public final class CoverageReportService {
             Path reportPath,
             double totalLineCoverage,
             double totalBranchCoverage,
-            Map<String, ClassCoverage> classCoverageByName
+            Map<String, ClassCoverage> classCoverageByName,
+            Map<String, Path> reportPathByClass
     ) {
+        public CoverageSnapshot(
+                Path reportPath,
+                double totalLineCoverage,
+                double totalBranchCoverage,
+                Map<String, ClassCoverage> classCoverageByName
+        ) {
+            this(reportPath, totalLineCoverage, totalBranchCoverage, classCoverageByName,
+                    classCoverageByName.keySet().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(
+                            className -> className, ignored -> reportPath
+                    )));
+        }
+
+        public CoverageSnapshot {
+            classCoverageByName = Map.copyOf(classCoverageByName);
+            reportPathByClass = Map.copyOf(reportPathByClass);
+        }
+
         public Optional<ClassCoverage> classCoverage(String fullyQualifiedName) {
             return Optional.ofNullable(classCoverageByName.get(fullyQualifiedName));
+        }
+
+        public Path reportPathForClass(String fullyQualifiedName) {
+            return reportPathByClass.getOrDefault(fullyQualifiedName, reportPath);
         }
     }
 

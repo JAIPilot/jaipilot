@@ -5,14 +5,14 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Java Enterprise Toolkit Harness for mutation-tested unit tests and scored code cleanup."
+    "description": "Deterministic local Java evidence that cuts down agentic drift."
   },
   "plugins": [
     {
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
-      "description": "Generate proven Java tests and remediate code quality with transparent scorecards.",
-      "version": "3.4.0",
+      "description": "Inspect, clean, and prove Java changes with deterministic local evidence.",
+      "version": "4.0.0",
       "category": "development",
       "tags": [
         "java",

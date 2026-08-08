@@ -67,6 +67,45 @@ class TestExecutionReportServiceTest {
         assertTrue(failure.getMessage().contains("exceeds"));
     }
 
+    @Test
+    void skipsPlainHelpersButRequiresAnnotatedNonConventionTests() throws Exception {
+        Path helper = root.resolve("src/test/java/com/example/Fixtures.java");
+        Path scenario = root.resolve("src/test/java/com/example/Scenario.java");
+        Files.writeString(helper, "package com.example; class Fixtures {}\n");
+        Files.writeString(scenario, "package com.example; class Scenario { @Test void verifies() {} }\n");
+
+        TestExecutionReportService.ExecutionEvidence evidence = service.inspect(root, List.of(helper, scenario));
+
+        assertEquals(List.of("com.example.Scenario"), evidence.expectedClasses());
+        assertEquals(List.of("com.example.Scenario"), evidence.missingClasses());
+        assertEquals(List.of("src/test/java/com/example/Fixtures.java"), evidence.helperSources());
+    }
+
+    @Test
+    void skippedOnlyAndStructurallyInvalidXmlDoNotProveExecution() throws Exception {
+        writeReport("target/surefire-reports", """
+                <testsuite tests="1"><testcase name="test"><skipped/></testcase></testsuite>
+                """);
+        assertEquals(List.of("com.example.OrderServiceTest"), service.findMissingReports(root, List.of(testPath)));
+
+        writeReport("target/surefire-reports", """
+                <testsuites><testcase classname="com.example.OrderServiceTest" name="test"/></testsuites>
+                """);
+        assertEquals(List.of("com.example.OrderServiceTest"), service.findMissingReports(root, List.of(testPath)));
+    }
+
+    @Test
+    void rejectsDoctypeAndContradictoryCounts() throws Exception {
+        writeReport("target/surefire-reports", """
+                <!DOCTYPE testsuite [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+                <testsuite tests="1">&xxe;</testsuite>
+                """);
+        assertThrows(IllegalStateException.class, () -> service.findMissingReports(root, List.of(testPath)));
+
+        writeReport("target/surefire-reports", "<testsuite tests=\"1\" skipped=\"2\"/>\n");
+        assertThrows(IllegalStateException.class, () -> service.findMissingReports(root, List.of(testPath)));
+    }
+
     private void writeReport(String directory, String contents) throws Exception {
         Path report = root.resolve(directory).resolve("TEST-com.example.OrderServiceTest.xml");
         Files.createDirectories(report.getParent());
