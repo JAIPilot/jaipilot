@@ -33,6 +33,8 @@ function age(timestamp) {
 
 function renderRepositories(view) {
   const select = byId('repository-select');
+  const count = view.repositories.length;
+  text('repository-count', `${count} Java ${count === 1 ? 'repository' : 'repositories'} stored on this machine`);
   const ids = new Set(view.repositories.map((repository) => repository.id));
   if (!ids.has(selectedId)) selectedId = view.selectedRepository?.id || '';
   select.replaceChildren();

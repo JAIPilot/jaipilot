@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jaipilot_plugin_root=\"${PLUGIN_ROOT}\"; [ -n \"$jaipilot_plugin_root\" ] || jaipilot_plugin_root=\"${CLAUDE_PLUGIN_ROOT}\"; exec \"$jaipilot_plugin_root/hooks/session-start.sh\"",
+            "command": "jaipilot_plugin_root=\"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}\"; [ -n \"$jaipilot_plugin_root\" ] || exit 0; exec \"$jaipilot_plugin_root/hooks/session-start.sh\"",
             "timeout": 10,
             "statusMessage": "Initializing JAIPilot evidence"
           }
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jaipilot_plugin_root=\"${PLUGIN_ROOT}\"; [ -n \"$jaipilot_plugin_root\" ] || jaipilot_plugin_root=\"${CLAUDE_PLUGIN_ROOT}\"; exec \"$jaipilot_plugin_root/hooks/post-tool-use.sh\"",
+            "command": "jaipilot_plugin_root=\"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}\"; [ -n \"$jaipilot_plugin_root\" ] || exit 0; exec \"$jaipilot_plugin_root/hooks/post-tool-use.sh\"",
             "timeout": 300,
             "statusMessage": "Refreshing committed Java evidence"
           }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jaipilot_plugin_root=\"${PLUGIN_ROOT}\"; [ -n \"$jaipilot_plugin_root\" ] || jaipilot_plugin_root=\"${CLAUDE_PLUGIN_ROOT}\"; exec \"$jaipilot_plugin_root/bin/jaipilot\" hook-stop --project .",
+            "command": "jaipilot_plugin_root=\"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}\"; [ -n \"$jaipilot_plugin_root\" ] || exit 0; exec \"$jaipilot_plugin_root/hooks/stop.sh\"",
             "timeout": 300,
             "statusMessage": "Checking exact Java diff proof"
           }

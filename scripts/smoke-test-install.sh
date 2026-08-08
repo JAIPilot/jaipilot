@@ -13,6 +13,7 @@ DIST_DIR="$REPO_ROOT/target/distributions"
 SMOKE_DIR="$REPO_ROOT/target/smoke-install"
 VERSION=""
 CLASSIFIER=""
+NON_JAVA_DIR=""
 
 usage() {
   cat <<'EOF'
@@ -120,7 +121,12 @@ cleanup_dashboard() {
     *) kill "$dashboard_pid" 2>/dev/null || true ;;
   esac
 }
-trap cleanup_dashboard EXIT HUP INT TERM
+
+cleanup() {
+  cleanup_dashboard
+  [ -z "$NON_JAVA_DIR" ] || rm -rf "$NON_JAVA_DIR"
+}
+trap cleanup EXIT HUP INT TERM
 
 if JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/incomplete-app" \
   JAIPILOT_BOOTSTRAP_ARCHIVE_URL="file://$TAR_GZ" \
@@ -207,6 +213,10 @@ grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/active-lock.log" \
   || die "Distribution did not include the executable post-tool hook"
 [ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/session-start.sh" ] \
   || die "Distribution did not include the executable SessionStart initializer"
+[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/java-project-root.sh" ] \
+  || die "Distribution did not include the executable Java project detector"
+[ -x "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/stop.sh" ] \
+  || die "Distribution did not include the executable Stop filter"
 [ -x "$SMOKE_DIR/app/current/plugins/jaipilot/bin/jaipilot-mcp" ] \
   || die "Distribution did not include the executable MCP launcher"
 "$SMOKE_DIR/app/bin/jaipilot" version > "$SMOKE_DIR/version.json"
@@ -220,6 +230,27 @@ printf '%s' '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"
     "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh" \
     > "$SMOKE_DIR/non-commit-hook.json"
 [ ! -s "$SMOKE_DIR/non-commit-hook.json" ] || die "Post-tool hook emitted output for a non-commit command"
+
+NON_JAVA_DIR=$(mktemp -d "${TMPDIR:-/tmp}/jaipilot-smoke-nonjava.XXXXXX")
+printf '{}\n' > "$NON_JAVA_DIR/package.json"
+(
+  cd "$NON_JAVA_DIR"
+  PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
+  JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+  JAIPILOT_DASHBOARD_DISABLED=1 \
+    "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/session-start.sh"
+  printf '%s' '{"tool_input":{"command":"git commit -m ignored"}}' \
+    | PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
+      JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+      JAIPILOT_DASHBOARD_DISABLED=1 \
+      "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/post-tool-use.sh"
+  PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
+  JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+  JAIPILOT_DASHBOARD_DISABLED=1 \
+    "$SMOKE_DIR/app/current/plugins/jaipilot/hooks/stop.sh"
+)
+[ ! -d "$SMOKE_DIR/state/session" ] \
+  || die "Non-Java hooks created initialization state"
 
 PLUGIN_ROOT="$SMOKE_DIR/app/current/plugins/jaipilot" \
 JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
@@ -253,9 +284,18 @@ grep -Fq '"analysisStatus" : "ready"' "$REPOSITORY_SNAPSHOT" \
 grep -Fq '"revision"' "$REPOSITORY_SNAPSHOT" \
   || die "Installed post-tool hook did not persist the analyzed Git revision"
 
-JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
-  python3 "$REPO_ROOT/scripts/smoke-test-mcp.py" \
-  "$SMOKE_DIR/app/current/plugins/jaipilot/bin/jaipilot-mcp"
+(
+  cd "$NON_JAVA_DIR"
+  JAIPILOT_STATE_HOME="$SMOKE_DIR/mcp-only-state" \
+  JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
+  JAIPILOT_DASHBOARD_DISABLED=0 \
+    python3 "$REPO_ROOT/scripts/smoke-test-mcp.py" \
+    "$SMOKE_DIR/app/current/plugins/jaipilot/bin/jaipilot-mcp"
+)
+[ ! -e "$SMOKE_DIR/mcp-only-state/dashboard/server.json" ] \
+  || die "MCP activation started a dashboard in a non-Java directory"
+[ ! -d "$SMOKE_DIR/mcp-only-state/repositories" ] \
+  || die "MCP activation registered a non-Java directory"
 
 STABLE_RUNNER_SHA256=$(compute_sha256 "$SMOKE_DIR/app/bin/jaipilot")
 "$SMOKE_DIR/app/current/libexec/install.sh" \

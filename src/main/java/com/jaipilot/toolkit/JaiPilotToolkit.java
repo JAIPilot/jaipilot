@@ -68,12 +68,6 @@ public final class JaiPilotToolkit {
         if (arguments.length > 0 && "dashboard-serve".equals(arguments[0])) {
             System.exit(DashboardServer.serve(mapper, stateRoot, System.err));
         }
-        DashboardServer.ensureRunning(
-                mapper,
-                stateRoot,
-                System.err,
-                arguments.length > 0 && "dashboard".equals(arguments[0])
-        );
         int status = run(arguments, System.in, System.out, System.err, stateRoot, mapper);
         if (status != 0) {
             System.exit(status);
@@ -158,13 +152,13 @@ public final class JaiPilotToolkit {
         }
         if ("dashboard".equals(parsed.command())) {
             parsed.allow();
+            DashboardServer.ensureRunning(mapper, stateRoot, stderr, true);
             return DashboardServer.currentStatus(mapper, stateRoot);
         }
         ToolkitRunStore store = new ToolkitRunStore(mapper, stateRoot, message -> stderr.println("jaipilot: " + message));
         RepositorySnapshotStore snapshots = new RepositorySnapshotStore(mapper, stateRoot);
         if ("hook-stop".equals(parsed.command())) {
             parsed.allow("project");
-            snapshots.register(parsed.project());
             return stopHook(mapper, stdin, parsed.project(), store);
         }
         return executeEvidenceCommand(parsed, store, snapshots);
@@ -226,14 +220,17 @@ public final class JaiPilotToolkit {
         };
     }
 
-    private static RepositorySnapshotStore.RepositoryState refreshSnapshot(
+    private static Object refreshSnapshot(
             Path project,
             ToolkitRunStore store,
             RepositorySnapshotStore snapshots
     ) {
+        if (!store.hasProductionJava(project)) {
+            return new SnapshotSkipped(false, "not_java_project");
+        }
         snapshots.register(project);
         try {
-            ToolkitRunStore.QualityInspection quality = store.quality(project, ToolkitRunStore.TargetSelection.all());
+            ToolkitRunStore.QualityInspection quality = store.currentQuality(project).orElseThrow();
             ToolkitRunStore.DiffGateStatus gate = safeGate(project, store);
             return snapshots.recordAnalysis(project, quality, gate);
         } catch (RuntimeException exception) {
@@ -349,6 +346,9 @@ public final class JaiPilotToolkit {
     }
 
     private record HookResponse(String decision, String reason) {
+    }
+
+    private record SnapshotSkipped(boolean applicable, String reason) {
     }
 
     private record FailedProof(boolean ok, DiffVerificationService.DiffVerification result) {

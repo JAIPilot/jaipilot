@@ -54,8 +54,9 @@ Run these commands inside Claude Code:
 ```
 
 The plugin downloads a checksum-verified private Java runtime on first use. It does not require a
-globally installed JDK. The stdio MCP server and Agent Skills work together; hooks add background
-repository initialization and direct-commit refresh.
+globally installed JDK. The stdio MCP server and Agent Skills work together. Hooks initialize and
+refresh only Maven or Gradle directories that contain Java source; other directories exit silently
+without starting Java, creating state, or starting the dashboard.
 
 ## Six deterministic MCP tools
 
@@ -74,9 +75,10 @@ opens a PR, or applies a hidden candidate.
 
 ## How drift is reduced
 
-At session start JAIPilot registers the detected repository, records its local GitHub origin when
-available, starts the loopback dashboard, and refreshes current quality in a detached process. This
-initialization does not edit the repository or create files inside it.
+At session start JAIPilot first checks for a Maven or Gradle build and Java source. For an applicable
+repository it records the canonical path and local GitHub origin, refreshes current quality in a
+detached process, and starts the loopback dashboard. This initialization does not edit the repository
+or create files inside it. Non-Java directories do not invoke the private runtime.
 
 The direct `git commit` post-tool hook queues the same detached repository snapshot. The Stop hook checks
 the current Java/build diff and returns actionable proof requirements to the host agent. These are
@@ -118,7 +120,9 @@ build configuration merely to pass, or treats coverage as a substitute for mutat
 ## Local current-evidence dashboard
 
 JAIPilot starts an owner-private dashboard on `http://127.0.0.1:7433/`. If that port is occupied, it
-uses another loopback port. The simple repository selector shows:
+uses another loopback port. This is one machine-wide dashboard, not one server per repository. Its
+selector includes every Java repository retained in the common local store and shows its canonical
+path and GitHub link when available. For the selected repository it shows:
 
 - current whole-project quality and findings;
 - current proof status and exact-fingerprint freshness;

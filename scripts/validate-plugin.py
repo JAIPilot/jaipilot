@@ -80,8 +80,9 @@ def main() -> None:
     session_command = session_hooks[0].get("hooks", [{}])[0].get("command")
     require(
         isinstance(session_command, str)
-        and "${PLUGIN_ROOT}" in session_command
-        and "${CLAUDE_PLUGIN_ROOT}" in session_command
+        and "PLUGIN_ROOT" in session_command
+        and "CLAUDE_PLUGIN_ROOT" in session_command
+        and "exit 0" in session_command
         and "session-start.sh" in session_command,
         "SessionStart must use the provider-neutral detached initializer",
     )
@@ -89,6 +90,11 @@ def main() -> None:
     require(session_script.is_file(), "SessionStart script is required")
     require(session_script.stat().st_mode & 0o111 != 0,
             "SessionStart script must be executable")
+    java_detector = ROOT / "plugins/jaipilot/hooks/java-project-root.sh"
+    require(java_detector.is_file() and java_detector.stat().st_mode & 0o111 != 0,
+            "Java project detector must be executable")
+    require("java-project-root.sh" in text("plugins/jaipilot/hooks/session-start.sh"),
+            "SessionStart must ignore non-Java directories before bootstrap")
 
     post_hooks = hook_map.get("PostToolUse")
     require(isinstance(post_hooks, list) and len(post_hooks) == 1, "One PostToolUse hook is required")
@@ -100,8 +106,9 @@ def main() -> None:
     )
     require(
         isinstance(post_command, str)
-        and "${PLUGIN_ROOT}" in post_command
-        and "${CLAUDE_PLUGIN_ROOT}" in post_command
+        and "PLUGIN_ROOT" in post_command
+        and "CLAUDE_PLUGIN_ROOT" in post_command
+        and "exit 0" in post_command
         and "post-tool-use.sh" in post_command,
         "PostToolUse hook must use the portable commit filter",
     )
@@ -116,12 +123,15 @@ def main() -> None:
     command = stop_hooks[0].get("hooks", [{}])[0].get("command") if isinstance(stop_hooks[0], dict) else None
     require(
         isinstance(command, str)
-        and "${PLUGIN_ROOT}" in command
-        and "${CLAUDE_PLUGIN_ROOT}" in command
-        and "/bin/jaipilot" in command
-        and "hook-stop" in command,
-        "Stop hook must use the portable plugin runner",
+        and "PLUGIN_ROOT" in command
+        and "CLAUDE_PLUGIN_ROOT" in command
+        and "exit 0" in command
+        and "stop.sh" in command,
+        "Stop hook must use the Java-only portable filter",
     )
+    stop_filter = ROOT / "plugins/jaipilot/hooks/stop.sh"
+    require(stop_filter.is_file() and stop_filter.stat().st_mode & 0o111 != 0,
+            "Stop hook Java project filter must be executable")
 
     mcp = payload("plugins/jaipilot/.mcp.json")
     servers = mcp.get("mcpServers")

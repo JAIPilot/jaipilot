@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -20,8 +22,14 @@ class HookScriptTest {
     Path tempDir;
 
     @Test
-    void hooksDelegateOnlyInitializationDirectCommitAndStopToThePrivateRunner() throws Exception {
+    void hooksActivateOnlyForJavaProjectsAndMissingPluginRootsExitCleanly() throws Exception {
         Path project = Files.createDirectory(tempDir.resolve("project"));
+        Files.writeString(project.resolve("pom.xml"), "<project/>\n");
+        Path source = project.resolve("src/main/java/com/example/Sample.java");
+        Files.createDirectories(source.getParent());
+        Files.writeString(source, "package com.example; public class Sample {}\n");
+        Path nonJava = Files.createDirectory(tempDir.resolve("non-java"));
+        Files.writeString(nonJava.resolve("package.json"), "{}\n");
         Path log = tempDir.resolve("runner.log");
         Path fakeRunner = tempDir.resolve("fake-runner.sh");
         Files.writeString(fakeRunner, "#!/bin/sh\nprintf '%s|%s\\n' \"$PWD\" \"$*\" >> \"$JAIPILOT_TEST_LOG\"\n");
@@ -38,6 +46,13 @@ class HookScriptTest {
                 "{\"tool_input\":{\"command\":\"git status --short\"}}"));
         assertFalse(Files.exists(log));
 
+        run(pluginRoot.resolve("hooks/session-start.sh"), nonJava, environment, "");
+        run(pluginRoot.resolve("hooks/post-tool-use.sh"), nonJava, environment,
+                "{\"tool_input\":{\"command\":\"git commit -m test\"}}");
+        run(pluginRoot.resolve("hooks/stop.sh"), nonJava, environment, "");
+        Thread.sleep(100);
+        assertFalse(Files.exists(log));
+
         run(pluginRoot.resolve("hooks/post-tool-use.sh"), project, environment,
                 "{\"tool_input\":{\"command\":\"git commit -m test\"}}" );
         String canonicalProject = project.toRealPath().toString();
@@ -45,6 +60,30 @@ class HookScriptTest {
 
         run(pluginRoot.resolve("hooks/session-start.sh"), project, environment, "");
         waitFor(() -> read(log).contains("snapshot --project " + canonicalProject));
+        waitFor(() -> read(log).contains("dashboard"));
+        run(pluginRoot.resolve("hooks/stop.sh"), project, environment, "{}");
+        assertTrue(read(log).contains("hook-stop --project " + canonicalProject));
+
+        Process detector = new ProcessBuilder(
+                pluginRoot.resolve("hooks/java-project-root.sh").toString(),
+                source.getParent().toString()
+        ).start();
+        assertEquals(0, detector.waitFor());
+        assertEquals(canonicalProject, read(detector.getInputStream()).trim());
+
+        JsonNode manifest = new ObjectMapper().readTree(pluginRoot.resolve("hooks/hooks.json").toFile());
+        for (String event : new String[]{"SessionStart", "PostToolUse", "Stop"}) {
+            String command = manifest.path("hooks").path(event).path(0).path("hooks").path(0)
+                    .path("command").asText();
+            ProcessBuilder rootless = new ProcessBuilder("/bin/sh", "-c", command).directory(nonJava.toFile());
+            rootless.environment().remove("PLUGIN_ROOT");
+            rootless.environment().remove("CLAUDE_PLUGIN_ROOT");
+            Process process = rootless.start();
+            process.getOutputStream().close();
+            assertEquals(0, process.waitFor(), event + ": " + read(process.getErrorStream()));
+            assertEquals("", read(process.getInputStream()));
+            assertEquals("", read(process.getErrorStream()));
+        }
 
         assertFalse(Files.exists(project.resolve(".jaipilot")));
         assertFalse(Files.exists(project.resolve("target")));

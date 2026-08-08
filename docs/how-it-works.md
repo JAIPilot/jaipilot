@@ -71,10 +71,11 @@ diff review. The skills own no hidden state.
 
 ## Automatic initialization and hooks
 
-SessionStart launches a detached `snapshot` for the detected directory. It immediately registers an
-initializing repository entry, computes current whole-project quality, records the local GitHub link,
-and starts the dashboard. The process writes only to JAIPilot's private state root, never the
-repository.
+SessionStart first verifies that the detected directory has a Maven or Gradle build and Java source.
+Only applicable projects launch a detached `snapshot`, register a repository entry, compute current
+whole-project quality, record the local GitHub link, and start the dashboard. Non-Java directories
+exit before bootstrap or state creation. The process writes only to JAIPilot's private state root,
+never the repository.
 
 PostToolUse filters for direct coding-agent `git commit` shell calls and queues a detached snapshot refresh. Stop
 runs `diff-gate` so applicable working-tree changes still reach the review skill. These hooks do not
@@ -87,7 +88,7 @@ State lives under `JAIPILOT_STATE_HOME`, `$XDG_STATE_HOME/jaipilot`, or
 `~/.local/state/jaipilot`. Directories and files are owner-only where supported. Writes are locked,
 atomic, bounded, and symlink-safe.
 
-The snapshot store keeps at most 64 repositories, 100 current findings per repository, and bounded
+The machine-wide snapshot store keeps at most 64 repositories, 100 current findings per repository, and bounded
 proof messages. It stores the canonical local path because the machine-wide selector must reopen the
 repository; nothing is uploaded. It does not store command history, usage analytics, prompts, source,
 or an editable workflow.

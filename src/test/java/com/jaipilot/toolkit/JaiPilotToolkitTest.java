@@ -12,6 +12,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -62,6 +63,38 @@ class JaiPilotToolkitTest {
         assertEquals("", gitStatus(project));
         assertFalse(Files.exists(project.resolve(".jaipilot")));
         assertFalse(Files.exists(project.resolve("target")));
+    }
+
+    @Test
+    void snapshotSkipsNonJavaDirectoriesWithoutRegisteringThem() throws Exception {
+        Path project = Files.createDirectory(tempDir.resolve("non-java"));
+        Files.writeString(project.resolve("package.json"), "{}\n");
+
+        JsonNode result = json(run("snapshot", "--project", project.toString()));
+        RepositorySnapshotStore.DashboardView dashboard = new RepositorySnapshotStore(
+                JaiPilotToolkit.mapper(), stateRoot()
+        ).view(null);
+
+        assertFalse(result.path("result").path("applicable").asBoolean());
+        assertEquals("not_java_project", result.path("result").path("reason").asText());
+        assertTrue(dashboard.repositories().isEmpty());
+    }
+
+    @Test
+    void dashboardCommandStartsTheRequestedPrivateStateRoot() throws Exception {
+        JsonNode result = json(run("dashboard"));
+        long pid = result.path("result").path("pid").asLong();
+        try {
+            assertTrue(result.path("result").path("running").asBoolean());
+            assertTrue(result.path("result").path("url").asText().startsWith("http://127.0.0.1:"));
+            assertTrue(pid > 0);
+        } finally {
+            ProcessHandle process = pid > 0 ? ProcessHandle.of(pid).orElse(null) : null;
+            if (process != null) {
+                process.destroy();
+                process.onExit().get(5, TimeUnit.SECONDS);
+            }
+        }
     }
 
     @Test

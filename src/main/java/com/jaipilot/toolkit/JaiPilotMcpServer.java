@@ -17,7 +17,6 @@ public final class JaiPilotMcpServer {
         JaiPilotMcpTools tools = new JaiPilotMcpTools();
         McpSyncServer server = buildServer(transport, tools);
         Runtime.getRuntime().addShutdownHook(new Thread(server::closeGracefully, "jaipilot-mcp-shutdown"));
-        DashboardServer.ensureRunning(JaiPilotToolkit.mapper(), ToolkitRunStore.defaultRoot(), System.err, false);
     }
 
     static McpSyncServer buildServer(StdioServerTransportProvider transport, JaiPilotMcpTools tools) {

@@ -130,6 +130,10 @@ final class ToolkitRunStore {
         return Optional.of(quality(projectRoot, TargetSelection.all()));
     }
 
+    boolean hasProductionJava(Path requestedRoot) {
+        return !projects.findProductionClasses(resolveProjectRoot(requestedRoot)).isEmpty();
+    }
+
     OpenRewriteCleanupService.RewriteResult rewrite(Path requestedRoot, TargetSelection selection) {
         Path projectRoot = resolveProjectRoot(requestedRoot);
         List<Path> targets = selectTargets(projectRoot, selection).stream()

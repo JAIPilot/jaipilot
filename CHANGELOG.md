@@ -2,6 +2,20 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [4.0.1] - 2026-08-08
+
+### Fixed
+
+- Limited automatic SessionStart, PostToolUse, and Stop work to detected Maven or Gradle Java
+  projects; non-Java directories now exit silently without bootstrapping the runtime or creating
+  JAIPilot state.
+- Made hook manifest commands exit cleanly when a host does not provide either supported plugin-root
+  variable, removing the recurring PostToolUse command-not-found failure.
+- Kept one machine-wide repository store and dashboard, made the retained-repository count explicit,
+  and rendered the canonical JAIPilot logo visibly on the dark header.
+- Stopped MCP activation from starting a dashboard in unrelated directories; the dashboard now starts
+  after an applicable Java snapshot or an explicit dashboard request.
+
 ## [4.0.0] - 2026-08-08
 
 ### Changed

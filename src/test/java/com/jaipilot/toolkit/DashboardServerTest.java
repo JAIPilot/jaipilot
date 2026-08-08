@@ -38,6 +38,7 @@ class DashboardServerTest {
             assertTrue(page.body().contains("JAIPilot Local Quality"));
             assertTrue(page.body().contains("Current findings"));
             assertTrue(page.body().contains("Observed impact"));
+            assertTrue(page.body().contains("repository-count"));
             assertFalse(page.body().contains("Local usage"));
             assertFalse(page.body().contains("Recent analysis"));
             assertTrue(page.contentSecurityPolicy().contains("default-src 'self'"));
@@ -53,8 +54,9 @@ class DashboardServerTest {
 
             Response logo = get(dashboard.status().url() + "logo.svg");
             assertEquals(200, logo.status());
-            assertEquals(Files.readString(Path.of("plugins/jaipilot/assets/jaipilot-logo.svg")).replaceAll("\\s+", ""),
+            assertEquals(Files.readString(Path.of("plugins/jaipilot/assets/jaipilot-logo-dark.svg")).replaceAll("\\s+", ""),
                     logo.body().replaceAll("\\s+", ""));
+            assertTrue(logo.body().contains("#F0F6FC"));
 
             JsonNode metrics = mapper.readTree(get(dashboard.status().url() + "api/metrics").body());
             assertEquals(1, metrics.path("repositories").size());
