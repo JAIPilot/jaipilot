@@ -4,6 +4,7 @@
       "type": "stdio",
       "command": "./bin/jaipilot-mcp",
       "cwd": ".",
+      "startup_timeout_sec": 20,
       "args": [],
       "env": {}
     }

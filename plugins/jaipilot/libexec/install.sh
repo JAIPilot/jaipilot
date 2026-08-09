@@ -14,6 +14,8 @@ LOCK_DIR=""
 LOCK_HELD=0
 CURRENT_LINK_TMP=""
 TMP_DIR=""
+ARTIFACT_DOWNLOAD_PID=""
+CHECKSUM_DOWNLOAD_PID=""
 
 usage() {
   cat <<'EOF'
@@ -94,6 +96,22 @@ download() {
     "$source_url" -o "$destination"
 }
 
+download_pair() {
+  download "$ARTIFACT_URL" "$ARTIFACT_PATH" &
+  ARTIFACT_DOWNLOAD_PID=$!
+  download "$CHECKSUM_URL" "$CHECKSUM_PATH" &
+  CHECKSUM_DOWNLOAD_PID=$!
+
+  artifact_download_status=0
+  wait "$ARTIFACT_DOWNLOAD_PID" || artifact_download_status=$?
+  checksum_download_status=0
+  wait "$CHECKSUM_DOWNLOAD_PID" || checksum_download_status=$?
+  ARTIFACT_DOWNLOAD_PID=""
+  CHECKSUM_DOWNLOAD_PID=""
+  [ "$artifact_download_status" -eq 0 ] && [ "$checksum_download_status" -eq 0 ] \
+    || die "Could not download the JAIPilot payload and checksum."
+}
+
 release_install_lock() {
   [ "$LOCK_HELD" -eq 1 ] || return
   lock_owner=""
@@ -106,6 +124,12 @@ release_install_lock() {
 }
 
 cleanup() {
+  for download_pid in "$ARTIFACT_DOWNLOAD_PID" "$CHECKSUM_DOWNLOAD_PID"; do
+    [ -z "$download_pid" ] || kill "$download_pid" 2>/dev/null || true
+  done
+  for download_pid in "$ARTIFACT_DOWNLOAD_PID" "$CHECKSUM_DOWNLOAD_PID"; do
+    [ -z "$download_pid" ] || wait "$download_pid" 2>/dev/null || true
+  done
   [ -z "$CURRENT_LINK_TMP" ] || rm -f "$CURRENT_LINK_TMP"
   release_install_lock
   [ -z "$TMP_DIR" ] || rm -rf "$TMP_DIR"
@@ -180,7 +204,8 @@ require_command mktemp
 umask 077
 mkdir -p "$APP_DIR"
 chmod 700 "$APP_DIR" 2>/dev/null || true
-trap cleanup EXIT HUP INT TERM
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
 acquire_install_lock
 TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/jaipilot-install.XXXXXX")
 
@@ -190,8 +215,7 @@ fi
 
 ARTIFACT_PATH="$TMP_DIR/jaipilot-toolkit.jar"
 CHECKSUM_PATH="$TMP_DIR/jaipilot-toolkit.jar.sha256"
-download "$ARTIFACT_URL" "$ARTIFACT_PATH"
-download "$CHECKSUM_URL" "$CHECKSUM_PATH"
+download_pair
 
 EXPECTED_SHA256=$(read_expected_sha256 "$CHECKSUM_PATH")
 ACTUAL_SHA256=$(compute_sha256 "$ARTIFACT_PATH")

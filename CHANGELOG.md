@@ -2,6 +2,14 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [4.0.8] - 2026-08-09
+
+### Fixed
+
+- Downloaded the release JAR and its checksum concurrently during cold plugin bootstrap, removing
+  avoidable sequential GitHub/TLS latency, and set the Codex MCP startup boundary to a measured 20
+  seconds for the remaining public-network transfer.
+
 ## [4.0.7] - 2026-08-09
 
 ### Changed

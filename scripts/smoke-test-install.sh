@@ -108,23 +108,40 @@ cat > "$SMOKE_DIR/retry-server.py" <<'PY'
 import http.server
 import pathlib
 import sys
+import threading
+import time
 
-artifact, checksum, counter, port_file = map(pathlib.Path, sys.argv[1:])
+artifact, checksum, counter, overlap, port_file = map(pathlib.Path, sys.argv[1:])
+lock = threading.Lock()
+request_count = 0
+active_requests = 0
+maximum_active_requests = 0
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
-        count = int(counter.read_text() if counter.exists() else "0") + 1
-        counter.write_text(str(count))
-        if count <= 2:
-            self.send_response(503)
+        global request_count, active_requests, maximum_active_requests
+        with lock:
+            request_count += 1
+            count = request_count
+            active_requests += 1
+            maximum_active_requests = max(maximum_active_requests, active_requests)
+            counter.write_text(str(request_count))
+            overlap.write_text(str(maximum_active_requests))
+        try:
+            time.sleep(0.2)
+            if count <= 2:
+                self.send_response(503)
+                self.end_headers()
+                return
+            source = artifact if self.path == "/payload.jar" else checksum
+            payload = source.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
-            return
-        source = artifact if self.path == "/payload.jar" else checksum
-        payload = source.read_bytes()
-        self.send_response(200)
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
+            self.wfile.write(payload)
+        finally:
+            with lock:
+                active_requests -= 1
 
     def log_message(self, *_args):
         return
@@ -134,7 +151,8 @@ port_file.write_text(str(server.server_port))
 server.serve_forever()
 PY
 python3 "$SMOKE_DIR/retry-server.py" \
-  "$ARTIFACT" "$CHECKSUM_FILE" "$SMOKE_DIR/curl-count" "$SMOKE_DIR/retry-port" &
+  "$ARTIFACT" "$CHECKSUM_FILE" "$SMOKE_DIR/curl-count" \
+  "$SMOKE_DIR/max-active" "$SMOKE_DIR/retry-port" &
 RETRY_SERVER_PID=$!
 attempt=0
 while [ "$attempt" -lt 50 ] && [ ! -f "$SMOKE_DIR/retry-port" ]; do
@@ -153,6 +171,8 @@ kill "$RETRY_SERVER_PID" 2>/dev/null || true
 RETRY_SERVER_PID=""
 [ "$(cat "$SMOKE_DIR/curl-count")" -ge 4 ] \
   || die "Installer did not retry a transient curl transport failure"
+[ "$(cat "$SMOKE_DIR/max-active")" -ge 2 ] \
+  || die "Installer did not download the payload and checksum concurrently"
 
 mkdir -p "$SMOKE_DIR/lock-app/.install-lock"
 printf '%s\n' "$$" > "$SMOKE_DIR/lock-app/.install-lock/pid"

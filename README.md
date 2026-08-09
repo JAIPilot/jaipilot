@@ -220,7 +220,7 @@ compatibility.
 - [Petclinic controlled pilot](evaluations/petclinic-pilot/RESULTS.md)
 - [Spring Petclinic 4.0.5 demonstration](evaluations/petclinic-demo/4.0.5/README.md)
 - [Lean-kernel and Kafka evidence](docs/evaluations/lean-kernel-4.0.0.md)
-- [Plugin bootstrap evidence](docs/evaluations/plugin-bootstrap-4.0.2.md)
+- [Plugin bootstrap evidence](docs/evaluations/plugin-bootstrap-4.0.8.md)
 - [Contributing](CONTRIBUTING.md) · [Support](SUPPORT.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
 ## License
