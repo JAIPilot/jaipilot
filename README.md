@@ -20,11 +20,45 @@ with the build, executed tests, coverage, mutation testing, code quality, and ar
 It is deliberately not another coding agent. It is the small deterministic evidence layer that
 keeps a long Java coding session anchored to what actually ran.
 
+## Why enterprise vibe coding drifts
+
+Professional vibe coding—developing software without reading every line yourself—is much harder in
+enterprise repositories. Legacy systems are often decades-old monoliths with behavior spread across
+code paths, databases, dependent APIs, message brokers, frameworks, and configuration. Adding a
+feature correctly can require the context and judgment of an experienced staff engineer.
+
+In practice, the ability to vibe code for longer depends on how many moving parts the agent must keep
+coordinated. Fewer moving parts, clearer boundaries, and simpler invariants give the agent a smaller,
+more reliable model of the system. Dead code, excess functionality, duplicated logic, hidden
+coupling, and unnecessary abstractions make that model decay sooner. Deleting, trimming, and
+simplifying are therefore part of making an enterprise repository agent-ready.
+
+High test coverage matters for the same reason. In a legacy repository, a nearly complete test suite
+does more than catch known bugs: it locks in existing behavior as an executable specification. Every
+test run tells the agent which assumptions still hold. Maintaining that coverage for new work keeps
+defining expected behavior, while mutation testing checks whether the tests detect meaningful code
+changes instead of merely executing lines.
+
+Deterministic systems provide the other half of the feedback loop. SonarQube-style analysis exposes
+quality and reliability problems, ArchUnit enforces architectural boundaries, and OpenRewrite makes
+repeatable refactoring possible. When those signals are connected directly to the coding agent, it
+can correct its work using evidence from the real repository instead of relying only on context and
+confidence.
+
+JAIPilot packages that loop for Java. The agent still owns requirements, reasoning, and edits;
+JAIPilot returns deterministic build, test, coverage, mutation, quality, refactoring, and architecture
+evidence that helps the agent stay aligned for longer. This cannot guarantee that a business
+requirement is right or that code is universally correct, but it makes drift and missing evidence
+visible before confidence is mistaken for proof.
+
 ## A real Spring Petclinic change
 
 <p align="center">
-  <img src="docs/assets/petclinic-proof-demo.gif" alt="Recorded JAIPilot Spring Petclinic visit-scheduling demonstration" width="900" />
+  <img src="docs/assets/petclinic-proof-demo.gif" alt="Illustrated JAIPilot Spring Petclinic visit-scheduling walkthrough" width="900" />
 </p>
+
+*Illustrated walkthrough composed from the recorded run data—not a screen capture or AI-generated
+image.*
 
 Codex added a medium-complexity visit-scheduling use case to Spring Framework Petclinic. JAIPilot
 found that the working implementation had crossed its complexity limits. The agent extracted three

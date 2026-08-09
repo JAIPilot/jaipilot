@@ -2,6 +2,15 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [4.0.7] - 2026-08-09
+
+### Changed
+
+- Expanded the README's product rationale: fewer moving parts, cleanup, executable behavior from
+  high-coverage tests, mutation strength, and deterministic architecture and refactoring feedback.
+- Labeled the Petclinic animation explicitly as a programmatically composed walkthrough of recorded
+  evidence rather than a screen capture or AI-generated image.
+
 ## [4.0.6] - 2026-08-09
 
 ### Added

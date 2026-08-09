@@ -5,7 +5,10 @@ medium-complexity use case in a fresh Spring Framework Petclinic clone. JAIPilot
 quality feedback and exact-diff proof. Hidden tests added only after the agent stopped decided
 whether the final patch was accepted.
 
-![Recorded Spring Petclinic JAIPilot proof](../../../docs/assets/petclinic-proof-demo.gif)
+![Illustrated Spring Petclinic JAIPilot proof walkthrough](../../../docs/assets/petclinic-proof-demo.gif)
+
+The animation is a programmatically composed walkthrough of the recorded measurements, not a screen
+capture or AI-generated image. The run data and exact patch are published below.
 
 ## Frozen setup
 
