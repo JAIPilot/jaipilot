@@ -2,6 +2,13 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [4.0.5] - 2026-08-09
+
+### Added
+
+- Added visible JAIPilot tool titles, MCP start notices, host-agent announcements, and evidence-based
+  completion summaries that explain why each deterministic run mattered without overstating value.
+
 ## [4.0.4] - 2026-08-09
 
 ### Fixed

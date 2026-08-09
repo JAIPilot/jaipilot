@@ -74,6 +74,13 @@ All tools are synchronous and return structured evidence. Long builds remain vis
 which can cancel or retry them using its normal process controls. JAIPilot never commits, pushes,
 opens a PR, or applies a hidden candidate.
 
+Each tool has a visible `JAIPilot:` title and emits a standard MCP start notice. Its MCP description
+also tells the host agent to announce the specific check before calling it. After the tool finishes,
+JAIPilot returns a short `Why this mattered` line plus evidence from that run: for example the
+discovered build and class count, finding and severity totals, exact-fingerprint proof status, or
+passed/failed proof gates. Failed, skipped, and non-applicable work stays explicit. JAIPilot does not
+claim a benefit that the returned evidence did not measure.
+
 ## How drift is reduced
 
 The host agent decides when JAIPilot is useful. It can inspect a Java repository, request a current

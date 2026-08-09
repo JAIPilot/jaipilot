@@ -16,6 +16,11 @@ The plugin exposes six synchronous MCP tools:
 - `jaipilot_diff_gate`
 - `jaipilot_prove_diff`
 
+Every tool has a visible `JAIPilot:` title, emits a standard MCP start notice, and asks the host agent
+to announce the check before it runs. Every result includes a concise `Why this mattered` and
+`Evidence` summary derived from that run. Failed, skipped, and non-applicable checks are labeled
+honestly rather than marketed as wins.
+
 Its Agent Skills are `jaipilot-review-diff`, `jaipilot-generate-tests`, and
 `jaipilot-clean-java`.
 
