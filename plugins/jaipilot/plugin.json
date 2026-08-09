@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "4.0.6",
+  "version": "4.0.7",
   "description": "Deterministic guardrails that cut down agentic drift for high-quality agentic Java changes.",
   "author": {
     "name": "JAIPilot",
