@@ -12,7 +12,7 @@
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
       "description": "Inspect, clean, and prove Java changes with deterministic local evidence.",
-      "version": "4.0.7",
+      "version": "4.0.8",
       "category": "development",
       "tags": [
         "java",

@@ -6,7 +6,7 @@ if [ -n "${JAIPILOT_TOOLKIT_EXECUTABLE:-}" ]; then
 fi
 
 PLUGIN_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-VERSION="4.0.7"
+VERSION="4.0.8"
 
 if [ -n "${JAIPILOT_RUNTIME_HOME:-}" ]; then
   APP_DIR=$JAIPILOT_RUNTIME_HOME
