@@ -29,7 +29,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <revision>4.0.5</revision>
+        <revision>4.0.6</revision>
         <maven.compiler.release>17</maven.compiler.release>
         <junit.version>5.11.4</junit.version>
         <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>
