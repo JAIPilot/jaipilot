@@ -48,4 +48,10 @@ This pilot is intentionally small. A positive result must be repeated with Claud
 a provider-neutral product claim.
 
 The completed Codex results are in [RESULTS.md](RESULTS.md), with per-trial measurements in
-[trials.csv](trials.csv).
+[trials.csv](trials.csv). The committed record contains the runner, prompts, hidden tests, aggregate
+report, and trial table. It does not contain the original 24 raw transcripts and patches, so the
+study is reproducible but the historical runs are not fully re-auditable from this repository alone.
+
+The separately labeled [JAIPilot 4.0.5 visit-scheduling demonstration](../petclinic-demo/4.0.5/README.md)
+publishes its exact patch and structured measurements. It is not another comparison arm and does not
+change this pilot's decision.

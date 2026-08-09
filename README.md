@@ -1,10 +1,10 @@
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/jaipilot-logo-dark.svg" />
-    <img src="docs/assets/jaipilot-logo.svg" alt="JAIPilot logo" width="140" />
+    <img src="docs/assets/jaipilot-logo.svg" alt="JAIPilot logo" width="96" />
   </picture>
   <h1>JAIPilot</h1>
-  <p><strong>Deterministic guardrails that cut down agentic drift for high-quality agentic Java changes.</strong></p>
+  <p><strong>Deterministic proof for agent-written Java changes.</strong></p>
   <p>
     <a href="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml"><img src="https://github.com/JAIPilot/jaipilot/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
     <a href="https://github.com/JAIPilot/jaipilot/releases"><img src="https://img.shields.io/github/v/release/JAIPilot/jaipilot?display_name=tag&sort=semver" alt="Latest release" /></a>
@@ -13,29 +13,61 @@
   </p>
 </div>
 
-JAIPilot is a local, backend-free Java Enterprise Harness for Codex, Claude Code, and any coding
-tool that supports its stdio MCP server. It helps coding agents produce and maintain high-quality
-code with minimal manual intervention, especially in enterprise brownfield projects.
+JAIPilot is a local, backend-free Java harness for Codex and Claude Code. The coding agent plans and
+edits. JAIPilot checks the real repository, measures the selected scope, and proves the exact diff
+with the build, executed tests, coverage, mutation testing, code quality, and architecture rules.
 
-JAIPilot is deliberately not another coding agent. The host agent reasons, edits, retries, manages
-Git, and talks to the user. JAIPilot supplies the small deterministic evidence kernel that keeps a
-long coding session anchored to the real repository.
+It is deliberately not another coding agent. It is the small deterministic evidence layer that
+keeps a long Java coding session anchored to what actually ran.
 
-## The boundary
+## A real Spring Petclinic change
 
-| Host coding agent owns | JAIPilot owns |
+<p align="center">
+  <img src="docs/assets/petclinic-proof-demo.gif" alt="Recorded JAIPilot Spring Petclinic visit-scheduling demonstration" width="900" />
+</p>
+
+Codex added a medium-complexity visit-scheduling use case to Spring Framework Petclinic. JAIPilot
+found that the working implementation had crossed its complexity limits. The agent extracted three
+cohesive helpers, retained 13 passing focused tests, and reran JAIPilot. Exact-diff proof then
+reported 100% executable changed-line coverage, 95.5% changed-branch coverage, 95% mutation score,
+zero quality findings, and zero architecture violations. Five hidden contract tests and all 89
+tests in an independent clean build passed afterward.
+
+[Read the recorded run, exact patch, measurements, prompt, and hidden-test boundary.](evaluations/petclinic-demo/4.0.5/README.md)
+
+## What JAIPilot adds
+
+| An agent can say | JAIPilot can establish |
 | --- | --- |
-| Planning and architectural judgment | Repository and changed-scope discovery |
-| Source and test edits | Deterministic quality findings and scores |
-| Branches, commits, rebases, and PRs | Pinned, explicitly invoked OpenRewrite cleanup |
-| Focused iteration and retry strategy | Clean-build, test-execution, coverage, PIT, and ArchUnit proof |
-| Cancellation and process supervision | Exact diff fingerprint and local proof receipt |
-| Asking before opening a support issue | Latest per-repository snapshot and local dashboard |
+| “I changed the intended files.” | The exact Git baseline, changed Java/build paths, and fingerprint. |
+| “The tests pass.” | A clean isolated build and fresh execution of the changed test classes. |
+| “Coverage looks good.” | Changed executable-line and branch coverage from fresh JaCoCo evidence. |
+| “The tests are meaningful.” | Targeted PIT mutation strength, including every surviving mutation. |
+| “The code is clean.” | Deterministic findings, complexity, duplication, parse failures, and score components. |
+| “The architecture is intact.” | Complete ArchUnit evidence for the changed production classes. |
 
-This division keeps JAIPilot lean. It does not maintain a second workflow engine, candidate
-workspace, apply transaction, command history, usage analytics, or agent scheduler.
+JAIPilot does not replace requirement judgment. Strong tests can still encode the wrong business
+behavior. Proof says exactly what the executed tests and deterministic gates established—not that an
+unmeasured requirement must be correct.
+
+## Evidence before marketing
+
+The public evidence is mixed, and JAIPilot reports it that way.
+
+| Study | Result | Product decision |
+| --- | --- | --- |
+| [Randomized Petclinic A/B pilot](evaluations/petclinic-pilot/RESULTS.md) | JAIPilot 4.0.3 and baseline Codex each accepted 9/12 trials. Treatment added 58.6% median agent time and 100.9% median input tokens. | Remove automatic hooks and routine proof. Keep JAIPilot lean and agent-invoked. |
+| [Current 4.0.5 demonstration](evaluations/petclinic-demo/4.0.5/README.md) | One visit-scheduling run passed hidden tests, clean verification, scope checks, and exact-diff proof. | Demonstrates the current workflow; does not establish A/B improvement. |
+
+The 24-trial pilot uses frozen prompts, hidden tests, randomized ordering, identical Codex settings,
+and an independent acceptance oracle. Its committed record contains the runner, measurements, and
+fixtures, but not the original 24 raw transcripts and patches. The single current demo publishes its
+exact patch and structured measurements. Neither result supports a universal superiority claim.
 
 ## Install
+
+JAIPilot is distributed only as Codex and Claude Code plugins. It requires Java 17+ from `JAVA_HOME`
+or `PATH` and downloads one checksum-verified portable JAR on first use.
 
 ### Codex
 
@@ -46,138 +78,116 @@ codex plugin add jaipilot@jaipilot
 
 ### Claude Code
 
-Run these commands inside Claude Code:
+Run inside Claude Code:
 
 ```text
 /plugin marketplace add JAIPilot/jaipilot
 /plugin install jaipilot@jaipilot
 ```
 
-The plugin uses Java 17+ from `JAVA_HOME` or `PATH` and downloads one checksum-verified portable
-JAIPilot JAR on first use. It does not download a second JRE or separate operating-system payload.
-The stdio MCP server and Agent Skills work together. JAIPilot installs no SessionStart, shell,
-commit, or Stop hooks. Merely opening a repository does not analyze it, run its build, create
-repository state, or start the dashboard.
+JAIPilot installs no SessionStart, shell, Git, commit, or Stop hooks. Opening a repository does not
+analyze it, run its build, create repository state, or start the dashboard. The host agent explicitly
+selects a JAIPilot tool when deterministic feedback is useful.
 
-## Six deterministic MCP tools
+## Three jobs, six tools
 
-| Tool | Purpose |
-| --- | --- |
-| `jaipilot_inspect` | Discover the Java build, production classes, and available evidence engines. |
-| `jaipilot_snapshot` | Refresh whole-repository quality and the dashboard's current state. |
-| `jaipilot_quality` | Return deterministic findings, debt, complexity, duplication, and scorecards. |
-| `jaipilot_rewrite` | Run pinned OpenRewrite recipes for an exact agent-selected scope. |
-| `jaipilot_diff_gate` | Check whether the current Java/build fingerprint has a valid proof receipt. |
-| `jaipilot_prove_diff` | Run the clean build and every applicable coverage, PIT, quality, and ArchUnit gate. |
+| Journey | MCP tools | Outcome |
+| --- | --- | --- |
+| Understand | `jaipilot_inspect`, `jaipilot_snapshot` | Discover the Java boundary and refresh current whole-project evidence. |
+| Improve | `jaipilot_quality`, `jaipilot_rewrite` | Measure an exact scope and optionally run pinned OpenRewrite cleanup. |
+| Prove | `jaipilot_prove_diff`, `jaipilot_diff_gate` | Prove the current Java/build fingerprint and reject stale receipts. |
 
-All tools are synchronous and return structured evidence. Long builds remain visible to the host,
-which can cancel or retry them using its normal process controls. JAIPilot never commits, pushes,
-opens a PR, or applies a hidden candidate.
+All tools are synchronous and return structured evidence. Long builds stay visible to the host, so
+its normal process controls can cancel or retry them. JAIPilot never commits, pushes, opens a PR, or
+applies a hidden candidate.
 
-Each tool has a visible `JAIPilot:` title and emits a standard MCP start notice. Its MCP description
-also tells the host agent to announce the specific check before calling it. After the tool finishes,
-JAIPilot returns a short `Why this mattered` line plus evidence from that run: for example the
-discovered build and class count, finding and severity totals, exact-fingerprint proof status, or
-passed/failed proof gates. Failed, skipped, and non-applicable work stays explicit. JAIPilot does not
-claim a benefit that the returned evidence did not measure.
-
-## How drift is reduced
-
-The host agent decides when JAIPilot is useful. It can inspect a Java repository, request a current
-snapshot, analyze a selected scope, run a pinned cleanup, check a diff receipt, or prove the exact
-diff. A snapshot records the canonical path and local GitHub origin, refreshes whole-repository
-quality, and starts the loopback dashboard. Nothing edits the repository except an agent-selected
-OpenRewrite invocation.
-
-JAIPilot does not watch files, intercept shell commands, run after commits, or block the agent at
-Stop. This keeps ordinary coding sessions quiet and makes every potentially expensive build,
-coverage, mutation, or architecture check an explicit agent decision. Agent Skills describe when
-those checks are worthwhile; the deterministic tools enforce their evidence once selected.
-
-The normal loop is intentionally short:
+Every tool has a visible `JAIPilot:` title and emits an MCP start notice. Every result ends with the
+operation status, a `Why this mattered` explanation, and measurements from that run:
 
 ```text
-inspect → edit with the host agent → quality → prove-diff → diff-gate
+JAIPilot is running: Prove exact Java diff.
+JAIPilot finished: Prove exact Java diff (passed)
+Why this mattered: JAIPilot ran the clean build and applicable gates instead of relying on agent confidence.
+Evidence: targets=3; failures=0; warnings=5; elapsed=PT41.259321665S
 ```
 
-Proof is cached only for the exact relevant fingerprint. A Java file, test, build descriptor, wrapper,
-symlink, or executable-mode change invalidates the receipt. Defaults are:
+Failed, skipped, stale, and non-applicable work remains explicit. JAIPilot does not convert missing
+evidence into a zero score or a pass.
 
-- 90% changed-line coverage;
+## The normal loop
+
+```text
+inspect → agent edits → quality → prove-diff → diff-gate
+```
+
+The agent decides when each step is worthwhile. Unit-test work uses fresh JaCoCo, changed-test XML,
+and targeted PIT evidence. Cleanup uses pinned, exactly scoped OpenRewrite recipes first, but only
+when the agent selects cleanup; the agent reviews and refines any resulting diff.
+
+Proof is cached only for the exact relevant fingerprint. A Java file, test, build descriptor,
+wrapper, symlink, or executable-mode change invalidates the receipt. Default gates are:
+
+- 90% changed executable-line coverage;
 - 85% changed-branch coverage;
 - 80% changed-line mutation score;
 - 90 changed-code quality score;
 - zero introduced or severity-escalated critical/high findings; and
 - complete ArchUnit evidence with zero package-cycle violations involving changed classes.
 
-Build/test-only and deletion-only diffs still require the clean build. Gates that are genuinely not
-applicable remain explicit rather than being represented as a zero score or a pass.
+Build/test-only and deletion-only diffs still require the clean build. Genuinely non-applicable gates
+remain labeled non-applicable.
 
-## Unit tests and cleanup
+## A deliberately small boundary
 
-The `jaipilot-generate-tests` skill asks the host agent to write focused tests, then uses fresh
-JaCoCo, test-execution XML, and targeted PIT evidence to show whether those tests are meaningful.
+| Host coding agent owns | JAIPilot owns |
+| --- | --- |
+| Requirements, planning, and architectural judgment | Repository and changed-scope discovery |
+| Source and test edits | Deterministic quality findings and scores |
+| Branches, commits, rebases, and PRs | Pinned, explicitly invoked OpenRewrite cleanup |
+| Iteration and retry strategy | Build, execution, coverage, PIT, and ArchUnit proof |
+| Cancellation and process supervision | Exact fingerprint and local proof receipt |
+| Deciding whether to report a defect | Current per-repository snapshot and dashboard |
 
-The `jaipilot-clean-java` skill runs pinned, exactly scoped OpenRewrite recipes first when cleanup is
-useful. The host reviews the resulting Git diff, keeps only worthwhile behavior-preserving changes,
-and adds a regression test before changing established behavior.
+This division keeps JAIPilot lean. It has no second agent loop, workflow engine, candidate workspace,
+command history, usage analytics, hosted backend, or scheduler.
 
-`jaipilot-review-diff` ties both paths to the exact Git fingerprint. No skill lowers a gate, changes
-build configuration merely to pass, or treats coverage as a substitute for mutation strength.
+## Local evidence dashboard
 
-## Local current-evidence dashboard
+`jaipilot_snapshot` starts an owner-private dashboard on `http://127.0.0.1:7433/`, or another
+loopback port if needed. One machine-wide selector includes every retained Java repository and shows
+its canonical path and GitHub link when available. The selected repository shows current quality and
+findings, exact-proof freshness, applicable coverage/mutation/architecture evidence, and observed
+snapshot deltas.
 
-JAIPilot starts an owner-private dashboard on `http://127.0.0.1:7433/`. If that port is occupied, it
-uses another loopback port. This is one machine-wide dashboard, not one server per repository. Its
-selector includes every Java repository retained in the common local store and shows its canonical
-path and GitHub link when available. For the selected repository it shows:
-
-- current whole-project quality and findings;
-- current proof status and exact-fingerprint freshness;
-- applicable ArchUnit, coverage, mutation, and gate evidence; and
-- observed quality/finding deltas between snapshots.
-
-The dashboard is a view over bounded per-repository snapshots, not a project-management database.
-It has no telemetry, hosted backend, command history, usage analytics, portfolios, or compliance
-workflow. State is stored outside repositories under `JAIPILOT_STATE_HOME`, then
+State is bounded and stored outside repositories under `JAIPILOT_STATE_HOME`, then
 `$XDG_STATE_HOME/jaipilot`, or `~/.local/state/jaipilot`, with owner-only permissions.
 
-## Privacy and support
+## Privacy, support, and boundaries
 
-Repository inspection and Git-origin lookup are local; JAIPilot never fetches. Source code, prompts,
+Repository inspection and Git-origin lookup are local; JAIPilot never fetches. Source, prompts,
 findings, paths, and metrics are not uploaded. The dashboard binds only to IPv4 loopback and exposes
 read-only endpoints.
 
-If a structured JAIPilot failure looks like a product defect, the host agent may offer to open a
+If a structured failure appears to be a JAIPilot defect, the host may offer to open a
 [GitHub issue](https://github.com/JAIPilot/jaipilot/issues/new/choose). It must ask first and sanitize
-paths, source, prompts, credentials, environment values, and repository-private details. JAIPilot
-never files or uploads an issue automatically.
+paths, source, prompts, credentials, environment values, and private repository details.
 
-## Honest boundaries
+JAIPilot complements rather than replaces centralized analysis. SonarQube and similar platforms are
+stronger for formal security/data-flow analysis, large rule catalogs, centralized governance,
+portfolios, compliance, and long-term organization history. JAIPilot requires a local Maven or
+Gradle repository; fresh coverage and mutation evidence depend on that repository's JaCoCo and PIT
+compatibility.
 
-JAIPilot complements rather than replaces centralized analysis. SonarQube and similar platforms
-remain stronger for formal security/data-flow analysis, large rule catalogs, centralized governance,
-portfolios, compliance, and long-term organization-wide history.
+## Documentation
 
-JAIPilot requires a local Maven or Gradle repository and uses local Git refs without fetching. Fresh
-coverage and mutation evidence depend on the repository's JaCoCo/PIT compatibility. JAIPilot does
-not automatically observe commits; the agent invokes snapshot, diff gate, or diff proof when current
-evidence is useful.
-
-See [how JAIPilot works](docs/how-it-works.md), [quality metrics](docs/quality-metrics.md), and the
-[static-analysis boundary](docs/static-analysis-boundary.md). The
-[v4.0 lean-kernel evidence](docs/evaluations/lean-kernel-4.0.0.md) records raw performance and Kafka
-acceptance results, including the failed Kafka test-suite boundary. The
-[v4.0.2 plugin-bootstrap evidence](docs/evaluations/plugin-bootstrap-4.0.2.md) records the payload-size
-reduction, protocol timings, retry behavior, and silent Stop failure-path acceptance.
-
-## Project links
-
-- [Releases](https://github.com/JAIPilot/jaipilot/releases)
-- [Contributing](CONTRIBUTING.md)
-- [Support](SUPPORT.md)
-- [Security](SECURITY.md)
-- [Changelog](CHANGELOG.md)
+- [How JAIPilot works](docs/how-it-works.md)
+- [Quality metrics and formulas](docs/quality-metrics.md)
+- [Static-analysis boundary](docs/static-analysis-boundary.md)
+- [Petclinic controlled pilot](evaluations/petclinic-pilot/RESULTS.md)
+- [Spring Petclinic 4.0.5 demonstration](evaluations/petclinic-demo/4.0.5/README.md)
+- [Lean-kernel and Kafka evidence](docs/evaluations/lean-kernel-4.0.0.md)
+- [Plugin bootstrap evidence](docs/evaluations/plugin-bootstrap-4.0.2.md)
+- [Contributing](CONTRIBUTING.md) · [Support](SUPPORT.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
 ## License
 

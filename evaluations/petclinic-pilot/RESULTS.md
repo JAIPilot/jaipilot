@@ -102,3 +102,15 @@ These are quality and confidence improvements, not acceptance-rate improvements 
 
 No Claude replication was run because the Codex treatment did not pass the predeclared positive-result
 threshold.
+
+## Evidence boundary
+
+The committed evidence includes all prompts, independent hidden tests, the frozen runner, this
+report, and the complete 24-row measurement table. The original raw agent transcripts, patches, and
+build logs were retained during execution but were not committed. Consequently, another maintainer
+can rerun the design and verify the recorded aggregates, but cannot reconstruct every historical
+patch solely from this repository.
+
+A later [JAIPilot 4.0.5 visit-scheduling demonstration](../petclinic-demo/4.0.5/README.md) publishes
+its exact patch and structured evidence. It is a single accepted demo after the product was
+simplified, not an A/B replication, and it does not supersede the neutral pilot result above.

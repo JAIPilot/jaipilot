@@ -2,6 +2,21 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [4.0.6] - 2026-08-09
+
+### Added
+
+- Added a README-visible Spring Petclinic demonstration backed by the losslessly compressed exact
+  agent patch, structured JAIPilot proof measurements, the frozen prompt, and an independent
+  hidden-test acceptance suite.
+
+### Changed
+
+- Reworked the README around the user outcome, recorded demonstration, controlled A/B evidence,
+  three core journeys, installation, and honest product boundaries.
+- Clarified that the historical 24-trial Petclinic pilot did not commit its original raw transcripts
+  and patches, and kept its neutral acceptance and negative overhead result prominent.
+
 ## [4.0.5] - 2026-08-09
 
 ### Added

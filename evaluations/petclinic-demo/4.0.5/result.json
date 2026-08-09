@@ -1,0 +1,33 @@
+{
+  "accepted": true,
+  "agentExit": 0,
+  "agentSeconds": 788.894,
+  "agentTimedOut": false,
+  "arm": "treatment",
+  "buildCommandReferences": 8,
+  "cachedInputTokens": 1388800,
+  "changedPaths": [
+    "src/main/java/org/springframework/samples/petclinic/service/ClinicService.java",
+    "src/main/java/org/springframework/samples/petclinic/service/ClinicServiceImpl.java",
+    "src/main/java/org/springframework/samples/petclinic/web/VisitController.java",
+    "src/test/java/org/springframework/samples/petclinic/service/ClinicServiceImplTests.java",
+    "src/test/java/org/springframework/samples/petclinic/web/VisitControllerTests.java"
+  ],
+  "diffCheckPassed": true,
+  "fullVerifyPassed": true,
+  "fullVerifySeconds": 17.943,
+  "fullVerifyTimedOut": false,
+  "hiddenTestSeconds": 9.026,
+  "hiddenTestsPassed": true,
+  "hiddenTestsTimedOut": false,
+  "inputTokens": 1486258,
+  "jaipilotReferences": 34,
+  "linesAdded": 302,
+  "linesDeleted": 3,
+  "outputTokens": 17537,
+  "repetition": 1,
+  "schemaVersion": 1,
+  "scopePassed": true,
+  "scopeViolations": [],
+  "task": "visit-scheduling"
+}
