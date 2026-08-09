@@ -96,7 +96,8 @@ def main() -> None:
     require(
         isinstance(server, dict)
         and server.get("type") == "stdio"
-        and server.get("command") == "./bin/jaipilot-mcp",
+        and server.get("command") == "./bin/jaipilot-mcp"
+        and server.get("cwd") == ".",
         "JAIPilot MCP server must use the self-contained plugin launcher",
     )
     mcp_launcher = ROOT / "plugins/jaipilot/bin/jaipilot-mcp"

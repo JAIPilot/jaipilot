@@ -3,6 +3,7 @@
     "jaipilot": {
       "type": "stdio",
       "command": "./bin/jaipilot-mcp",
+      "cwd": ".",
       "args": [],
       "env": {}
     }

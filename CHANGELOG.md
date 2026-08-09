@@ -2,6 +2,13 @@
 
 Notable user-facing changes to JAIPilot are recorded here. Releases follow semantic versioning.
 
+## [4.0.4] - 2026-08-09
+
+### Fixed
+
+- Made Codex start JAIPilot's relative MCP launcher from the plugin directory, preventing
+  `No such file or directory (os error 2)` when a project does not contain `./bin/jaipilot-mcp`.
+
 ## [4.0.3] - 2026-08-08
 
 ### Changed

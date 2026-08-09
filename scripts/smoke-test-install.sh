@@ -169,11 +169,11 @@ grep -Fq "Another JAIPilot install is using" "$SMOKE_DIR/lock.log" \
 # because the host starts its MCP server.
 [ ! -e "$PLUGIN_ROOT/hooks" ] || die "Plugin still contains automatic coding-tool hooks"
 (
-  cd "$JAVA_PROJECT"
+  cd "$PLUGIN_ROOT"
   JAIPILOT_STATE_HOME="$STATE_HOME" \
   JAIPILOT_RUNTIME_HOME="$SMOKE_DIR/app" \
   JAIPILOT_DASHBOARD_DISABLED=1 \
-    python3 "$REPO_ROOT/scripts/smoke-test-mcp.py" "$PLUGIN_ROOT/bin/jaipilot-mcp"
+    python3 "$REPO_ROOT/scripts/smoke-test-mcp.py" ./bin/jaipilot-mcp
 )
 [ ! -e "$STATE_HOME/repositories" ] \
   || die "MCP initialization analyzed or registered a repository without an agent tool call"
