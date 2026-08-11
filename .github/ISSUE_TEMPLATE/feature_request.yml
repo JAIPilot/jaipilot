@@ -1,5 +1,5 @@
-name: Product proposal
-description: Propose a measurable JAIPilot workflow improvement
+name: Skill improvement
+description: Propose a focused improvement to a JAIPilot Java workflow
 title: "proposal: "
 labels:
   - enhancement
@@ -7,35 +7,28 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: Engineering problem
-      description: What Java workflow is painful today, for whom, and how often?
+      label: Problem
+      description: What Java task does the current skill handle poorly?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Concrete example
+      description: Provide a request and disposable repository shape that demonstrate the gap.
     validations:
       required: true
   - type: textarea
     id: outcome
     attributes:
       label: Desired outcome
-      description: Describe the user-visible result without prescribing implementation first.
+      description: Describe the smallest useful behavior change.
     validations:
       required: true
   - type: textarea
     id: evidence
     attributes:
       label: Acceptance evidence
-      description: What repository, command, metric, or failure case would prove the improvement?
-      placeholder: Identical revision and build boundaries; expected accepted fix, coverage, elapsed time, or recovery result.
+      description: How should the revised skill be forward-tested?
     validations:
       required: true
-  - type: textarea
-    id: safety
-    attributes:
-      label: Safety and privacy constraints
-      description: Note implications for scope, determinism, build proof, cancellation, recovery, or local-only operation.
-    validations:
-      required: false
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives considered
-    validations:
-      required: false

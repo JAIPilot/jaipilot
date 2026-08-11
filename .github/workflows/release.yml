@@ -6,71 +6,27 @@ on:
       - "v*"
 
 jobs:
-  build:
-    runs-on: ubuntu-24.04
+  release:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "21"
-          cache: maven
-
-      - name: Resolve version
-        id: version
-        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Build release artifacts
-        run: ./mvnw -B -ntp -Drevision=${{ steps.version.outputs.value }} verify
-
-      - name: Validate agent plugins
-        run: python3 ./scripts/validate-plugin.py
-
-      - name: Enforce lean plugin payload
+      - name: Verify release identity
         run: |
-          test "$(stat -c %s "target/distributions/jaipilot-toolkit-${{ steps.version.outputs.value }}.jar")" -lt 20971520
+          test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
-      - name: Smoke test install script
-        run: ./scripts/smoke-test-install.sh --version "${{ steps.version.outputs.value }}"
-
-      - name: Upload release assets
-        uses: actions/upload-artifact@v6
-        with:
-          name: jaipilot-plugin-payload
-          path: |
-            target/distributions/jaipilot-toolkit-${{ steps.version.outputs.value }}.jar
-            target/distributions/jaipilot-toolkit-${{ steps.version.outputs.value }}.jar.sha256
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Download release assets
-        uses: actions/download-artifact@v8
-        with:
-          path: target/release-assets
-          merge-multiple: true
+      - name: Validate skills-only plugin
+        run: python3 scripts/validate-plugin.py
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          name: JAIPilot Java Enterprise Harness ${{ github.ref_name }}
+          name: JAIPilot Skills
           generate_release_notes: true
-          files: |
-            target/release-assets/*.jar
-            target/release-assets/*.sha256
-            plugins/jaipilot/libexec/install.sh

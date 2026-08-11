@@ -1,31 +1,59 @@
 ---
 name: jaipilot-review-diff
-description: Review, improve, and prove Java changes from Git commits or the working tree. Use for branch review, pre-commit quality, changed-code coverage, mutation strength, architecture checks, or Java pull-request diff review when the host agent decides deterministic proof is useful.
+description: Review and verify Java changes in Git using the repository's existing build, tests, coverage, mutation, architecture, and static-analysis tools. Use for Java diff review, pull-request review, pre-commit checks, changed-code risk, regression analysis, or requests to prove a Java change.
 ---
 
-# Review a Java Diff with JAIPilot
+# Review a Java diff
 
-Treat the returned Git fingerprint as the proof boundary. The host agent owns analysis, editing,
-retries, cancellation, commits, and review; JAIPilot owns deterministic local evidence.
+Review the complete requested change, not only the most obvious file. Use repository-native evidence
+and keep the host agent in control.
 
-## Workflow
+## Establish the boundary
 
-1. Run `jaipilot_diff_gate`. Feature branches use the local default-branch merge base; the default
-   branch uses `HEAD^` plus staged, unstaged, and untracked work. Set `JAIPILOT_DIFF_BASE` only for an
-   explicit local comparison ref. JAIPilot never fetches.
-2. Stop when status is `not_applicable` or `passed`. For `review_required`, retain the returned
-   production, test, and build paths as the boundary.
-3. Run `jaipilot_quality --mode changed`. Fix critical/high findings and parse failures first. Run
-   `jaipilot_rewrite --mode changed` when production cleanup is useful, then review every recipe edit.
-4. Inspect behavior and tests. Make the smallest coherent correction in the agent-controlled Git
-   worktree. Preserve behavior unless a regression test proves a defect.
-5. Use focused builds while editing. Avoid repeatedly running the full proof against a moving diff.
-6. Run `jaipilot_prove_diff` after the diff stabilizes. By default it requires a clean full build,
-   90% changed-line coverage, 85% changed-branch coverage, 80% changed-line PIT score, 90 changed-code
-   quality, zero new critical/high findings, and complete zero-violation ArchUnit evidence.
-7. Resolve raw failures and rerun. Finish only when `jaipilot_diff_gate` confirms the same fingerprint.
+1. Confirm that the selected root contains a Java Maven or Gradle project. If it does not, report
+   that this skill is not applicable and stop.
+2. Read the repository's AGENTS.md, contribution guide, build files, and relevant module
+   instructions.
+3. Record git status --short, the current revision, and the comparison base. Never fetch or change
+   branches unless the user asks.
+4. Include staged, unstaged, and untracked Java, test, build, wrapper, and configuration files.
+   In a multi-module repository, include every affected module.
+5. Preserve all unrelated work. Never run reset, checkout, clean, stash, or broad formatting to
+   manufacture a clean diff.
 
-Do not lower gates, add exclusions, or change build configuration merely to pass. Build/test-only and
-deletion-only diffs still require the clean build; non-applicable coverage, mutation, or architecture
-must remain explicit. Report the baseline, fingerprint, targets, edits, coverage, mutations, quality,
-ArchUnit results, elapsed time, warnings, and final status.
+## Review
+
+1. Read every changed production file, relevant tests, and directly affected contracts.
+2. Look for incorrect behavior, missing edge cases, compatibility breaks, unsafe resource or
+   concurrency behavior, architecture drift, dead code, duplication, needless abstractions, and
+   unrelated edits.
+3. Prefer deletion and reuse. Keep only lines required by the request or its proof.
+4. Treat repository-configured compiler checks, Checkstyle, PMD, SpotBugs, Error Prone, ArchUnit,
+   SonarQube reports, and similar tools as evidence. Do not invent equivalent findings when a tool
+   is absent.
+5. Make corrections only when the user asked for implementation. Otherwise report findings with
+   file, location, impact, and the smallest reasonable fix.
+
+## Verify
+
+1. Use the repository wrapper and documented commands. Run focused tests while iterating.
+2. Run the normal module or repository verification command after the diff stabilizes.
+3. Run configured JaCoCo, PIT, ArchUnit, OpenRewrite, or static-analysis tasks when they apply.
+   Do not add plugins, dependencies, exclusions, suppressions, or weaker thresholds merely to pass.
+4. Confirm that changed tests actually executed. Do not infer test quality from a green build or
+   line coverage alone.
+5. Re-read the final diff after verification and check that generated output did not enter it.
+6. If a command cannot run, report the exact failure and leave that property unavailable.
+
+## Report
+
+Return:
+
+- revision, comparison base, modules, and files reviewed;
+- findings ordered by severity, followed by extra or unnecessary code;
+- edits made and why each was necessary;
+- exact commands and whether each passed, failed, skipped, or was unavailable;
+- test execution, coverage, mutation, architecture, and analyzer evidence when measured; and
+- residual risks and unverified boundaries.
+
+Do not claim that the change is correct solely because the build passed.

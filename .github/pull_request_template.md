@@ -1,27 +1,23 @@
 ## Outcome
 
-What user-visible result does this change deliver?
+What does this improve for a JAIPilot user?
 
-## Why
+## Scope
 
-What problem or product gap does it address? Include the root cause for fixes.
+Which skill or plugin metadata changed? Why is every changed file necessary?
 
 ## Evidence
 
-- [ ] Focused tests passed
-- [ ] `git diff --check`
-- [ ] `./mvnw -B verify`
-- [ ] Plugin and skill validators, when those surfaces changed
-- [ ] `./scripts/smoke-test-install.sh`, when distribution changed
-- [ ] Same-boundary raw timings, median, and p95, when a hot path changed
+- [ ] git diff --check
+- [ ] python3 scripts/validate-plugin.py
+- [ ] Changed skills passed the OpenAI skill validator
+- [ ] The plugin passed the OpenAI plugin validator
+- [ ] Claude validation passed when available
+- [ ] Workflow changes were forward-tested in a disposable Java repository
 
-Summarize relevant test counts, coverage, fixture/revision, or failure-recovery evidence here.
+List the exact prompt, repository shape, host version, commands, and observed result.
 
-## Safety and scope
+## Boundaries
 
-Describe effects on clean-build proof, execution evidence, privacy, determinism, cancellation,
-recovery, drift detection, and exact receipts. Write “no change” where applicable.
-
-## Reviewer notes
-
-Call out intentional tradeoffs, boundaries, or follow-up work.
+State any unavailable tool or unmeasured property. Confirm that the change adds no runtime,
+automatic work, background process, remote service, or unrelated repository modification.

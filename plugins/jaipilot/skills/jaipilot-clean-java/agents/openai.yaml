@@ -1,4 +1,4 @@
 interface:
-  display_name: "Enterprise Java Cleanup"
-  short_description: "Find, fix, score, and prove Java quality"
-  default_prompt: "Use $jaipilot-clean-java to inspect and clean the requested Java code, improve its quality scorecard, and keep only behavior-proven changes."
+  display_name: "Clean Java"
+  short_description: "Simplify Java and preserve behavior"
+  default_prompt: "Use $jaipilot-clean-java to simplify the requested Java code and verify the smallest behavior-preserving change."

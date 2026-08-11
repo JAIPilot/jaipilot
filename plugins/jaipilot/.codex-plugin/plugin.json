@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "4.0.8",
-  "description": "Deterministic guardrails that cut down agentic drift for high-quality agentic Java changes.",
+  "version": "5.0.0",
+  "description": "Java engineering skills for smaller, safer, better-proven agent changes.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -12,9 +12,7 @@
   "keywords": [
     "java",
     "junit",
-    "jacoco",
-    "pitest",
-    "mutation-testing",
+    "testing",
     "openrewrite",
     "refactoring",
     "code-quality"
@@ -22,16 +20,16 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "Deterministic local Java evidence",
-    "longDescription": "Cut down agentic drift with local repository inspection, quality findings, pinned OpenRewrite cleanup, clean-build diff proof, exact receipts, and a current-evidence dashboard.",
+    "shortDescription": "Practical Java engineering skills",
+    "longDescription": "Guide coding agents through disciplined Java diff review, behavior-focused test generation, and minimal cleanup using the repository's own build and analysis tools.",
     "developerName": "JAIPilot",
     "category": "Productivity",
     "capabilities": [],
     "websiteURL": "https://github.com/JAIPilot/jaipilot",
     "defaultPrompt": [
-      "Generate Java tests and prove them with coverage and PIT.",
-      "Review and prove every changed Java production file.",
-      "Fix smells, complexity, and duplication in changed Java."
+      "Review and verify my current Java diff.",
+      "Add meaningful tests for the requested Java behavior.",
+      "Simplify the changed Java code without changing behavior."
     ],
     "brandColor": "#2457D6",
     "logo": "./assets/jaipilot-logo.svg",

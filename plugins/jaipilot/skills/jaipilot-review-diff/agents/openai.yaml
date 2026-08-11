@@ -1,4 +1,4 @@
 interface:
-  display_name: "JAIPilot Diff Review"
-  short_description: "Prove every changed Java production file"
-  default_prompt: "Use $jaipilot-review-diff to review, improve, and prove the current Java Git diff."
+  display_name: "Review Java Diff"
+  short_description: "Review and verify Java changes"
+  default_prompt: "Use $jaipilot-review-diff to review and verify my current Java diff with the repository's own tools."

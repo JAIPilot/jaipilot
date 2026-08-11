@@ -1,30 +1,55 @@
 ---
 name: jaipilot-clean-java
-description: Analyze, clean, refactor, modernize, and prove Java with JAIPilot's local OpenRewrite-first evidence kernel. Use for code smells, bug risks, complexity, duplication, maintainability debt, resource safety, performance cleanup, or IDE-style Java inspections in Maven and Gradle repositories.
+description: Simplify, refactor, and verify Java while preserving behavior and scope. Use for code smells, dead code, duplication, excessive complexity, resource safety, maintainability, modernization, or requests to clean changed Java with configured OpenRewrite and analysis tools.
 ---
 
-# Clean Java with JAIPilot
+# Clean Java safely
 
-Let the host agent own the branch or worktree, edits, retries, cancellation, Git, and user decisions.
-Use JAIPilot only for deterministic scope, pinned OpenRewrite, quality evidence, and final proof.
+Make the code smaller and clearer without turning cleanup into an unrelated rewrite.
 
-## Workflow
+## Establish scope
 
-1. Inspect the repository with `jaipilot_inspect` or the private runner:
-   `<plugin-root>/bin/jaipilot inspect --project <root>`.
-2. Choose `changed`, `classes`, or `all`. Use `all` only for an explicit whole-project request.
-3. Run `jaipilot_quality`. Prioritize critical/high bug risks, then complexity, duplication, debt,
-   performance, and modernization. Treat parse failures as incomplete evidence.
-4. Ensure the agent controls a clean, recoverable Git branch or worktree. Run `jaipilot_rewrite` for
-   the exact scope so pinned OpenRewrite recipes execute first. Review the resulting Git diff; keep
-   only useful, behavior-preserving edits.
-5. Refine the smallest coherent change. Add a regression test before changing established behavior.
-   Do not lower gates, suppress findings, or broaden scope merely to obtain a pass.
-6. Run the repository's normal focused tests while iterating. When the diff is stable, run
-   `jaipilot_prove_diff` once. Resolve every build, coverage, PIT, quality, and ArchUnit failure.
-7. Recheck `jaipilot_diff_gate`. Continue only when the exact current fingerprint is `passed` or
-   no Java/build input is applicable.
+1. Confirm that the selected root contains a Java Maven or Gradle project. Otherwise report that
+   this skill is not applicable and stop.
+2. Read repository instructions, build files, relevant production code, and tests.
+3. Record Git status and the exact requested files or behavior. Preserve unrelated work.
+4. Establish a passing focused baseline when practical. If the baseline already fails, separate that
+   failure from the cleanup.
+5. Identify concrete debt: dead code, duplication, needless abstraction, tangled control flow,
+   misleading names, unsafe resources, broad exceptions, avoidable allocation, or outdated patterns.
 
-Report the selected scope, OpenRewrite edits accepted or reverted, findings and debt changed,
-tests added, proof evidence, warnings, and remaining limitations. JAIPilot never commits or applies
-the patch; the agent follows the user's normal Git and review workflow.
+## Clean
+
+1. Prefer deletion, direct code, existing abstractions, and repository conventions.
+2. Keep behavior stable. Add or strengthen a regression test before intentionally changing behavior.
+3. If the repository configures OpenRewrite, inspect the pinned version, active recipes, scope, and
+   dry-run diff before applying a relevant recipe. Review every resulting edit.
+4. If OpenRewrite is absent, state that it is unavailable. Do not inject a plugin, recipe, dependency,
+   suppression, or exclusion without user approval.
+5. Use configured formatter, compiler checks, Checkstyle, PMD, SpotBugs, Error Prone, ArchUnit,
+   SonarQube reports, or similar analyzers when applicable.
+6. Refine mechanical output into the smallest readable change. Remove speculative helpers,
+   comments that restate code, compatibility paths without a requirement, and unrelated formatting.
+
+## Verify
+
+1. Run focused tests after each coherent behavior-sensitive change.
+2. Run the normal module or repository verification command after the diff stabilizes.
+3. Run relevant configured architecture and static-analysis tasks.
+4. Use configured coverage or mutation testing when production behavior or tests changed.
+5. Re-read the complete final diff. Confirm that every changed line serves the requested cleanup or
+   its proof and that generated output is absent.
+6. Report a failed or unavailable check honestly instead of weakening the cleanup criteria.
+
+## Report
+
+Return:
+
+- files and debt selected;
+- code deleted, simplified, or rewritten and why;
+- OpenRewrite recipes and mechanical edits accepted or rejected, when applicable;
+- exact test, build, architecture, and analyzer commands with results;
+- behavior evidence and any measured coverage or mutation result; and
+- remaining debt deliberately left outside scope.
+
+Do not claim behavior preservation without relevant execution evidence.

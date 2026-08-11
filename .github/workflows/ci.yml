@@ -5,24 +5,14 @@ on:
   pull_request:
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "17"
-          cache: maven
+      - name: Validate skills-only plugin
+        run: python3 scripts/validate-plugin.py
 
-      - name: Verify
-        run: ./mvnw -B verify
-
-      - name: Validate agent plugins
-        run: python3 ./scripts/validate-plugin.py
-
-      - name: Smoke test install script
-        run: ./scripts/smoke-test-install.sh
+      - name: Reject whitespace errors
+        run: git diff --check HEAD^ HEAD

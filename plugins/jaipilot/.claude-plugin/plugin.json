@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "4.0.8",
-  "description": "Deterministic guardrails that cut down agentic drift for high-quality agentic Java changes.",
+  "version": "5.0.0",
+  "description": "Java engineering skills for smaller, safer, better-proven agent changes.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -12,9 +12,7 @@
   "keywords": [
     "java",
     "junit",
-    "jacoco",
-    "pitest",
-    "mutation-testing",
+    "testing",
     "openrewrite",
     "refactoring",
     "code-quality"
