@@ -1,45 +1,20 @@
 # JAIPilot
 
-**Deterministic guardrails that cut down agentic drift for high-quality agentic Java changes.**
+JAIPilot provides three Java engineering skills:
 
-JAIPilot is a local, backend-free Java Enterprise Harness for Codex, Claude Code, and any stdio MCP
-host. The coding agent owns reasoning, edits, retries, cancellation, Git, and user interaction.
-JAIPilot owns deterministic repository scope, quality evidence, OpenRewrite cleanup, clean-build
-proof, exact fingerprints, and the current-evidence dashboard.
+- jaipilot-review-diff
+- jaipilot-generate-tests
+- jaipilot-clean-java
 
-The plugin exposes six synchronous MCP tools:
+The host agent uses the target repository's existing Git, Maven or Gradle wrapper, tests, and
+configured analysis tools. JAIPilot adds no executable, MCP server, hook, installer, background
+process, dashboard, account, or telemetry.
 
-- `jaipilot_inspect`
-- `jaipilot_snapshot`
-- `jaipilot_quality`
-- `jaipilot_rewrite`
-- `jaipilot_diff_gate`
-- `jaipilot_prove_diff`
+Ask the agent to review a Java diff, add meaningful Java tests, or simplify Java without changing
+behavior. The selected skill establishes scope, preserves unrelated work, runs applicable
+repository-native checks, and reports both evidence and limitations.
 
-Every tool has a visible `JAIPilot:` title, emits a standard MCP start notice, and asks the host agent
-to announce the check before it runs. Every result includes a concise `Why this mattered` and
-`Evidence` summary derived from that run. Failed, skipped, and non-applicable checks are labeled
-honestly rather than marketed as wins.
-
-Its Agent Skills are `jaipilot-review-diff`, `jaipilot-generate-tests`, and
-`jaipilot-clean-java`.
-
-JAIPilot installs no automatic hooks. Opening a repository, editing a file, running a shell command,
-committing, or stopping an agent session does not analyze the repository or run its build. The host
-agent chooses a JAIPilot MCP tool when deterministic evidence is useful. An explicit snapshot records
-the repository and GitHub origin, refreshes current metrics, and starts the loopback dashboard.
-
-JAIPilot uses Java 17+ from `JAVA_HOME` or `PATH`; it downloads one checksum-verified portable JAR,
-not a private JRE or platform-specific bundle.
-
-The private machine-wide dashboard is normally available at <http://127.0.0.1:7433/>. Its repository
-selector reads the common owner-private state store and shows every retained Java repository, its
-canonical local path, GitHub link when present, current quality and findings, exact-fingerprint proof
-freshness, applicable ArchUnit/coverage/PIT gates, and observed snapshot deltas. It has no telemetry,
-backend, command history, or usage analytics.
-
-JAIPilot never commits, pushes, opens a PR, applies a hidden workspace, or raises a GitHub issue.
-When a structured failure appears to be a product defect, the host agent may ask the user before
-opening a sanitized issue at <https://github.com/JAIPilot/jaipilot/issues/new/choose>.
+JAIPilot is guidance, not an enforcement engine. It does not silently add build plugins, lower
+quality gates, or claim that unavailable evidence passed.
 
 Learn more at <https://github.com/JAIPilot/jaipilot>.

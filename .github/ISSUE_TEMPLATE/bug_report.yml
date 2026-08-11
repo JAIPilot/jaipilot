@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible JAIPilot evidence, MCP, hook, or dashboard failure
+description: Report a reproducible JAIPilot skill or plugin problem
 title: "bug: "
 labels:
   - bug
@@ -7,28 +7,24 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve JAIPilot. Remove secrets and proprietary source before submitting.
-        For undisclosed vulnerabilities, use the private process in `SECURITY.md` instead.
+        Remove credentials, proprietary source, private paths, and unsanitized build output.
+        Report undisclosed vulnerabilities through SECURITY.md.
   - type: textarea
     id: summary
     attributes:
       label: What happened?
-      description: Describe the observed behavior and its user impact.
+      description: Describe the behavior and its effect on your work.
     validations:
       required: true
   - type: dropdown
-    id: workflow
+    id: skill
     attributes:
-      label: Workflow
+      label: Skill
       options:
+        - Review Java diff
         - Generate Java tests
-        - Clean or refactor Java
-        - Diff proof or proof receipt
-        - MCP server or tool
-        - Session or commit hook
-        - Local dashboard
-        - Plugin installation or update
-        - Project inspection
+        - Clean Java
+        - Plugin installation or discovery
         - Other
     validations:
       required: true
@@ -36,12 +32,7 @@ body:
     id: reproduction
     attributes:
       label: Minimal reproduction
-      description: Share the smallest project shape, request, and sequence that reproduces the issue.
-      placeholder: |
-        1. Use JAIPilot v3.4.0 in Codex, Claude Code, or another stdio MCP host.
-        2. Open a clean Maven project with ...
-        3. Ask "..."
-        4. The structured result returns ...
+      description: Include the request, repository shape, and commands the agent ran.
     validations:
       required: true
   - type: textarea
@@ -54,36 +45,20 @@ body:
     id: version
     attributes:
       label: JAIPilot version
-      placeholder: v3.4.0
+      placeholder: v5.0.0
     validations:
       required: true
   - type: input
     id: host
     attributes:
-      label: Host tool and version
-      placeholder: Codex / Claude Code / another Agent Skills host
-    validations:
-      required: true
-  - type: input
-    id: environment
-    attributes:
-      label: Environment
-      placeholder: macOS 15 x64, Temurin 21, Maven 3.9.11
+      label: Host and version
+      placeholder: Codex or Claude Code
     validations:
       required: true
   - type: textarea
     id: output
     attributes:
-      label: Structured result and diagnostics
-      description: Paste sanitized JAIPilot JSON and relevant stderr or build output.
+      label: Sanitized output
       render: shell
     validations:
       required: false
-  - type: checkboxes
-    id: checks
-    attributes:
-      label: Preflight
-      options:
-        - label: The project build succeeds without JAIPilot.
-        - label: I searched existing issues and discussions for this problem.
-          required: true

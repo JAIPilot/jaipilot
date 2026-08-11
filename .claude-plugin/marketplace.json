@@ -5,21 +5,20 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Deterministic local Java evidence that cuts down agentic drift."
+    "description": "Java engineering skills for smaller, safer, better-proven agent changes."
   },
   "plugins": [
     {
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
-      "description": "Inspect, clean, and prove Java changes with deterministic local evidence.",
-      "version": "4.0.8",
+      "description": "Review Java diffs, generate tests, and clean code with repository-native tools.",
+      "version": "5.0.0",
       "category": "development",
       "tags": [
         "java",
         "testing",
         "refactoring",
-        "code-quality",
-        "mutation-testing"
+        "code-quality"
       ]
     }
   ]

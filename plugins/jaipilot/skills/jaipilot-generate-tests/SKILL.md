@@ -1,30 +1,59 @@
 ---
 name: jaipilot-generate-tests
-description: Generate, repair, and prove high-quality Java unit tests with JAIPilot's local coverage and PIT evidence. Use for JUnit tests, changed-class tests, coverage gaps, regression tests, surviving mutations, or test improvement in Maven and Gradle repositories.
+description: Generate, repair, and verify meaningful Java tests using the repository's existing framework and build. Use for JUnit or TestNG tests, regression tests, coverage gaps, surviving mutations, boundary cases, or requests to improve Java test quality.
 ---
 
-# Generate Java Tests with JAIPilot
+# Generate meaningful Java tests
 
-The host agent reasons about behavior and owns all edits. JAIPilot supplies deterministic targets,
-fresh build evidence, JaCoCo coverage, targeted PIT mutation results, quality, and ArchUnit proof.
+Use tests to describe observable behavior, not to reward a coverage number.
 
-## Workflow
+## Understand the target
 
-1. Run `jaipilot_inspect` for the repository. Do not silently change build configuration when Maven,
-   Gradle, JaCoCo, or PIT prerequisites are missing.
-2. Select named classes, changed production classes, or classes below a fresh coverage threshold.
-   Use whole-project scope only when explicitly requested.
-3. Inspect production contracts and existing tests. In the agent-controlled branch or worktree, add
-   the smallest tests for observable normal, boundary, invalid-input, failure, and state behavior.
-4. Reuse the repository's framework and dependencies. Avoid sleeps, real network calls, order
-   dependence, shared mutable state, implementation-detail assertions, and hollow coverage tests.
-5. Run focused repository tests while iterating. Run `jaipilot_quality` on touched production code
-   when testability requires a production refactor.
-6. When the diff is stable, run `jaipilot_prove_diff`. Use changed-line coverage and surviving or
-   uncovered PIT mutations to strengthen assertions. Require the clean build and all applicable
-   gates to pass; never infer mutation strength from coverage alone.
-7. Confirm `jaipilot_diff_gate` reports `passed` for the exact fingerprint before handing off.
+1. Confirm that the selected root contains a Java Maven or Gradle project. Otherwise report that
+   this skill is not applicable and stop.
+2. Read repository instructions, build files, existing tests, fixtures, and the production contract.
+3. Record the current Git status and preserve unrelated work.
+4. Identify the exact class, behavior, defect, or changed lines the user wants protected.
+5. Use the repository's existing test framework, style, assertion library, mocking approach, and
+   naming conventions. Do not add dependencies or reconfigure the build without approval.
 
-Report targets, tests changed and executed, clean-build evidence, changed line/branch coverage,
-mutation counts and survivors, quality/architecture evidence, warnings, and concrete unscorable
-boundaries. JAIPilot does not create or apply a separate candidate workspace.
+## Design the tests
+
+1. Cover observable normal, boundary, invalid-input, state-transition, and failure behavior that is
+   relevant to the request.
+2. Add a regression test that fails for the demonstrated defect before changing established
+   production behavior.
+3. Prefer public contracts and stable collaboration boundaries over private-method or
+   implementation-detail assertions.
+4. Avoid sleeps, real network calls, order dependence, shared mutable state, random outcomes without
+   fixed seeds, and assertions that merely repeat the implementation.
+5. Keep fixtures small. Reuse existing builders and helpers when they remain clear.
+6. Change production code only when the user permits a necessary testability or defect fix. Keep
+   that change minimal and behavior-preserving unless the regression test proves otherwise.
+
+## Execute and strengthen
+
+1. Run the narrowest repository-native command that executes the new tests. Confirm from test output
+   or reports that the intended class and methods ran.
+2. Run related tests after the focused test passes.
+3. Use the repository's configured JaCoCo report to inspect relevant line and branch coverage.
+   Treat missing or stale reports as unavailable.
+4. Use configured PIT mutation testing when it is practical for the selected class. Strengthen tests
+   against meaningful survivors; do not assert implementation trivia merely to kill a mutation.
+5. Run the repository's normal final verification command.
+6. Re-read the final diff and remove hollow tests, duplication, unused fixtures, debug output, and
+   unrelated formatting.
+
+## Report
+
+Return:
+
+- target behavior and tests added or changed;
+- production changes, if any, and their justification;
+- exact test and build commands with pass, fail, skipped, or unavailable status;
+- executed test classes and methods when available;
+- coverage and mutation evidence only when freshly measured;
+- important cases intentionally not covered and why; and
+- remaining limitations.
+
+Never describe unconfigured coverage or mutation tooling as a pass.

@@ -1,67 +1,44 @@
 # Contributing
 
-Thanks for contributing to the JAIPilot Java Enterprise Harness.
+JAIPilot is a small, skills-only plugin. Contributions should make one of its three Java workflows
+clearer, safer, or more useful without adding runtime machinery.
 
-Before participating, read the [community code of conduct](CODE_OF_CONDUCT.md). For usage questions
-and early ideas, start with [GitHub Discussions](https://github.com/JAIPilot/jaipilot/discussions).
-Use issues for reproducible defects and proposals with concrete acceptance evidence.
+## Setup
 
-## Development setup
+You need Git and Python 3. Codex and Claude Code are useful for host-level validation.
 
-You need Java 17+, Git, Python 3, and a POSIX shell.
+~~~bash
+python3 scripts/validate-plugin.py
+~~~
 
-```bash
-./mvnw -B verify
-python3 ./scripts/validate-plugin.py
-```
+## Rules
 
-`verify` runs the Java suite, creates JaCoCo XML, builds the shaded plugin runner, and produces one
-portable checksum-protected plugin JAR.
+- Keep plugins/jaipilot limited to manifests, skills, UI metadata, SVG assets, and its short README.
+- Do not add MCP, a runtime, CLI, hook, daemon, installer, backend, package-manager dependency, or
+  automatic repository work.
+- Keep skill instructions concise and imperative.
+- Prefer repository wrappers and configured tools.
+- Never tell an agent to discard unrelated work, weaken a gate, or add tooling without approval.
+- Report unavailable evidence honestly.
+- Forward-test workflow changes on disposable Java repositories.
 
-## Common checks
+Before submitting a change:
 
-```bash
-./mvnw -B test
-java -jar target/jaipilot-toolkit-4.0.1-all.jar inspect --project .
-./scripts/smoke-test-install.sh
-```
-
-The direct smoke checks structured evidence-kernel discovery. The installer smoke exercises bounded
-transport retries, checksum verification, host Java 17+, MCP, cached launch, zero automatic
-repository work, and explicit snapshot initialization.
-
-## Pull requests
-
-- Keep changes focused and add deterministic tests for behavior, safety gates, races, timeouts, and failure modes.
-- Preserve structured JSON on runner stdout.
-- Keep planning, editing, retries, cancellation, Git, and user interaction in the connected coding
-  agent. Do not add another workflow engine or provider-specific model subprocess.
-- Update README, skills, manifests, and project memory when their contract changes.
-- Include repeatable before/after evidence for performance-sensitive changes.
-- Do not commit `target/`, temporary workspaces, or local configuration.
-- Explain the user-visible outcome, verification evidence, safety impact, and explicit boundaries.
-
-Before opening a pull request:
-
-```bash
+~~~bash
 git diff --check
-./mvnw -B verify
-python3 ./scripts/validate-plugin.py
-./scripts/smoke-test-install.sh
-```
+python3 scripts/validate-plugin.py
+python3 /path/to/skill-creator/scripts/quick_validate.py plugins/jaipilot/skills/<skill>
+python3 /path/to/plugin-creator/scripts/validate_plugin.py plugins/jaipilot
+claude plugin validate plugins/jaipilot
+~~~
 
-## Release publishing
+Include the affected skill, the test prompt, repository shape, host version, commands, and observed
+result. Do not include proprietary source, credentials, or private paths.
 
-`scripts/release-build.sh` aligns the Maven revision, plugin bootstrap, marketplaces, and all plugin
-manifests. A `v*` tag builds one portable checksum-protected JAR and publishes a GitHub Release with
-the plugin-local installer. Codex and Claude Code plugins are the only distribution channels.
+## Releases
 
-## Reporting bugs and security issues
+VERSION, all plugin manifests, and the Claude marketplace entry must match. A v* tag is validated
+before GitHub publishes the release. Codex and Claude Code plugins are the only distribution
+channels.
 
-For a bug, include the JAIPilot version, Codex or Claude Code version, Java version, build
-tool/version, operating system, command or tool arguments, stderr diagnostics, and a minimal project
-when possible.
-
-Follow [SECURITY.md](SECURITY.md) for vulnerabilities; do not disclose them in a public issue.
-
-For support channel guidance, see [SUPPORT.md](SUPPORT.md).
+For vulnerabilities, follow [SECURITY.md](SECURITY.md).
