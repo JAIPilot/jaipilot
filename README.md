@@ -6,8 +6,8 @@
 
 **Java engineering skills that help coding agents make smaller, safer, better-proven changes.**
 
-JAIPilot is a skills-only plugin for Codex and Claude Code. It gives the coding agent three focused
-workflows for reviewing Java diffs, generating tests, and cleaning Java code.
+JAIPilot is a skills-only plugin for ChatGPT, Codex, and Claude Code. It gives the coding agent three
+focused workflows for reviewing Java diffs, generating tests, and cleaning Java code.
 
 There is no JAIPilot runtime, MCP server, dashboard, background process, installer, or automatic
 hook. Installing the plugin adds Markdown instructions and brand assets—nothing starts, downloads,
@@ -102,6 +102,8 @@ preserved at [v4.0.8](https://github.com/JAIPilot/jaipilot/releases/tag/v4.0.8).
 - [Contributing](CONTRIBUTING.md)
 - [Support](SUPPORT.md)
 - [Security](SECURITY.md)
+- [Privacy](PRIVACY.md)
+- [Terms](TERMS.md)
 - [Changelog](CHANGELOG.md)
 
 Licensed under the [MIT License](LICENSE).

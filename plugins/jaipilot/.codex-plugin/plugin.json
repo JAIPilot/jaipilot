@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "Java engineering skills for smaller, safer, better-proven agent changes.",
   "author": {
     "name": "JAIPilot",
@@ -26,6 +26,8 @@
     "category": "Productivity",
     "capabilities": [],
     "websiteURL": "https://github.com/JAIPilot/jaipilot",
+    "privacyPolicyURL": "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md",
     "defaultPrompt": [
       "Review and verify my current Java diff.",
       "Add meaningful tests for the requested Java behavior.",

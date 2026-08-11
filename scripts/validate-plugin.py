@@ -42,6 +42,8 @@ ALLOWED_PLUGIN_ROOTS = {
     "plugin.json",
     "skills",
 }
+PRIVACY_URL = "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md"
+TERMS_URL = "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md"
 
 
 def require(condition: bool, message: str) -> None:
@@ -84,6 +86,10 @@ def validate_manifests(expected_version: str) -> None:
     prompts = interface.get("defaultPrompt")
     require(isinstance(prompts, list) and len(prompts) == 3,
             "Codex interface must contain three starter prompts")
+    require(interface.get("privacyPolicyURL") == PRIVACY_URL,
+            "Codex interface must publish the canonical privacy policy URL")
+    require(interface.get("termsOfServiceURL") == TERMS_URL,
+            "Codex interface must publish the canonical terms URL")
 
 
 def validate_skills() -> None:
