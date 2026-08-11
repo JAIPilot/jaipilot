@@ -1,5 +1,19 @@
 # Changelog
 
+## [5.0.1] - 2026-08-11
+
+### Added
+
+- Added public privacy and terms documents for the OpenAI plugin review.
+- Added a reproducible submission packet with listing copy, starter prompts, reviewer test cases,
+  availability guidance, attestations, and release notes.
+- Declared the public privacy and terms URLs in the Codex plugin interface metadata.
+
+### Changed
+
+- Prepared the same three skills-only workflows for the official OpenAI plugin directory without
+  adding a runtime, backend, authentication, telemetry, or a package-manager distribution.
+
 ## [5.0.0] - 2026-08-11
 
 ### Changed

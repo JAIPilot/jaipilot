@@ -38,7 +38,7 @@ result. Do not include proprietary source, credentials, or private paths.
 ## Releases
 
 VERSION, all plugin manifests, and the Claude marketplace entry must match. A v* tag is validated
-before GitHub publishes the release. Codex and Claude Code plugins are the only distribution
-channels.
+before GitHub publishes the release. The official OpenAI plugin directory, Codex plugin
+marketplace, and Claude Code plugin marketplace are the only distribution channels.
 
 For vulnerabilities, follow [SECURITY.md](SECURITY.md).
