@@ -56,18 +56,24 @@ JDK, build wrapper, dependencies, and configured engineering tools.
 | Skill | Use it for |
 | --- | --- |
 | jaipilot-review-diff | Review a Java Git diff, find risk or unnecessary code, and run the repository's applicable verification. |
-| jaipilot-generate-tests | Add behavior-focused JUnit tests and use configured coverage or mutation testing when available. |
+| jaipilot-generate-tests | Raise meaningful per-class Java coverage with bounded parallel workers and fresh configured JaCoCo or PIT evidence. |
 | jaipilot-clean-java | Simplify Java safely and use configured OpenRewrite or analyzers without broadening scope. |
 
 Example requests:
 
 ~~~text
 Use JAIPilot to review and verify my current Java diff.
-Use JAIPilot to add meaningful tests for OrderService.
+Use JAIPilot to raise every eligible class in the orders module toward at least 80% line coverage.
 Use JAIPilot to simplify the changed Java code without changing behavior.
 ~~~
 
 The skills can also trigger naturally when the request clearly matches their descriptions.
+
+For a coverage campaign, the test skill assigns one production class to each available worker and
+runs bounded waves in isolated worktrees or build outputs. It does not run concurrent Maven or
+Gradle processes in one checkout, assume shared tests are runtime-independent, or turn missing
+JaCoCo data into a pass. After integration, the agent refreshes one aggregate report and lists the
+baseline and final coverage of every eligible class, including honest blockers below 80%.
 
 ## What the agent should return
 

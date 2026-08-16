@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "5.0.1",
+  "version": "5.1.0",
   "description": "Java engineering skills for smaller, safer, better-proven agent changes.",
   "author": {
     "name": "JAIPilot",
@@ -30,7 +30,7 @@
     "termsOfServiceURL": "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md",
     "defaultPrompt": [
       "Review and verify my current Java diff.",
-      "Add meaningful tests for the requested Java behavior.",
+      "Raise meaningful per-class Java test coverage toward at least 80%.",
       "Simplify the changed Java code without changing behavior."
     ],
     "brandColor": "#2457D6",

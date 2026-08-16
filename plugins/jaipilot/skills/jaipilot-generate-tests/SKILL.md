@@ -1,59 +1,89 @@
 ---
 name: jaipilot-generate-tests
-description: Generate, repair, and verify meaningful Java tests using the repository's existing framework and build. Use for JUnit or TestNG tests, regression tests, coverage gaps, surviving mutations, boundary cases, or requests to improve Java test quality.
+description: Generate, repair, and verify meaningful Java unit tests, including parallel per-class coverage campaigns. Use for JUnit or TestNG tests, regression tests, coverage gaps, surviving mutations, boundary cases, or requests to maximize fresh JaCoCo line coverage toward at least 80% for each eligible production class.
 ---
 
-# Generate meaningful Java tests
+# Raise meaningful Java coverage per class
 
-Use tests to describe observable behavior, not to reward a coverage number.
+Target at least 80% fresh JaCoCo line coverage for every eligible in-scope production class. Treat
+80% as an objective, not permission to add hollow tests or claim unmeasured coverage.
 
-## Understand the target
+## Establish the campaign
 
 1. Confirm that the selected root contains a Java Maven or Gradle project. Otherwise report that
    this skill is not applicable and stop.
-2. Read repository instructions, build files, existing tests, fixtures, and the production contract.
-3. Record the current Git status and preserve unrelated work.
-4. Identify the exact class, behavior, defect, or changed lines the user wants protected.
-5. Use the repository's existing test framework, style, assertion library, mocking approach, and
-   naming conventions. Do not add dependencies or reconfigure the build without approval.
+2. Read repository instructions, build files, existing tests, fixtures, and the production
+   contracts. Record Git status and preserve unrelated work.
+3. Define the production classes in scope. Use the user's explicit scope; otherwise prefer changed
+   classes, then their module. Do not silently turn a bounded request into a repository-wide job.
+4. Run the repository's existing baseline tests and configured JaCoCo report. Calculate each
+   eligible class's line coverage as covered lines divided by covered plus missed lines.
+5. Include classes with executable production lines. Honor only existing generated-code or coverage
+   exclusions, and list excluded or zero-executable-line classes separately.
+6. If fresh class-level JaCoCo data is unavailable, ask before adding or changing tooling. Continue
+   with behavior-focused tests when useful, but do not claim an 80% result.
 
-## Design the tests
+## Coordinate one class per worker
 
-1. Cover observable normal, boundary, invalid-input, state-transition, and failure behavior that is
-   relevant to the request.
-2. Add a regression test that fails for the demonstrated defect before changing established
-   production behavior.
-3. Prefer public contracts and stable collaboration boundaries over private-method or
-   implementation-detail assertions.
-4. Avoid sleeps, real network calls, order dependence, shared mutable state, random outcomes without
-   fixed seeds, and assertions that merely repeat the implementation.
-5. Keep fixtures small. Reuse existing builders and helpers when they remain clear.
-6. Change production code only when the user permits a necessary testability or defect fix. Keep
-   that change minimal and behavior-preserving unless the regression test proves otherwise.
+1. Build a deterministic queue ordered by missed lines, risk, and class name. Assign exactly one
+   production class to each worker and normally one corresponding test class.
+2. When the host supports subagents, run a bounded parallel batch sized for available agent slots,
+   CPU, memory, and repository services. Keep the remaining classes queued for later waves.
+3. Give editing or build workers separate temporary Git worktrees or equivalent isolated build
+   outputs. Never run concurrent Maven or Gradle processes against the same checkout or output tree.
+4. When relevant uncommitted work cannot be reproduced safely, do not stash, reset, or omit it.
+   Parallelize read-only analysis and serialize edits/builds, or obtain approval for isolated copies.
+5. Do not assume tests are runtime-independent merely because authoring is split by class. Do not
+   enable parallel test execution unless the repository already supports it safely.
+6. If the host cannot run subagents, process the same per-class queue sequentially and report that
+   parallel authoring was unavailable.
 
-## Execute and strengthen
+## Worker contract
 
-1. Run the narrowest repository-native command that executes the new tests. Confirm from test output
-   or reports that the intended class and methods ran.
-2. Run related tests after the focused test passes.
-3. Use the repository's configured JaCoCo report to inspect relevant line and branch coverage.
-   Treat missing or stale reports as unavailable.
-4. Use configured PIT mutation testing when it is practical for the selected class. Strengthen tests
-   against meaningful survivors; do not assert implementation trivia merely to kill a mutation.
-5. Run the repository's normal final verification command.
-6. Re-read the final diff and remove hollow tests, duplication, unused fixtures, debug output, and
-   unrelated formatting.
+For the assigned production class:
+
+1. Read its public contract, collaborators, existing tests, and relevant call sites.
+2. Cover observable normal, boundary, invalid-input, state-transition, and failure behavior. Add a
+   regression test that fails before any permitted defect fix.
+3. Follow the repository's existing framework, assertion, mocking, fixture, and naming conventions.
+   Prefer real values and stable collaboration boundaries over private-method assertions.
+4. Avoid sleeps, real network calls, order dependence, shared mutable state, unfixed randomness,
+   excessive mocking, reflection into internals, and assertions that repeat the implementation.
+5. Run the narrowest repository-native command that executes the assigned test class. Confirm from
+   output or reports that its intended methods ran.
+6. Refresh the configured JaCoCo evidence in the isolated checkout and iterate while useful
+   behavior remains uncovered. Aim for at least 80% line coverage for the assigned class.
+7. Use configured PIT for the assigned class when practical. Strengthen meaningful survivors; do
+   not assert implementation trivia merely to kill mutations.
+8. Change production code only with user approval for a necessary testability or defect fix. Never
+   add dependencies, plugins, exclusions, suppressions, or weaker gates merely to reach the target.
+9. Return the test patch, exact commands, executed tests, fresh class coverage, mutation evidence,
+   and any blocker. Do not commit or modify files outside the assignment unless asked.
+
+## Integrate and prove
+
+1. Review and integrate worker patches one at a time. Resolve overlapping fixtures centrally and
+   remove duplicated or contradictory tests.
+2. Run the focused test classes together using the repository's normal runner. Then refresh one
+   aggregate JaCoCo report from the integrated tree.
+3. Compare every eligible class with the 80% target. Schedule another targeted wave for classes
+   below it when meaningful uncovered behavior remains.
+4. For a class that remains below 80%, record the exact measured value and reason: unreachable or
+   generated paths, environment dependency, unsafe behavior, missing tooling, or diminishing-value
+   implementation detail. Never label a best effort as passing.
+5. Run related tests and the repository's normal final verification command. Re-read the complete
+   diff and remove hollow tests, duplication, unused fixtures, debug output, and unrelated changes.
 
 ## Report
 
 Return:
 
-- target behavior and tests added or changed;
-- production changes, if any, and their justification;
-- exact test and build commands with pass, fail, skipped, or unavailable status;
-- executed test classes and methods when available;
-- coverage and mutation evidence only when freshly measured;
-- important cases intentionally not covered and why; and
-- remaining limitations.
+- scope, baseline command, worker count, isolation method, and parallel waves;
+- tests and any approved production changes;
+- exact focused, aggregate, coverage, mutation, and final commands with outcomes;
+- a table of every eligible class with baseline coverage, final coverage, target status, and blocker;
+- excluded classes and the repository rule that excluded them;
+- important behavior intentionally not covered and why; and
+- unavailable evidence and remaining limitations.
 
-Never describe unconfigured coverage or mutation tooling as a pass.
+Never describe unconfigured, stale, or missing coverage or mutation evidence as a pass.

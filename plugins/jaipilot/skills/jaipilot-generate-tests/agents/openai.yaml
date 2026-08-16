@@ -1,4 +1,4 @@
 interface:
-  display_name: "Generate Java Tests"
-  short_description: "Add behavior-focused Java tests"
-  default_prompt: "Use $jaipilot-generate-tests to add meaningful Java tests and verify them with the repository's existing tools."
+  display_name: "Maximize Java Test Coverage"
+  short_description: "Raise meaningful per-class Java coverage"
+  default_prompt: "Use $jaipilot-generate-tests to raise meaningful class-level Java test coverage toward at least 80% with bounded parallel workers and fresh repository evidence."

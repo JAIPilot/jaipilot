@@ -1,7 +1,7 @@
 # OpenAI plugin submission packet
 
 This file is the reproducible source for the OpenAI Platform submission form. It describes the
-exact skills-only bundle at version 5.0.1 and must not be interpreted as approval or publication by
+exact skills-only bundle at version 5.1.0 and must not be interpreted as approval or publication by
 OpenAI.
 
 ## Listing
@@ -19,7 +19,8 @@ OpenAI.
 ### Long description
 
 JAIPilot gives ChatGPT and Codex three repeatable Java engineering workflows: review complete Git
-diffs, add behavior-focused tests, and simplify code without widening scope. It uses each
+diffs, raise meaningful class-level test coverage through bounded parallel workers, and simplify
+code without widening scope. It uses each
 repository's existing Maven or Gradle wrapper and configured tools such as JaCoCo, PIT, ArchUnit,
 OpenRewrite, Checkstyle, PMD, SpotBugs, Error Prone, or SonarQube reports. Missing evidence is
 reported as unavailable. JAIPilot does not add dependencies, weaken gates, run background
@@ -28,7 +29,7 @@ processes, or upload repository data.
 ## Starter prompts
 
 1. Review and verify my current Java diff.
-2. Add meaningful tests for the requested Java behavior.
+2. Raise meaningful per-class Java test coverage toward at least 80%.
 3. Simplify the changed Java code without changing behavior.
 
 ## Positive reviewer cases
@@ -56,16 +57,18 @@ processes, or upload repository data.
 - **Expected result shape:** Affected modules/files, prioritized findings, exact verification
   commands and results, unavailable evidence, and remaining risk.
 
-### 3. Add meaningful unit tests
+### 3. Raise meaningful per-class coverage
 
-- **Prompt:** Add focused tests for Person's accessor and validation behavior. Do not change
-  production code.
-- **Fixture:** A Maven Java project with JUnit and Bean Validation already configured.
-- **Expected:** Select `jaipilot-generate-tests`; identify observable behavior and boundaries; edit
-  test files only; run the focused test and applicable verification; report measured coverage only
-  when a fresh repository report exists.
-- **Expected result shape:** Behaviors covered, test files changed, focused/full commands and
-  outcomes, fresh coverage when available, and production-files-unchanged confirmation.
+- **Prompt:** Raise every eligible production class in the people module toward at least 80% line
+  coverage. Keep each class assignment independent and do not change production code.
+- **Fixture:** A Maven Java project with several under-tested classes plus JUnit and JaCoCo already
+  configured.
+- **Expected:** Select `jaipilot-generate-tests`; assign one production class to each available
+  worker in bounded isolated waves; add observable behavior and boundary tests; integrate patches;
+  refresh one aggregate report; and report every class below 80% without weakening the build.
+- **Expected result shape:** Worker count and isolation, behaviors covered, test files changed,
+  focused/full commands, per-class baseline and final coverage, blockers, and confirmation that
+  production files remained unchanged.
 
 ### 4. Strengthen mutation resistance
 
@@ -122,9 +125,10 @@ the portal.
 
 ## Release notes
 
-Version 5.0.1 prepares JAIPilot's three skills-only Java workflows for the official OpenAI plugin
-directory. It adds public privacy and terms documents plus review fixtures. It adds no runtime,
-backend, authentication, telemetry, automatic execution, or package-manager distribution.
+Version 5.1.0 expands JAIPilot's test workflow into bounded one-class-per-worker coverage campaigns.
+It targets at least 80% fresh line coverage for every eligible production class, integrates worker
+patches centrally, and reports blockers honestly. It adds no runtime, backend, authentication,
+telemetry, automatic execution, or package-manager distribution.
 
 ## Attestation notes
 

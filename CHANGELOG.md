@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.1.0] - 2026-08-16
+
+### Changed
+
+- Expanded `jaipilot-generate-tests` into a per-class coverage campaign that targets at least 80%
+  fresh JaCoCo line coverage for every eligible production class without rewarding hollow tests.
+- Added bounded one-class-per-worker parallel waves with isolated worktrees or build outputs,
+  deterministic prioritization, aggregate remeasurement, and honest per-class blockers.
+- Kept test execution repository-native and prevented concurrent Maven or Gradle processes from
+  sharing one checkout or output tree.
+
 ## [5.0.1] - 2026-08-11
 
 ### Added
