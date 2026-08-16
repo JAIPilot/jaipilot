@@ -1,4 +1,4 @@
 interface:
-  display_name: "Clean Java"
-  short_description: "Simplify Java and preserve behavior"
-  default_prompt: "Use $jaipilot-clean-java to simplify the requested Java code and verify the smallest behavior-preserving change."
+  display_name: "Clean, Modernize & Optimize Java"
+  short_description: "Safely reduce, upgrade, and optimize Java"
+  default_prompt: "Use $jaipilot-clean-java to safely reduce, consolidate, modernize, or optimize this Java project with repository evidence."

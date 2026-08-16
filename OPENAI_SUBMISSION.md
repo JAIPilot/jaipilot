@@ -1,7 +1,7 @@
 # OpenAI plugin submission packet
 
 This file is the reproducible source for the OpenAI Platform submission form. It describes the
-exact skills-only bundle at version 5.1.0 and must not be interpreted as approval or publication by
+exact skills-only bundle at version 5.2.0 and must not be interpreted as approval or publication by
 OpenAI.
 
 ## Listing
@@ -19,8 +19,9 @@ OpenAI.
 ### Long description
 
 JAIPilot gives ChatGPT and Codex three repeatable Java engineering workflows: review complete Git
-diffs, raise meaningful class-level test coverage through bounded parallel workers, and simplify
-code without widening scope. It uses each
+diffs, raise meaningful class-level test coverage through bounded parallel workers, and safely
+remove unused code, consolidate logic, modernize dependencies or JDKs, and optimize measured
+performance. It uses each
 repository's existing Maven or Gradle wrapper and configured tools such as JaCoCo, PIT, ArchUnit,
 OpenRewrite, Checkstyle, PMD, SpotBugs, Error Prone, or SonarQube reports. Missing evidence is
 reported as unavailable. JAIPilot does not add dependencies, weaken gates, run background
@@ -30,7 +31,7 @@ processes, or upload repository data.
 
 1. Review and verify my current Java diff.
 2. Raise meaningful per-class Java test coverage toward at least 80%.
-3. Simplify the changed Java code without changing behavior.
+3. Safely clean, consolidate, modernize, or optimize this Java project.
 
 ## Positive reviewer cases
 
@@ -81,16 +82,52 @@ processes, or upload repository data.
 - **Expected result shape:** Targeted survivor, minimal test change, test and PIT commands, mutation
   result, unchanged thresholds/dependencies, and limitations.
 
-### 5. Perform a minimal cleanup
+### 5. Perform a fail-closed unused cleanup
 
-- **Prompt:** Simplify the changed EntityUtils code without changing behavior. Prefer deletion over
-  abstraction.
-- **Fixture:** A Java repository with redundant branches and OpenRewrite already configured.
-- **Expected:** Select `jaipilot-clean-java`; establish a baseline; use only an applicable pinned
-  recipe if it reduces the requested scope; review its patch; keep the smallest coherent cleanup;
-  run focused and repository verification; report zero net change if no safe improvement exists.
-- **Expected result shape:** Baseline, recipe or manual simplification used, final minimal diff,
-  verification results, behavior-preservation evidence, and any declined cleanup.
+- **Prompt:** Remove everything in the orders module that is safely proven unused. Do not guess about
+  framework or external consumers.
+- **Fixture:** A Java repository with an unused import and private helper, plus a seemingly unused
+  reflective entry point and OpenRewrite already configured.
+- **Expected:** Select `jaipilot-clean-java`; establish the application boundary and baseline; run an
+  exactly scoped pinned recipe dry run; build a deletion ledger; remove the import and proven private
+  helper leaf by leaf; retain the reflective entry point; and run clean repository verification.
+- **Expected result shape:** Boundary, baseline, per-item deletion proof, retained uncertainty,
+  recipe edits accepted or rejected, verification, API assumptions, and reversal guidance.
+
+### 6. Consolidate equivalent logic
+
+- **Prompt:** Consolidate the duplicated customer lookup services and reduce unnecessary classes and
+  methods without changing domain behavior.
+- **Fixture:** A Java project with syntactically similar services, one genuinely shared invariant,
+  and another branch whose authorization and exception rules intentionally differ.
+- **Expected:** Select `jaipilot-clean-java`; compare invariants and callers; use characterization
+  tests; consolidate only the equivalent seam; retain the different policy; migrate consumers one
+  group at a time; and delete the old class only after reference proof.
+- **Expected result shape:** Accepted and rejected similarities, tests, canonical implementation,
+  before/after classes, methods, lines and duplication, commands, and compatibility risk.
+
+### 7. Modernize to verified stable releases
+
+- **Prompt:** Upgrade this service to the newest stable Java and dependencies it can safely support.
+- **Fixture:** A Maven service on Java 17 with a pinned BOM, CI/container runtime, public consumers,
+  and one plugin that does not yet support Java 25 bytecode.
+- **Expected:** Select `jaipilot-clean-java`; inventory every environment; research authoritative
+  stable releases and migration guides; isolate upgrade axes; reject Java 25 until the plugin or
+  boundary is compatible; and report the highest fully verified version instead of claiming latest.
+- **Expected result shape:** Old, evaluated and accepted versions, migration edits, dependency-tree
+  changes, rejected versions and reasons, profile/runtime commands, and remaining advisories.
+
+### 8. Optimize a measured workload
+
+- **Prompt:** Make this blocking request fan-out faster while preserving results, failures, and
+  resource limits. Consider virtual threads only if the evidence supports them.
+- **Fixture:** A Java service with a reproducible load test, profiler trace, blocking I/O, a bounded
+  connection pool, and synchronized code that can pin virtual threads.
+- **Expected:** Select `jaipilot-clean-java`; record at least five comparable baseline runs; identify
+  the bottleneck; test algorithm, batching, and concurrency hypotheses separately; reject a virtual
+  thread change if pinning or the pool dominates; and remeasure accepted changes.
+- **Expected result shape:** Workload and environment, raw runs, median, p95, throughput/resources,
+  correctness tests, accepted and rejected hypotheses, and unmeasured production differences.
 
 ## Negative reviewer cases
 
@@ -125,10 +162,11 @@ the portal.
 
 ## Release notes
 
-Version 5.1.0 expands JAIPilot's test workflow into bounded one-class-per-worker coverage campaigns.
-It targets at least 80% fresh line coverage for every eligible production class, integrates worker
-patches centrally, and reports blockers honestly. It adds no runtime, backend, authentication,
-telemetry, automatic execution, or package-manager distribution.
+Version 5.2.0 expands JAIPilot's cleanup workflow into four composable modes: fail-closed unused
+removal, behavior-locked logical consolidation, verified stable JDK and dependency modernization,
+and measurement-first performance optimization. It can use the existing test and diff-review skills
+for characterization and final proof. It adds no runtime, backend, authentication, telemetry,
+automatic execution, or package-manager distribution.
 
 ## Attestation notes
 

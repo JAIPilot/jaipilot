@@ -1,5 +1,23 @@
 # Changelog
 
+## [5.2.0] - 2026-08-16
+
+### Changed
+
+- Expanded `jaipilot-clean-java` into a fail-closed unused-code cleanup with a per-candidate
+  deletion ledger, leaf-first application, and reversible verification.
+- Added behavior-locked logical consolidation that reduces classes, methods, lines, and duplication
+  only when invariants and downstream contracts genuinely match.
+- Added stable JDK, build, framework, plugin, and dependency modernization in isolated compatibility
+  batches, including full-environment checks before adopting Java 25.
+- Added measurement-first algorithm, allocation, I/O, caching, and concurrency optimization with
+  reproducible raw runs, median, p95, and virtual-thread suitability checks.
+- Required repository-wide symbol and configuration checks plus explicit reflection, framework,
+  side-effect, profile, public-API, resource, dependency, packaging, and runtime boundaries.
+- Made uncertainty a retained-and-reported result instead of an unsafe deletion or universal safety
+  claim, while keeping configured, pinned, exactly scoped OpenRewrite dry runs first and composing
+  the existing test-generation and diff-review skills for behavior locks and final proof.
+
 ## [5.1.0] - 2026-08-16
 
 ### Changed

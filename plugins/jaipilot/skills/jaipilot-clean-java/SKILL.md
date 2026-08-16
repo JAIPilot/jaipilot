@@ -1,55 +1,85 @@
 ---
 name: jaipilot-clean-java
-description: Simplify, refactor, and verify Java while preserving behavior and scope. Use for code smells, dead code, duplication, excessive complexity, resource safety, maintainability, modernization, or requests to clean changed Java with configured OpenRewrite and analysis tools.
+description: Safely reduce, consolidate, modernize, and optimize Java with repository evidence. Use for unused code, dead classes, duplication, too many classes or methods, logical consolidation, dependency or JDK upgrades, OpenRewrite migrations, slow algorithms, allocation or concurrency problems, virtual threads, code smells, complexity, or performance cleanup.
 ---
 
-# Clean Java safely
+# Make Java smaller, newer, and faster without guessing
 
-Make the code smaller and clearer without turning cleanup into an unrelated rewrite.
+Optimize for verified value, not fewer lines, newer version numbers, or fashionable constructs.
+Never claim universal safety: Java reflection, frameworks, configuration, external consumers, and
+unmeasured workloads make that impossible. Fail closed when required evidence is unavailable.
 
-## Establish scope
+## Select the requested modes
+
+Read only the references needed for the request:
+
+- [unused.md](references/unused.md): remove repository-proven unused code, dependencies, or
+  resources;
+- [consolidate.md](references/consolidate.md): merge genuinely equivalent logic and reduce classes,
+  methods, and lines without creating a generic abstraction;
+- [modernize.md](references/modernize.md): upgrade the JDK, build, framework, plugins, and public
+  dependencies to verified compatible stable releases; and
+- [performance.md](references/performance.md): improve measured algorithms, allocation, I/O, and
+  concurrency, including virtual threads when the workload proves they fit.
+
+For a combined request, use this order unless repository constraints justify another: remove proven
+unused leaves, consolidate equivalent behavior, modernize in isolated batches, then optimize the
+result against a fresh benchmark.
+
+## Establish the shared boundary
 
 1. Confirm that the selected root contains a Java Maven or Gradle project. Otherwise report that
    this skill is not applicable and stop.
-2. Read repository instructions, build files, relevant production code, and tests.
-3. Record Git status and the exact requested files or behavior. Preserve unrelated work.
-4. Establish a passing focused baseline when practical. If the baseline already fails, separate that
-   failure from the cleanup.
-5. Identify concrete debt: dead code, duplication, needless abstraction, tangled control flow,
-   misleading names, unsafe resources, broad exceptions, avoidable allocation, or outdated patterns.
+2. Read repository instructions, build files, modules, source sets, generated-source rules,
+   profiles, tests, resources, packaging, supported runtimes, and public API policy.
+3. Record Git status and save the tracked diff plus an inventory and content snapshot of relevant
+   untracked files for later comparison. Preserve edits outside the explicit scope. Do not assume
+   every dirty line is unrelated: an in-scope candidate belongs to the requested cleanup, while
+   unclear ownership stays untouched and is reported.
+4. Define whether the boundary is a closed application or a published library, plugin, SDK,
+   framework extension, or service with downstream consumers.
+5. Run the repository's focused and normal verification baseline. Record existing failures before
+   edits and never make a failing baseline look green by weakening measurement.
 
-## Clean
+## Work in reversible evidence-backed batches
 
-1. Prefer deletion, direct code, existing abstractions, and repository conventions.
-2. Keep behavior stable. Add or strengthen a regression test before intentionally changing behavior.
-3. If the repository configures OpenRewrite, inspect the pinned version, active recipes, scope, and
-   dry-run diff before applying a relevant recipe. Review every resulting edit.
-4. If OpenRewrite is absent, state that it is unavailable. Do not inject a plugin, recipe, dependency,
-   suppression, or exclusion without user approval.
-5. Use configured formatter, compiler checks, Checkstyle, PMD, SpotBugs, Error Prone, ArchUnit,
-   SonarQube reports, or similar analyzers when applicable.
-6. Refine mechanical output into the smallest readable change. Remove speculative helpers,
-   comments that restate code, compatibility paths without a requirement, and unrelated formatting.
+1. When OpenRewrite is configured, inspect its pinned version and recipes. Run the smallest
+   applicable dry run before manual cleanup or migration and review every proposed edit. Never add
+   tooling without approval.
+2. Use an isolated worktree or equivalent reversible copy when relevant state can be reproduced
+   without hiding dirty work. Never reset, clean, or stash unrelated work.
+3. Apply one coherent leaf, consolidation seam, upgrade axis, or performance hypothesis at a time.
+   Compile and run the narrowest relevant tests after every behavior-sensitive batch.
+4. Reverse only a failed batch. Recompute references, compatibility, and measurements before the
+   next batch because one accepted change can alter later evidence.
+5. Use `$jaipilot-generate-tests` to add characterization or regression tests when behavior is not
+   adequately locked before a sensitive change. Do not add hollow tests merely to permit a rewrite.
+6. After integration, use `$jaipilot-review-diff` to inspect the complete Java and build diff and run
+   the repository's applicable final proof.
 
-## Verify
+## Shared acceptance rules
 
-1. Run focused tests after each coherent behavior-sensitive change.
-2. Run the normal module or repository verification command after the diff stabilizes.
-3. Run relevant configured architecture and static-analysis tasks.
-4. Use configured coverage or mutation testing when production behavior or tests changed.
-5. Re-read the complete final diff. Confirm that every changed line serves the requested cleanup or
-   its proof and that generated output is absent.
-6. Report a failed or unavailable check honestly instead of weakening the cleanup criteria.
+Accept a change only when:
+
+- the observable contract, errors, ordering, transactions, security, resource ownership, and
+  framework lifecycle remain intentional;
+- public API and downstream compatibility match the declared boundary;
+- configured tests, architecture checks, static analysis, packaging, and relevant profiles pass;
+- no dependency, exclusion, suppression, timeout, threshold, or test was weakened to pass; and
+- the final benefit is measured in the mode's terms and outweighs added indirection or risk.
+
+Prefer zero net change when proof is incomplete. A passing suite is evidence, not a universal
+guarantee.
 
 ## Report
 
 Return:
 
-- files and debt selected;
-- code deleted, simplified, or rewritten and why;
-- OpenRewrite recipes and mechanical edits accepted or rejected, when applicable;
-- exact test, build, architecture, and analyzer commands with results;
-- behavior evidence and any measured coverage or mutation result; and
-- remaining debt deliberately left outside scope.
-
-Do not claim behavior preservation without relevant execution evidence.
+- modes, boundary, initial worktree state, baseline, and unavailable evidence;
+- candidate or hypothesis ledger with accepted, rejected, and retained items;
+- OpenRewrite recipes and proposed edits accepted or rejected;
+- exact commands and pass, fail, skipped, or unavailable results;
+- before/after code shape, resolved versions, or performance measurements as applicable;
+- the final diff relative to the saved starting state, not only relative to `HEAD`;
+- external-consumer, runtime, workload, and profile assumptions; and
+- remaining risk plus how to reverse the uncommitted patch.

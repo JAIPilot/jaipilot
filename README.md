@@ -57,14 +57,17 @@ JDK, build wrapper, dependencies, and configured engineering tools.
 | --- | --- |
 | jaipilot-review-diff | Review a Java Git diff, find risk or unnecessary code, and run the repository's applicable verification. |
 | jaipilot-generate-tests | Raise meaningful per-class Java coverage with bounded parallel workers and fresh configured JaCoCo or PIT evidence. |
-| jaipilot-clean-java | Simplify Java safely and use configured OpenRewrite or analyzers without broadening scope. |
+| jaipilot-clean-java | Safely remove unused code, consolidate logic, modernize Java/dependencies, and optimize measured performance. |
 
 Example requests:
 
 ~~~text
 Use JAIPilot to review and verify my current Java diff.
 Use JAIPilot to raise every eligible class in the orders module toward at least 80% line coverage.
-Use JAIPilot to simplify the changed Java code without changing behavior.
+Use JAIPilot to remove everything the repository can prove unused, retaining anything uncertain.
+Use JAIPilot to consolidate equivalent services and reduce classes without changing behavior.
+Use JAIPilot to upgrade this project to the newest stable JDK and dependencies it can prove compatible.
+Use JAIPilot to optimize this workload from profiler and benchmark evidence.
 ~~~
 
 The skills can also trigger naturally when the request clearly matches their descriptions.
@@ -74,6 +77,12 @@ runs bounded waves in isolated worktrees or build outputs. It does not run concu
 Gradle processes in one checkout, assume shared tests are runtime-independent, or turn missing
 JaCoCo data into a pass. After integration, the agent refreshes one aggregate report and lists the
 baseline and final coverage of every eligible class, including honest blockers below 80%.
+
+The clean skill has four composable modes: fail-closed unused removal, behavior-locked
+consolidation, verified stable modernization, and measured performance optimization. It can invoke
+the test skill for characterization and regression coverage and the review skill for final proof.
+It does not treat fewer lines, larger version numbers, virtual threads, or one passing test suite as
+success by themselves. Anything uncertain stays in place and is reported.
 
 ## What the agent should return
 

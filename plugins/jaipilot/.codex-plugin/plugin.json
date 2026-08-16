@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "Java engineering skills for smaller, safer, better-proven agent changes.",
   "author": {
     "name": "JAIPilot",
@@ -31,7 +31,7 @@
     "defaultPrompt": [
       "Review and verify my current Java diff.",
       "Raise meaningful per-class Java test coverage toward at least 80%.",
-      "Simplify the changed Java code without changing behavior."
+      "Safely clean, consolidate, modernize, or optimize this Java project."
     ],
     "brandColor": "#2457D6",
     "logo": "./assets/jaipilot-logo.svg",

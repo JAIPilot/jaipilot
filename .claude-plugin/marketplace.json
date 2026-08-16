@@ -12,7 +12,7 @@
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
       "description": "Review Java diffs, generate tests, and clean code with repository-native tools.",
-      "version": "5.1.0",
+      "version": "5.2.0",
       "category": "development",
       "tags": [
         "java",
