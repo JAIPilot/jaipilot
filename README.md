@@ -114,6 +114,7 @@ preserved at [v4.0.8](https://github.com/JAIPilot/jaipilot/releases/tag/v4.0.8).
 
 ## Project
 
+- [JAIPilot Cloud campaign results](CLOUD_RESULTS.md) — a separate bounded GitHub App experiment
 - [Contributing](CONTRIBUTING.md)
 - [Support](SUPPORT.md)
 - [Security](SECURITY.md)
