@@ -42,12 +42,10 @@ ALLOWED_PLUGIN_ROOTS = {
     ".mcp.json",
     "README.md",
     "assets",
-    "mcp",
     "plugin.json",
     "skills",
 }
-MCP_SOURCE = PLUGIN / "mcp" / "jaipilot-mcp.ts"
-MCP_API_URL = "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud"
+MCP_API_URL = "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud/mcp"
 PRIVACY_URL = "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md"
 TERMS_URL = "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md"
 RETIRED_BEHAVIOR_LOCK = re.compile(
@@ -165,39 +163,19 @@ def validate_retired_features() -> None:
 def validate_mcp_server(
         server: object,
         label: str,
-        expected_args: list[str],
-        expected_cwd: object,
-        expected_env_vars: object,
 ) -> None:
     require(isinstance(server, dict), "jaipilot-remote must be an object")
-    require(server.get("type") == "stdio", "jaipilot-remote must use stdio")
-    require(server.get("command") == "deno", "jaipilot-remote must use the Deno runtime")
-    require(server.get("args") == expected_args,
-            f"{label}: jaipilot-remote must retain its bounded runtime permissions and path")
-    require(server.get("cwd") == expected_cwd,
-            f"{label}: jaipilot-remote has an unexpected working directory")
-    require(server.get("env_vars") == expected_env_vars,
-            f"{label}: jaipilot-remote has unexpected inherited environment variables")
-    require(server.get("env") == {"JAIPILOT_CLOUD_API_URL": MCP_API_URL},
-            "MCP config must contain only the non-secret production API URL")
+    require(server == {"type": "http", "url": MCP_API_URL},
+            f"{label}: jaipilot-remote must contain only the hosted OAuth MCP URL")
 
 
 def validate_mcp() -> None:
-    common_args = [
-        "run",
-        "--quiet",
-        "--allow-env=JAIPILOT_CLOUD_API_URL,JAIPILOT_CLOUD_TRIGGER_SECRET",
-        "--allow-net=otxfylhjrlaesjagfhfi.supabase.co",
-    ]
     claude = load(PLUGIN / ".mcp.json").get("mcpServers")
     require(isinstance(claude, dict) and set(claude) == {"jaipilot-remote"},
             "Claude MCP config must contain only jaipilot-remote")
     validate_mcp_server(
         claude["jaipilot-remote"],
         ".mcp.json",
-        common_args + ["${CLAUDE_PLUGIN_ROOT}/mcp/jaipilot-mcp.ts"],
-        None,
-        None,
     )
     codex = load(PLUGIN / ".codex-plugin" / "plugin.json").get("mcpServers")
     require(isinstance(codex, dict) and set(codex) == {"jaipilot-remote"},
@@ -205,18 +183,16 @@ def validate_mcp() -> None:
     validate_mcp_server(
         codex["jaipilot-remote"],
         ".codex-plugin/plugin.json",
-        common_args + ["mcp/jaipilot-mcp.ts"],
-        ".",
-        ["JAIPILOT_CLOUD_TRIGGER_SECRET"],
     )
-
-    source = read(MCP_SOURCE)
-    require("JAIPILOT_CLOUD_TRIGGER_SECRET" in source,
-            "MCP source must require the Cloud bearer at tool-call time")
-    require("workspace_destroy" in source and "process_cancel" in source,
-            "MCP source must expose cancellation and workspace cleanup")
-    require(re.search(r"gh[pousr]_[A-Za-z0-9]+|-----BEGIN [A-Z ]*PRIVATE KEY-----|sk-ant-", source)
-            is None, "MCP source must not contain credential material")
+    distributed = "\n".join(
+        read(path) for path in PLUGIN.rglob("*")
+        if path.is_file() and path.suffix in {".json", ".md", ".yaml", ".yml"}
+    )
+    require(re.search(
+        r"JAIPILOT_CLOUD_TRIGGER_SECRET|DAYTONA|GITHUB_APP_PRIVATE_KEY|sk-ant-",
+        distributed,
+        re.IGNORECASE,
+    ) is None, "Plugin must not expose provider details or credential configuration")
 
 
 def validate_marketplaces(expected_version: str) -> None:
@@ -254,8 +230,8 @@ def validate_lean_payload() -> tuple[int, int]:
             "Plugin must not contain symbolic links")
     require(not any(path.suffix in {".class", ".jar", ".py", ".sh"} for path in files),
             "Plugin must contain no binary, shell, or package-manager runtime payload")
-    require([path for path in files if path.suffix == ".ts"] == [MCP_SOURCE],
-            "Plugin may contain only the reviewed JAIPilot MCP TypeScript source")
+    require(not any(path.suffix == ".ts" for path in files),
+            "Hosted MCP plugin must not contain a local TypeScript runtime")
     require(not any(path.stat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                     for path in files),
             "Plugin files must not be executable")
@@ -273,7 +249,7 @@ def main() -> None:
     validate_marketplaces(expected_version)
     count, size = validate_lean_payload()
     print(
-        f"Validated JAIPilot {expected_version}: {len(SKILLS)} skills, 6 remote tools, "
+        f"Validated JAIPilot {expected_version}: {len(SKILLS)} skills, 7 remote tools, "
         f"{count} files, {size} bytes."
     )
 

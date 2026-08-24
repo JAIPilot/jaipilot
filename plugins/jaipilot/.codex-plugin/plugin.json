@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "5.4.1",
-  "description": "Java review, testing, cleanup, modernization, performance, and opt-in remote execution for coding agents.",
+  "version": "6.0.0",
+  "description": "Verified Java engineering skills and authenticated remote build hardware for Codex and Claude Code.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -23,36 +23,26 @@
   "skills": "./skills/",
   "mcpServers": {
     "jaipilot-remote": {
-      "type": "stdio",
-      "command": "deno",
-      "args": [
-        "run",
-        "--quiet",
-        "--allow-env=JAIPILOT_CLOUD_API_URL,JAIPILOT_CLOUD_TRIGGER_SECRET",
-        "--allow-net=otxfylhjrlaesjagfhfi.supabase.co",
-        "mcp/jaipilot-mcp.ts"
-      ],
-      "cwd": ".",
-      "env": {
-        "JAIPILOT_CLOUD_API_URL": "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud"
-      },
-      "env_vars": ["JAIPILOT_CLOUD_TRIGGER_SECRET"]
+      "type": "http",
+      "url": "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud/mcp"
     }
   },
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "Verified Java engineering workflows",
-    "longDescription": "Make Java changes smaller, cleaner, faster, and easier to verify through meaningful tests, safe cleanup, measured performance work, compatible modernization, and optional exact-commit remote execution.",
+    "shortDescription": "Verified Java work on ready remote hardware",
+    "longDescription": "Give Codex or Claude Code focused Java engineering workflows plus authenticated, disposable hardware for long Maven and Gradle builds, tests, analyzers, profilers, and benchmarks.",
     "developerName": "JAIPilot",
     "category": "Productivity",
-    "capabilities": ["Interactive"],
+    "capabilities": [
+      "Interactive"
+    ],
     "websiteURL": "https://github.com/JAIPilot/jaipilot",
     "privacyPolicyURL": "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md",
     "defaultPrompt": [
       "Optimize my current Java change without changing its behavior.",
       "Add meaningful tests for this Java behavior and report fresh coverage evidence.",
-      "Run this committed Java build or benchmark on disposable remote hardware."
+      "Run this Java build or benchmark on JAIPilot remote hardware and report the evidence."
     ],
     "brandColor": "#2457D6",
     "logo": "./assets/jaipilot-logo.svg",

@@ -1,5 +1,27 @@
 # Changelog
 
+## [6.0.0] - 2026-08-25
+
+### Added
+
+- Added standard OAuth sign-in through jaipilot.com for remote tools in Codex and Claude Code.
+- Added explicit, digest-verified upload of the current tracked and unignored Git working tree.
+- Added `workspace_prepare` and public-beta ownership, concurrency, source-size, lifetime, and
+  included-compute bounds.
+- Added a benefit-and-proof section with the measured Spring Framework Petclinic acceptance run.
+
+### Changed
+
+- Replaced the local Deno adapter and internal shared bearer with one hosted HTTP MCP resource.
+- Made remote Java execution independent of a user-installed GitHub App and able to verify staged,
+  unstaged, and untracked repository files.
+- Required agents to identify the concrete benefit of every remote run without inventing speedup.
+
+### Removed
+
+- Removed the bundled MCP runtime, cloud trigger secret configuration, provider-specific setup, and
+  exact-committed-SHA-only limitation from the public plugin.
+
 ## [5.4.1] - 2026-08-24
 
 ### Removed
@@ -27,8 +49,8 @@
   lifecycle-aware JaCoCo/PIT discovery, and semantic collection edge cases.
 - Strengthened cleanup and review with concrete AI-clutter criteria, honest complexity reduction,
   stable-upgrade scope, semantic replacement checks, and compatibility evidence.
-- Rewrote plugin, marketplace, skill, and repository descriptions around one clear outcome:
-  verified Java engineering performed by the customer's own coding agent.
+- Rewrote plugin, marketplace, skill, and repository descriptions around one clear outcome: verified
+  Java engineering performed by the customer's own coding agent.
 - Simplified the public repository by removing internal OpenAI submission paperwork and the
   historical Cloud campaign inventory; retained only source, distribution, verification, security,
   community, and release material.
@@ -37,8 +59,8 @@
 
 ### Added
 
-- Bundled the six-tool JAIPilot Remote MCP server with the existing Java skills for Codex and
-  Claude Code.
+- Bundled the six-tool JAIPilot Remote MCP server with the existing Java skills for Codex and Claude
+  Code.
 - Added `jaipilot-remote-java` to run long builds, tests, analyzers, profilers, and benchmarks on
   disposable Java hardware at one exact committed GitHub SHA.
 - Added pinned remote Java environments with JDK 17, 21, and 25, Maven 3.9.16, and Gradle 9.7.0.

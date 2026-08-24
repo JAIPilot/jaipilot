@@ -1,8 +1,8 @@
 # Privacy policy
 
-Effective: August 24, 2026
+Effective: August 25, 2026
 
-JAIPilot bundles static Java engineering skills and an optional remote-execution MCP client. Using
+JAIPilot bundles static Java engineering skills and an optional hosted remote-execution MCP. Using
 the skills locally does not send repository contents to JAIPilot. The plugin has no advertising,
 cookies, or product-analytics SDK.
 
@@ -12,23 +12,24 @@ plugins, and dependencies may access local or network resources according to the
 
 When the user or host agent explicitly invokes JAIPilot Remote:
 
-- the selected exact committed GitHub revision is checked out into a temporary Daytona workspace
-  through the JAIPilot Cloud control plane on Supabase;
-- GitHub processes repository identity and issues one short-lived repository-scoped read token;
-- command inputs, bounded output logs, workspace metadata, and provider operational metadata pass
-  through those services;
-- staged, unstaged, and untracked local files are not uploaded;
+- the user signs in through jaipilot.com and grants the coding host an OAuth connection;
+- the host may explicitly upload tracked and unignored staged, unstaged, and untracked repository
+  files through a short-lived private upload URL;
+- JAIPilot verifies ownership, archive size, and SHA-256 before extracting the source into a
+  temporary private workspace;
+- command inputs, bounded output logs, account/workspace metadata, and operational metadata pass
+  through JAIPilot Cloud and its managed infrastructure providers;
+- the uploaded archive is deleted after workspace preparation or failure;
 - the workspace and its same-workspace caches are deleted on explicit cleanup or hard TTL; and
 - JAIPilot does not place customer source in this public repository or a product analytics store.
 
 The remote sandbox has outbound network access, so repository build code and dependencies may send
-data elsewhere. Provider logs, backups, security controls, and retention are governed by GitHub,
-Supabase, Daytona, and any contacted dependency service.
+data elsewhere. Provider logs, backups, security controls, and retention are governed by Supabase,
+JAIPilot's managed execution provider, and any contacted dependency service.
 
-Remote execution is currently an operator preview using separately provisioned authentication. It
-is not a claim of private-VPC, regulated-data, data-residency, or Zero Data Retention support. Do
-not use it for sensitive or proprietary source unless the applicable provider terms and controls
-have been reviewed and accepted.
+Remote execution is a bounded public beta. It is not a claim of private-VPC, regulated-data,
+data-residency, or Zero Data Retention support. Do not use it for sensitive or proprietary source
+unless the applicable provider terms and controls have been reviewed and accepted.
 
 The public project is hosted on GitHub. GitHub processes visits, issues, discussions, and security
 reports under its own privacy terms. Do not include secrets, proprietary source, or personal data in

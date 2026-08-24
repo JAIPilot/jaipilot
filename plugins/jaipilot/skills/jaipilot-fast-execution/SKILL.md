@@ -7,8 +7,8 @@ description: Reduce wall time for substantial Java repository builds, tests, ana
 
 Minimize end-to-end wall time, not merely one command's displayed duration. Preserve the controlling
 task's exact behavior, coverage, measurement, and final-verification requirements. Never skip work,
-weaken a gate, raise a timeout, change test semantics, or edit repository configuration just to
-make a run appear faster.
+weaken a gate, raise a timeout, change test semantics, or edit repository configuration just to make
+a run appear faster.
 
 ## Size work to the real machine
 
@@ -43,8 +43,8 @@ make a run appear faster.
 1. Identify the normal clean verification and the smallest focused command. Run the required clean
    baseline once, retain safe dependency and wrapper caches, and iterate with the affected module,
    class, or task.
-2. Keep comparable performance commands, profiles, environment, worker flags, and workload
-   selection identical.
+2. Keep comparable performance commands, profiles, environment, worker flags, and workload selection
+   identical.
 3. Run the final repository-native clean verification once after the diff stabilizes. Confirm the
    intended tests and analyzers executed.
 4. Time material commands and report wall time, concurrency, and outcome. Separate dependency
@@ -65,9 +65,9 @@ If acceleration plausibly causes a failure, run the repository-native serial equ
 serial passes, stop using the unsafe option and report the fallback; if serial also fails, preserve
 the real failure. Never retry blindly or kill unrelated processes.
 
-Use the `jaipilot-remote-java` skill when an exact committed GitHub revision materially benefits from remote
-hardware. Keep local execution when the requested proof includes dirty files, private network or
-artifact access, unavailable secrets, or machine-specific services.
+Use the `jaipilot-remote-java` skill when substantial verification materially benefits from ready
+remote hardware. Keep local execution when the requested proof needs private network or artifact
+access, unavailable secrets, or machine-specific services.
 
 ## Report
 

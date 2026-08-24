@@ -1,18 +1,8 @@
 {
   "mcpServers": {
     "jaipilot-remote": {
-      "type": "stdio",
-      "command": "deno",
-      "args": [
-        "run",
-        "--quiet",
-        "--allow-env=JAIPILOT_CLOUD_API_URL,JAIPILOT_CLOUD_TRIGGER_SECRET",
-        "--allow-net=otxfylhjrlaesjagfhfi.supabase.co",
-        "${CLAUDE_PLUGIN_ROOT}/mcp/jaipilot-mcp.ts"
-      ],
-      "env": {
-        "JAIPILOT_CLOUD_API_URL": "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud"
-      }
+      "type": "http",
+      "url": "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud/mcp"
     }
   }
 }

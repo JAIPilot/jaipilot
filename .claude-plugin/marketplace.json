@@ -5,14 +5,14 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Java engineering skills with opt-in remote execution."
+    "description": "Verified Java engineering skills with authenticated remote build hardware."
   },
   "plugins": [
     {
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
-      "description": "Make Java changes smaller, safer, faster, and verifiable with the customer's coding agent.",
-      "version": "5.4.1",
+      "description": "Give Codex or Claude Code Java-specific guardrails and ready hardware for long builds, tests, profiling, and benchmarks.",
+      "version": "6.0.0",
       "category": "development",
       "tags": [
         "java",

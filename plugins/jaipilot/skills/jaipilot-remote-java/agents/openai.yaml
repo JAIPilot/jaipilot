@@ -1,4 +1,12 @@
 interface:
   display_name: "Run Java on Remote Hardware"
-  short_description: "Offload long checks for an exact commit"
-  default_prompt: "Use $jaipilot-remote-java to run this committed Java build or benchmark on disposable remote hardware and return exact evidence."
+  short_description: "Run long Java checks on ready hardware"
+  default_prompt: "Use $jaipilot-remote-java to run this substantial Java build or benchmark on authenticated disposable hardware and report the exact evidence and benefit."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "jaipilot-remote"
+      description: "Authenticated disposable Java execution"
+      transport: "streamable_http"
+      url: "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud/mcp"

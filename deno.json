@@ -6,7 +6,6 @@
     "include": [
       "plugins/jaipilot/.mcp.json",
       "plugins/jaipilot/.codex-plugin/plugin.json",
-      "plugins/jaipilot/mcp/jaipilot-mcp.ts",
       "tests/jaipilot-mcp_test.ts",
       "deno.json"
     ]
@@ -16,11 +15,10 @@
       "tags": ["recommended"]
     },
     "include": [
-      "plugins/jaipilot/mcp/jaipilot-mcp.ts",
       "tests/jaipilot-mcp_test.ts"
     ]
   },
   "tasks": {
-    "check": "deno fmt --check && deno lint && deno check plugins/jaipilot/mcp/jaipilot-mcp.ts tests/jaipilot-mcp_test.ts && deno test tests/jaipilot-mcp_test.ts && python3 scripts/validate-plugin.py"
+    "check": "deno fmt --check && deno lint && deno check tests/jaipilot-mcp_test.ts && deno test --allow-read tests/jaipilot-mcp_test.ts && python3 scripts/validate-plugin.py"
   }
 }
