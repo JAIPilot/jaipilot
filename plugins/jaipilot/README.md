@@ -15,9 +15,10 @@ JAIPilot helps your coding agent:
 Your coding agent remains the only planner and editor. JAIPilot supplies focused Java workflows,
 compute, and repository-native evidence.
 
-Petclinic acceptance results: **10** behavior tests, a **+2/-9** production cleanup, **100%**
-changed-method coverage, and **85/85** passing tests for one optimization; a separate remote clean
-build passed **75/75** tests in **44.6 seconds**.
+On the same Petclinic change, the result without JAIPilot had **75 tests**, **0%** coverage of the
+new method, and an unused helper. With JAIPilot: **85 tests**, **100%** line and branch coverage of
+the method, **7 net production lines removed**, and class complexity reduced from **25 to 24**. Both
+states passed clean Maven verification.
 
 ```text
 Use JAIPilot to make my current Java change as lean, safe, and fast as possible. Preserve behavior

@@ -1,5 +1,14 @@
 # Changelog
 
+## [6.0.2] - 2026-08-25
+
+### Changed
+
+- Replaced standalone JAIPilot metrics with a controlled before/after comparison at one exact
+  Petclinic pull-request head.
+- Independently reproduced test counts, changed-method and class coverage, production-line
+  reduction, method count, complexity, and clean-build outcomes for both states.
+
 ## [6.0.1] - 2026-08-25
 
 ### Changed

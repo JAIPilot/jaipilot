@@ -15,9 +15,33 @@ instead of tying up your laptop.
 JAIPilot does not replace your coding agent or add another AI. It gives your agent focused Java
 workflows, remote compute, and one rule: **show evidence, not confidence.**
 
-| **75/75** tests passed      | **44.6s** clean Maven build | **3 JDKs** ready    | **5 hours** remote compute included monthly |
-| --------------------------- | --------------------------- | ------------------- | ------------------------------------------- |
-| Petclinic remote acceptance | Fresh disposable workspace  | Java 17, 21, and 25 | Per signed-in beta user                     |
+| **75 → 85** tests     | **0% → 100%** target coverage | **7** net production lines removed | **25 → 24** class complexity |
+| --------------------- | ----------------------------- | ---------------------------------- | ---------------------------- |
+| +13.3%, zero failures | Lines and branches            | Same behavior                      | One unused method removed    |
+
+## JAIPilot vs no JAIPilot
+
+The original [Petclinic PR](https://github.com/skrcode/spring-framework-petclinic/pull/21) already
+had a green build. JAIPilot reviewed that exact head and produced this
+[companion change](https://github.com/skrcode/spring-framework-petclinic/pull/25):
+
+| Metric                         |       Without JAIPilot | With JAIPilot | Outcome                         |
+| ------------------------------ | ---------------------: | ------------: | ------------------------------- |
+| Tests                          |                     75 |            85 | **+10 tests (+13.3%)**          |
+| Changed-method line coverage   |              0/12 (0%) |  11/11 (100%) | **+100 percentage points**      |
+| Changed-method branch coverage |               0/8 (0%) |    8/8 (100%) | **+100 percentage points**      |
+| `Owner` class line coverage    |          22/53 (41.5%) | 33/51 (64.7%) | **+23.2 points with less code** |
+| Production change              | Unused helper remained |   +2/-9 lines | **7 net lines removed**         |
+| `Owner` methods                |                     16 |            15 | **1 unused method removed**     |
+| `Owner` complexity             |                     25 |            24 | **4% lower**                    |
+| Clean Maven verification       |           75/75 passed |  85/85 passed | **Both stayed green**           |
+
+The important result is not simply “more tests.” Without JAIPilot, the build passed while the new
+behavior had zero coverage and unused code remained. With JAIPilot, the same behavior stayed green,
+the edge cases became executable tests, and production code became smaller.
+
+The comparison uses the original PR head and JAIPilot's direct child commit, clean worktrees, the
+same `./mvnw -q clean verify` command, and fresh JaCoCo 0.8.14 reports.
 
 ## Why teams use JAIPilot
 
@@ -44,15 +68,14 @@ JAIPilot may add meaningful tests, remove unused code, simplify equivalent logic
 performance, evaluate compatible upgrades, review the complete diff, and run a final clean build. If
 no safe improvement can be proved, it should make no change.
 
-## Real JAIPilot results
+## More proven results
 
-All three acceptance runs used Spring Framework Petclinic and repository-native verification:
+Additional Petclinic acceptance runs used repository-native verification:
 
-| Use case                                                                                            | Result                                                                                                                                                                                             |
-| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Lean and optimize a change](https://github.com/skrcode/spring-framework-petclinic/pull/25)         | **10** behavior tests added; **7 net production lines removed** (+2/-9); changed method reached **100%** instruction, line, and branch coverage; **85/85** tests passed; Java 17 and 21 CI passed. |
-| [Cover previously untested behavior](https://github.com/skrcode/spring-framework-petclinic/pull/34) | **7** focused tests added with **no production or dependency change**; target coverage moved from **0% to 100%** for lines and branches; **82/82** tests passed independently on Java 17 and 21.   |
-| Run the current change remotely                                                                     | An uncommitted file reached the workspace; `./mvnw clean test` passed **75/75** tests in **44.6 seconds**; job recovery, cancellation, and workspace deletion were verified.                       |
+| Use case                                                                                            | Result                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Cover previously untested behavior](https://github.com/skrcode/spring-framework-petclinic/pull/34) | **7** focused tests added with **no production or dependency change**; target coverage moved from **0% to 100%** for lines and branches; **82/82** tests passed independently on Java 17 and 21. |
+| Run the current change remotely                                                                     | An uncommitted file reached the workspace; `./mvnw clean test` passed **75/75** tests in **44.6 seconds**; job recovery, cancellation, and workspace deletion were verified.                     |
 
 These are reproducible acceptance results, not claims that every repository will see the same
 coverage, code reduction, or speed.
