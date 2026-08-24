@@ -35,15 +35,15 @@ make a run appear faster.
    outputs. Do not invent concurrency around global state, ordered tests, rate-limited services, or
    a shared database.
 5. Never run concurrent Git writers, dependency resolvers, or Maven/Gradle processes against the
-   same checkout and output tree. Never overlap behavior baseline/candidate runs or performance
-   measurements; contention invalidates comparison.
+   same checkout and output tree. Never overlap performance measurements; contention invalidates
+   comparison.
 
 ## Spend full builds where they prove something
 
 1. Identify the normal clean verification and the smallest focused command. Run the required clean
    baseline once, retain safe dependency and wrapper caches, and iterate with the affected module,
    class, or task.
-2. Keep behavior baseline and candidate commands, profiles, environment, worker flags, and test
+2. Keep comparable performance commands, profiles, environment, worker flags, and workload
    selection identical.
 3. Run the final repository-native clean verification once after the diff stabilizes. Confirm the
    intended tests and analyzers executed.

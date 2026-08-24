@@ -48,9 +48,8 @@ and keep the host agent in control.
    Inspect declarations, executions, profiles, and lifecycle bindings before calling configured
    evidence unavailable.
 4. Confirm that changed tests actually executed. For behavior-sensitive production edits, require
-   comparable focused behavior evidence before and after the edit when the original state can be
-   reproduced safely. Review characterization tests for observable assertions. Do not infer test
-   quality from a green build or line coverage alone.
+   focused coverage of the affected contract and edge cases. Review tests for observable assertions.
+   Do not infer test quality from a green build or line coverage alone.
 5. Re-read the final diff after verification and check that generated output did not enter it.
 6. If a command cannot run, report the exact failure and leave that property unavailable.
 7. Use the `jaipilot-remote-java` skill only when an expensive check materially benefits from remote

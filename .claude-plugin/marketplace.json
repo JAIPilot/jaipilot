@@ -5,14 +5,14 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Behavior-locked Java engineering skills with opt-in remote execution."
+    "description": "Java engineering skills with opt-in remote execution."
   },
   "plugins": [
     {
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
       "description": "Make Java changes smaller, safer, faster, and verifiable with the customer's coding agent.",
-      "version": "5.4.0",
+      "version": "5.4.1",
       "category": "development",
       "tags": [
         "java",

@@ -1,4 +1,4 @@
 interface:
-  display_name: "Prove Java Behavior with Tests"
-  short_description: "Lock behavior or raise meaningful coverage"
-  default_prompt: "Use $jaipilot-generate-tests to lock this Java behavior with meaningful tests and fresh repository evidence."
+  display_name: "Add Meaningful Java Tests"
+  short_description: "Add useful tests or raise measured coverage"
+  default_prompt: "Use $jaipilot-generate-tests to add meaningful Java tests and report fresh coverage evidence when available."

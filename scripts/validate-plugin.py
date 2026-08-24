@@ -50,6 +50,11 @@ MCP_SOURCE = PLUGIN / "mcp" / "jaipilot-mcp.ts"
 MCP_API_URL = "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud"
 PRIVACY_URL = "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md"
 TERMS_URL = "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md"
+RETIRED_BEHAVIOR_LOCK = re.compile(
+    r"behaviou?r[- ]lock|lock(?:ed|ing)? (?:observable )?behaviou?r|"
+    r"behaviou?r (?:baseline|candidate)|characterization",
+    re.IGNORECASE,
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -147,6 +152,14 @@ def validate_skills() -> None:
         require(short_description is not None
                 and 25 <= len(short_description.group(1)) <= 64,
                 f"{name}: short_description must contain 25-64 characters")
+
+
+def validate_retired_features() -> None:
+    for path in PLUGIN.rglob("*"):
+        if not path.is_file() or path.suffix not in {".json", ".md", ".ts", ".yaml", ".yml"}:
+            continue
+        require(RETIRED_BEHAVIOR_LOCK.search(read(path)) is None,
+                f"{path.relative_to(ROOT)}: retired behavior-lock workflow found")
 
 
 def validate_mcp_server(
@@ -255,6 +268,7 @@ def main() -> None:
     expected_version = version()
     validate_manifests(expected_version)
     validate_skills()
+    validate_retired_features()
     validate_mcp()
     validate_marketplaces(expected_version)
     count, size = validate_lean_payload()

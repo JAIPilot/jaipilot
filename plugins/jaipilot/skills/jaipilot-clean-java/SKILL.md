@@ -39,9 +39,8 @@ in isolated batches. Evaluating a mode does not require editing in it.
    unclear ownership stays untouched and is reported.
 4. Define whether the boundary is a closed application or a published library, plugin, SDK,
    framework extension, or service with downstream consumers.
-5. Choose a focused behavior command for behavior-sensitive work and run it before production
-   edits. Also run the normal verification baseline. Record existing failures and never make a
-   failing baseline look green by weakening measurement.
+5. Identify the repository's focused checks and normal verification command. Record known existing
+   failures and never make a failing check look green by weakening measurement.
 
 ## Work in reversible evidence-backed batches
 
@@ -51,14 +50,13 @@ in isolated batches. Evaluating a mode does not require editing in it.
 2. Use an isolated worktree or equivalent reversible copy when relevant state can be reproduced
    without hiding dirty work. Never reset, clean, or stash unrelated work.
 3. Apply one coherent leaf, consolidation seam, performance hypothesis, or upgrade axis at a time.
-   Compile and run the same focused behavior command after every behavior-sensitive batch.
+   Compile and run the narrow relevant tests after every material batch.
 4. Reverse only a failed batch. Recompute references, compatibility, and measurements before the
    next batch because one accepted change can alter later evidence.
-5. Use the `jaipilot-generate-tests` skill to add characterization or regression tests when behavior is not
-   adequately locked before a sensitive change. Do not add hollow tests merely to permit a rewrite.
-6. After integration, rerun the exact focused behavior command from the baseline, use
-   the `jaipilot-review-diff` skill to inspect the complete Java and build diff, and run the repository's
-   applicable final clean proof.
+5. Use the `jaipilot-generate-tests` skill when the request includes tests or coverage, or when a
+   retained change exposes a specific regression gap. Do not add hollow tests merely to permit a rewrite.
+6. After integration, use the `jaipilot-review-diff` skill to inspect the complete Java and build
+   diff, then run the repository's applicable final clean proof.
 7. Use the `jaipilot-remote-java` skill when a build, analyzer, profiler, or benchmark materially benefits
    from disposable remote hardware and the exact state is already a GitHub-available commit. Do not
    treat committed remote evidence as proof of dirty local edits.

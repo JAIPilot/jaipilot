@@ -4,11 +4,11 @@
 
 # JAIPilot
 
-**Behavior-locked Java engineering for Codex and Claude Code.**
+**Java engineering workflows for Codex and Claude Code.**
 
-JAIPilot helps your coding agent turn a Java change into its smallest verified form: lock behavior,
+JAIPilot helps your coding agent make a Java change smaller, cleaner, faster, and easier to verify:
 add meaningful tests, remove proven waste, reduce real complexity, measure performance, evaluate
-compatible upgrades, and run the repository's own proof.
+compatible upgrades, and run the repository's own checks.
 
 The customer's agent remains the only planner and editor. JAIPilot is six focused skills plus six
 optional remote-execution tools—not another agent, code generator, daemon, or background scanner.
@@ -21,13 +21,13 @@ Your request → Codex or Claude Code → JAIPilot skills → repository-native 
 ## Start with one request
 
 ~~~text
-Use JAIPilot to optimize my current Java change without changing its behavior.
+Use JAIPilot to optimize my current Java change and verify it with the repository's own checks.
 ~~~
 
 The agent will:
 
 1. bound the exact diff, module, or project area and preserve unrelated work;
-2. run the repository's baseline and lock observable behavior with focused tests;
+2. run focused tests and configured repository checks;
 3. remove only proved-unused code and consolidate only genuinely equivalent logic;
 4. optimize only a measured workload or deterministic operation count;
 5. modernize only stable versions proved compatible with the declared boundary; and
@@ -40,8 +40,8 @@ never converted into a synthetic win.
 
 | Skill | What it does |
 | --- | --- |
-| `jaipilot-optimize-java` | Orchestrates one bounded, behavior-locked Java improvement across tests, cleanup, performance, and justified modernization. |
-| `jaipilot-generate-tests` | Adds characterization or regression tests, or runs a bounded per-class coverage campaign using fresh configured evidence. |
+| `jaipilot-optimize-java` | Orchestrates one bounded Java improvement across tests, cleanup, performance, and justified modernization. |
+| `jaipilot-generate-tests` | Adds meaningful tests or runs a bounded per-class coverage campaign using fresh configured evidence. |
 | `jaipilot-clean-java` | Removes proven waste, consolidates equivalent logic, reduces complexity, modernizes compatible versions, and optimizes measured workloads. |
 | `jaipilot-review-diff` | Reviews the complete Java change for regressions, unnecessary code, architecture drift, compatibility risk, and missing proof. |
 | `jaipilot-fast-execution` | Speeds substantial Maven/Gradle builds, tests, and analyzers through safe resource sizing, batching, and native parallelism. |
@@ -115,7 +115,7 @@ Every workflow returns a concise engineering record:
 Scope: revision, comparison base, modules, and files
 Changes: accepted and rejected hypotheses with reasons
 Commands: exact local or remote commands and outcomes
-Evidence: behavior, tests, coverage, architecture, analysis, or measurements
+Evidence: tests, coverage, architecture, analysis, compatibility, or measurements
 Limitations: unavailable services, profiles, consumers, or production conditions
 Cleanup: remote cancellation and workspace destruction, when applicable
 ~~~

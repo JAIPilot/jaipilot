@@ -1,4 +1,4 @@
 interface:
   display_name: "Optimize a Java Change"
   short_description: "Make Java smaller, safer, and measurably faster"
-  default_prompt: "Use $jaipilot-optimize-java to turn my current Java change into its smallest verified form without changing behavior."
+  default_prompt: "Use $jaipilot-optimize-java to turn my current Java change into its smallest verified form and run the repository's applicable checks."

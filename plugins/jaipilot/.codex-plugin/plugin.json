@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "5.4.0",
-  "description": "Behavior-locked Java engineering for coding agents, with opt-in remote execution.",
+  "version": "5.4.1",
+  "description": "Java review, testing, cleanup, modernization, performance, and opt-in remote execution for coding agents.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -41,8 +41,8 @@
   },
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "Behavior-locked Java engineering",
-    "longDescription": "Turn Java changes into their smallest verified form through behavior locks, meaningful tests, safe cleanup, measured performance work, compatible modernization, and optional exact-commit remote execution.",
+    "shortDescription": "Verified Java engineering workflows",
+    "longDescription": "Make Java changes smaller, cleaner, faster, and easier to verify through meaningful tests, safe cleanup, measured performance work, compatible modernization, and optional exact-commit remote execution.",
     "developerName": "JAIPilot",
     "category": "Productivity",
     "capabilities": ["Interactive"],
@@ -51,7 +51,7 @@
     "termsOfServiceURL": "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md",
     "defaultPrompt": [
       "Optimize my current Java change without changing its behavior.",
-      "Lock this Java behavior with meaningful tests and fresh coverage evidence.",
+      "Add meaningful tests for this Java behavior and report fresh coverage evidence.",
       "Run this committed Java build or benchmark on disposable remote hardware."
     ],
     "brandColor": "#2457D6",

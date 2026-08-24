@@ -20,13 +20,13 @@ branches into helpers, streams, annotations, reflection, configuration, or polym
 repository's configured analyzer when available; otherwise report structural decision counts
 without inventing a tool score.
 
-## Lock behavior before merging
+## Confirm equivalence before merging
 
 1. Map each candidate's observable inputs, outputs, state transitions, errors, events, persistence,
    and concurrency semantics.
-2. Invoke the `jaipilot-generate-tests` skill for characterization tests when those contracts are not already
-   covered. Exercise both implementations with the same case matrix where their behavior is meant
-   to match, and explicit separate cases where it is not.
+2. Compare callers, existing tests, configuration, and runtime contracts. Exercise both
+   implementations with the same case matrix where their behavior is meant to match, and explicit
+   separate cases where it is not. Reject the consolidation when equivalence is uncertain.
 3. Retain public adapters or deprecation paths when downstream consumers are outside the boundary.
    Do not reduce class count by silently breaking API or serialization identity.
 
@@ -41,6 +41,6 @@ without inventing a tool score.
 ## Accept and report
 
 Run clean repository verification and configured architecture, duplication, coverage, and mutation
-checks. Accept only if behavior stays locked and total concepts, duplication, or cognitive load fall
+checks. Accept only if existing verification passes and total concepts, duplication, or cognitive load fall
 without worse coupling. Report before/after classes, methods, production lines, duplication,
 branches, dependencies, adapters retained, rejected similarities, and any external-consumer risk.

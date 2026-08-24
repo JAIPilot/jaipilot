@@ -3,7 +3,7 @@
 JAIPilot gives Codex and Claude Code six focused Java engineering workflows:
 
 - `jaipilot-optimize-java`: turn a bounded Java change into its smallest verified form;
-- `jaipilot-generate-tests`: lock behavior or run a meaningful coverage campaign;
+- `jaipilot-generate-tests`: add regression tests or run a meaningful coverage campaign;
 - `jaipilot-clean-java`: remove proven waste, simplify, modernize, or optimize safely;
 - `jaipilot-review-diff`: find behavioral risk, unnecessary code, and missing proof;
 - `jaipilot-fast-execution`: reduce Java verification time with safe resource-aware execution; and

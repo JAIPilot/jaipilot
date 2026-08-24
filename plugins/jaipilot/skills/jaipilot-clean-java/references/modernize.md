@@ -46,9 +46,9 @@ Use the repository's toolchain and release conventions; do not merely change one
    compatibility, and serialization checks.
 4. Do not suppress warnings, illegal access, linkage errors, flaky tests, or security failures to
    complete an upgrade. Roll back the failed axis and report the highest verified version.
-5. Run the locked focused behavior command before and after every accepted axis. A green compile is
-   not compatibility proof; preserve runtime wiring, serialized forms, database access, framework
-   lifecycle, and the declared downstream-consumer boundary.
+5. Run focused tests after every accepted axis. A green compile is not compatibility proof;
+   preserve runtime wiring, serialized forms, database access, framework lifecycle, and the declared
+   downstream-consumer boundary.
 
 Report every component's old version, evaluated release, accepted version, evidence, migration
 edits, rejected version and reason, unresolved advisories, runtime assumptions, and exact commands.
