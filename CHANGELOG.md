@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.0.1] - 2026-08-25
+
+### Changed
+
+- Rewrote the public and bundled READMEs around JAIPilot's user outcome: less agent drift, better
+  Java changes, repository-native proof, and remote execution that frees the developer laptop.
+- Replaced authentication and infrastructure detail with a single sign-in instruction.
+- Added transparent Petclinic acceptance data for code reduction, tests, coverage, clean-build time,
+  toolchain readiness, and included remote compute.
+
 ## [6.0.0] - 2026-08-25
 
 ### Added

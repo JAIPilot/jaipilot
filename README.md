@@ -4,87 +4,58 @@
 
 # JAIPilot
 
-**Verified Java engineering and remote build hardware for Codex and Claude Code.**
+**Ship better Java with the coding agent you already use.**
 
-JAIPilot helps your existing coding agent keep Java changes small, clean, fast, and demonstrably
-safe. Six focused skills guide testing, cleanup, review, modernization, and measured optimization.
-When laptop setup or runtime becomes the bottleneck, the same agent can send the current repository
-working tree to a ready, disposable Java machine and run long Maven or Gradle work there.
+JAIPilot helps Codex and Claude Code clean, test, review, modernize, and optimize real Java
+repositories without drifting into unnecessary code or unproved changes.
 
-JAIPilot is not another AI agent. Codex or Claude Code remains the only planner and editor.
+For heavy builds, tests, analysis, and benchmarks, your agent can use a ready remote Java machine
+instead of tying up your laptop.
 
-```text
-Your request → your Codex or Claude Code → JAIPilot Java skills → repository-native evidence
-                                                └──────────────→ remote Java hardware when useful
-```
+JAIPilot does not replace your coding agent or add another AI. It gives your agent focused Java
+workflows, remote compute, and one rule: **show evidence, not confidence.**
 
-## Why use JAIPilot?
+| **75/75** tests passed      | **44.6s** clean Maven build | **3 JDKs** ready    | **5 hours** remote compute included monthly |
+| --------------------------- | --------------------------- | ------------------- | ------------------------------------------- |
+| Petclinic remote acceptance | Fresh disposable workspace  | Java 17, 21, and 25 | Per signed-in beta user                     |
 
-A default coding agent can already edit code and run local commands. JAIPilot adds value where
-professional Java work usually becomes slow or unreliable:
+## Why teams use JAIPilot
 
-- **Less agent drift.** The skills require the agent to bound scope, preserve contracts, use the
-  repository's real checks, reject unsupported guesses, and report evidence—not confidence.
-- **Java-specific judgment.** Tests, safe deletion, framework/reflection boundaries, compatible
-  upgrades, JDK selection, JMH/JFR measurement, ArchUnit, JaCoCo, PIT, and OpenRewrite are handled
-  as one coherent workflow instead of a generic “improve this” prompt.
-- **No machine setup tax.** Remote workspaces already have JDK 17, 21, and 25, Maven 3.9.16, and
-  Gradle 9.7.0. There is no VM account, API key, SSH setup, or local Deno runtime to configure.
-- **The current change is testable.** Tracked files plus unignored staged, unstaged, and untracked
-  files can be uploaded explicitly. The proof is not limited to an old Git commit.
-- **Long work survives disconnects.** Commands are asynchronous and return durable IDs for status,
-  bounded logs, cancellation, and cleanup.
-- **Your model remains your model.** JAIPilot supplies workflows and compute; it does not add a
-  second reasoning loop or charge for another hidden coding agent.
+- **Less agent drift** — changes stay bounded, lean, and aligned with the repository.
+- **Better Java code** — remove proven waste, reduce complexity, improve tests, review risky diffs,
+  modernize safely, and optimize measured bottlenecks.
+- **Real verification** — use the repository's Maven or Gradle build, tests, coverage, architecture
+  rules, and performance measurements.
+- **Free up your laptop** — move long Java work to disposable remote hardware with JDK 17, 21, and
+  25, Maven, and Gradle ready.
+- **Works on your current change** — staged, unstaged, and untracked files can be tested without
+  committing or pushing first.
+- **Your agent stays in control** — Codex or Claude Code chooses every edit and command and reports
+  exactly what JAIPilot achieved.
 
-The honest promise is not “remote is always faster.” The benefit is ready Java capacity, fewer local
-dependencies, a free laptop, durable execution, and repeatable evidence on one controlled machine. A
-speed or performance claim is made only when comparable measurements prove it.
-
-## What has been proved
-
-The version 6.0.0 release acceptance used standard Codex OAuth and a fresh Spring Framework
-Petclinic checkout containing an uncommitted marker:
-
-| JAIPilot claim               | Acceptance evidence                                                                              | User benefit                                                               |
-| ---------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| Normal hosted sign-in        | default OAuth discovery, consent, callback, and token exchange succeeded without a shared secret | no cloud API key, VM account, GitHub App, or provider setup                |
-| Current changes run remotely | 141 tracked/unignored files were digest-verified; the uncommitted marker appeared remotely       | test staged, unstaged, and untracked work without committing or pushing it |
-| Java is ready                | preinstalled Temurin JDK 17.0.20 ran `./mvnw clean test`                                         | avoid installing the repository toolchain on the laptop                    |
-| Real repository proof        | `BUILD SUCCESS`; 75 tests, 0 failures, 0 errors, 0 skipped; Maven time 44.647 seconds            | receive the build's result, not an agent's confidence                      |
-| Long work is durable         | status and bounded logs were recovered through returned process IDs                              | reconnect to work instead of restarting it with the chat session           |
-| Compute is controllable      | a separate running process was cancelled and the workspace deletion was confirmed                | stop abandoned work and release the machine predictably                    |
-
-This proves authentication, current-working-tree transport, toolchain readiness, a real clean Java
-build, durable process recovery, cancellation, and cleanup. It does not claim that the shared
-machine is faster than every developer laptop, that a green test suite proves all behavior, or that
-the environment represents production.
-
-## Start with one request
+## Start with one prompt
 
 ```text
-Use JAIPilot to optimize my current Java change, verify it with the repository's own checks, and
-offload substantial verification to JAIPilot remote hardware when that materially helps.
+Use JAIPilot to make my current Java change as lean, safe, and fast as possible. Preserve behavior,
+run the repository's real checks, and use remote hardware for substantial work when useful.
 ```
 
-The agent will bound the change, run focused checks, remove only proved waste, simplify equivalent
-logic, optimize measured workloads, evaluate compatible upgrades, review the whole diff, and run a
-final clean build. An honest pass may end with no code change.
+JAIPilot may add meaningful tests, remove unused code, simplify equivalent logic, improve measured
+performance, evaluate compatible upgrades, review the complete diff, and run a final clean build. If
+no safe improvement can be proved, it should make no change.
 
-## Skills
+## Real JAIPilot results
 
-| Skill                     | What it does                                                                                                                               |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `jaipilot-optimize-java`  | Orchestrates one bounded Java improvement across tests, cleanup, performance, and justified modernization.                                 |
-| `jaipilot-generate-tests` | Adds meaningful tests or runs a bounded per-class coverage campaign using fresh configured evidence.                                       |
-| `jaipilot-clean-java`     | Removes proven waste, consolidates equivalent logic, reduces complexity, modernizes compatible versions, and optimizes measured workloads. |
-| `jaipilot-review-diff`    | Reviews the complete Java change for regressions, unnecessary code, architecture drift, compatibility risk, and missing proof.             |
-| `jaipilot-fast-execution` | Speeds substantial Maven/Gradle verification through safe resource sizing, batching, and native parallelism.                               |
-| `jaipilot-remote-java`    | Offloads long Java commands for the explicitly uploaded current working tree.                                                              |
+All three acceptance runs used Spring Framework Petclinic and repository-native verification:
 
-The skills use JaCoCo, PIT, ArchUnit, OpenRewrite, Checkstyle, PMD, SpotBugs, Error Prone, SonarQube
-reports, JMH, JFR, or similar tools only when already configured or when the user approves adding
-them. They never weaken thresholds, add suppressions, or install machinery to manufacture a pass.
+| Use case                                                                                            | Result                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Lean and optimize a change](https://github.com/skrcode/spring-framework-petclinic/pull/25)         | **10** behavior tests added; **7 net production lines removed** (+2/-9); changed method reached **100%** instruction, line, and branch coverage; **85/85** tests passed; Java 17 and 21 CI passed. |
+| [Cover previously untested behavior](https://github.com/skrcode/spring-framework-petclinic/pull/34) | **7** focused tests added with **no production or dependency change**; target coverage moved from **0% to 100%** for lines and branches; **82/82** tests passed independently on Java 17 and 21.   |
+| Run the current change remotely                                                                     | An uncommitted file reached the workspace; `./mvnw clean test` passed **75/75** tests in **44.6 seconds**; job recovery, cancellation, and workspace deletion were verified.                       |
+
+These are reproducible acceptance results, not claims that every repository will see the same
+coverage, code reduction, or speed.
 
 ## Install
 
@@ -97,64 +68,37 @@ codex plugin add jaipilot@jaipilot
 
 ### Claude Code
 
-Run inside Claude Code:
-
 ```text
 /plugin marketplace add JAIPilot/jaipilot
 /plugin install jaipilot@jaipilot
 ```
 
-The skills work locally without a JAIPilot account. On the first remote tool call, Codex or Claude
-Code opens the standard OAuth flow; sign in at **jaipilot.com** and approve the connection. No
-JAIPilot secret, GitHub App, cloud-provider account, or local runtime is required.
+The Java skills work locally immediately. When your agent first needs JAIPilot remote hardware, sign
+in to JAIPilot when prompted. No VM account, API key, SSH configuration, GitHub App, or local
+JAIPilot runtime is required.
 
-## Remote Java execution
+## Included skills
 
-| Tool                | Purpose                                                   |
-| ------------------- | --------------------------------------------------------- |
-| `workspace_prepare` | Create a short-lived, user-owned source upload.           |
-| `workspace_create`  | Verify the archive and create one private Java workspace. |
-| `process_start`     | Start one asynchronous repository command.                |
-| `process_status`    | Read durable running state and the final exit code.       |
-| `process_logs`      | Read a bounded final 200 KiB log tail.                    |
-| `process_cancel`    | Stop and remove a process session.                        |
-| `workspace_destroy` | Delete the workspace, processes, files, and caches.       |
+| Skill                     | Outcome                                                 |
+| ------------------------- | ------------------------------------------------------- |
+| `jaipilot-optimize-java`  | Make one bounded Java change leaner, safer, and faster. |
+| `jaipilot-generate-tests` | Add meaningful tests and fresh coverage evidence.       |
+| `jaipilot-clean-java`     | Remove proven waste and simplify real complexity.       |
+| `jaipilot-review-diff`    | Find regressions, unnecessary code, and missing proof.  |
+| `jaipilot-fast-execution` | Run substantial Java verification efficiently.          |
+| `jaipilot-remote-java`    | Run long Java commands on disposable remote hardware.   |
 
-Current public-beta bounds are one active medium workspace, a 15-120 minute hard lifetime, a 100 MiB
-source archive, and five included compute hours per signed-in user each month. Source upload is
-explicit. The service verifies user ownership, size, and SHA-256, deletes the upload after workspace
-preparation, and gives the workspace no GitHub write credential.
+JAIPilot can work with repository-configured tools such as JaCoCo, PIT, ArchUnit, OpenRewrite,
+Checkstyle, PMD, SpotBugs, SonarQube, JMH, and JFR. It never weakens a quality gate merely to get a
+green result.
 
-Remote edits are disposable and never synchronize, commit, push, open a pull request, or merge.
-Build code has outbound network access. Work requiring a corporate VPN/VPC, private artifact
-repository, internal database, licensed service, or unavailable secret stays on the customer's own
-execution boundary.
+## Remote build beta
 
-## Evidence, not confidence
+The beta includes one active remote workspace and five compute hours per user each month. Remote
+work is disposable and never commits, pushes, or publishes code. Use it for repositories that build
+without a corporate VPN, private artifact service, internal database, or unavailable secret.
 
-Every workflow should return:
-
-```text
-Scope: Git state, modules, and files
-Changes: accepted and rejected hypotheses with reasons
-Commands: exact local or remote commands and outcomes
-Evidence: tests, coverage, architecture, analysis, compatibility, or measurements
-Benefit: setup avoided, resources freed, durable recovery, or measured improvement
-Limitations: unavailable services, profiles, consumers, or production conditions
-Cleanup: cancellation and confirmed workspace destruction
-```
-
-JAIPilot skills are procedural guidance, not an enforcement engine. A green build proves only the
-tested boundary, not universal correctness or business intent.
-
-## Repository
-
-The distributable plugin lives in `plugins/jaipilot` and contains only manifests, six skills,
-metadata, assets, and the hosted MCP URL. Root-level Deno and Python files only validate and release
-the bundle. There is no npm package, hook, watcher, dashboard, telemetry SDK, downloaded runtime, or
-provider credential.
-
-See [Contributing](CONTRIBUTING.md), [Support](SUPPORT.md), [Security](SECURITY.md),
-[Privacy](PRIVACY.md), [Terms](TERMS.md), and the [Changelog](CHANGELOG.md).
+See [Security](SECURITY.md), [Privacy](PRIVACY.md), [Support](SUPPORT.md), [Terms](TERMS.md), and
+the [Changelog](CHANGELOG.md).
 
 Licensed under the [MIT License](LICENSE).
