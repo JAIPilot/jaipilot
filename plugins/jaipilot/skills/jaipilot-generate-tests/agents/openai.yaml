@@ -1,4 +1,4 @@
 interface:
-  display_name: "Maximize Java Test Coverage"
-  short_description: "Raise meaningful per-class Java coverage"
-  default_prompt: "Use $jaipilot-generate-tests to raise meaningful class-level Java test coverage toward at least 80% with bounded parallel workers and fresh repository evidence."
+  display_name: "Prove Java Behavior with Tests"
+  short_description: "Lock behavior or raise meaningful coverage"
+  default_prompt: "Use $jaipilot-generate-tests to lock this Java behavior with meaningful tests and fresh repository evidence."

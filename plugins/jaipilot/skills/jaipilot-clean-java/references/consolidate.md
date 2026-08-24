@@ -14,11 +14,17 @@ Reduce code only when fewer concepts remain. Similar syntax is not proof of the 
 4. Prefer deleting a redundant path or reusing an existing domain abstraction over introducing a
    new utility, base class, strategy hierarchy, boolean mode, generic framework, or god object.
 
+For complexity cleanup, prefer fewer real decisions, earlier exits, smaller pure operations, and
+one authoritative invariant. Do not game cyclomatic or cognitive-complexity metrics by moving
+branches into helpers, streams, annotations, reflection, configuration, or polymorphism. Use the
+repository's configured analyzer when available; otherwise report structural decision counts
+without inventing a tool score.
+
 ## Lock behavior before merging
 
 1. Map each candidate's observable inputs, outputs, state transitions, errors, events, persistence,
    and concurrency semantics.
-2. Invoke `$jaipilot-generate-tests` for characterization tests when those contracts are not already
+2. Invoke the `jaipilot-generate-tests` skill for characterization tests when those contracts are not already
    covered. Exercise both implementations with the same case matrix where their behavior is meant
    to match, and explicit separate cases where it is not.
 3. Retain public adapters or deprecation paths when downstream consumers are outside the boundary.

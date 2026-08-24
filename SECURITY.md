@@ -30,5 +30,5 @@ host agent. Remote edits are disposable and are not synchronized locally or push
 
 The distributed adapter contains the non-secret production API URL but no bearer, GitHub token,
 private key, Daytona key, or customer source. Never put `JAIPILOT_CLOUD_TRIGGER_SECRET` in a
-prompt, repository, command argument, issue, or log. Public customer authentication is not shipped
-in version 5.3.0; the MCP remains an operator preview.
+prompt, repository, command argument, issue, or log. Public customer authentication is not shipped;
+the MCP remains a limited operator preview.

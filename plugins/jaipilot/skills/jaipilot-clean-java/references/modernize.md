@@ -3,6 +3,11 @@
 "Latest safe" means the newest stable version demonstrated compatible with the declared repository
 boundary. Do not equate the largest version number with safety.
 
+When modernization is one pass in a larger change, upgrade only build or runtime paths already in
+scope or directly required by the changed code. For an explicit modernization request, change only
+the named axis and its required compatibility edits. Inventory other versions without widening the
+patch.
+
 ## Inventory and research
 
 1. Inventory the JDK source, target, release, and toolchain; Maven or Gradle wrapper; build plugins;
@@ -41,6 +46,9 @@ Use the repository's toolchain and release conventions; do not merely change one
    compatibility, and serialization checks.
 4. Do not suppress warnings, illegal access, linkage errors, flaky tests, or security failures to
    complete an upgrade. Roll back the failed axis and report the highest verified version.
+5. Run the locked focused behavior command before and after every accepted axis. A green compile is
+   not compatibility proof; preserve runtime wiring, serialized forms, database access, framework
+   lifecycle, and the declared downstream-consumer boundary.
 
 Report every component's old version, evaluated release, accepted version, evidence, migration
 edits, rejected version and reason, unresolved advisories, runtime assumptions, and exact commands.

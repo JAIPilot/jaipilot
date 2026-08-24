@@ -1,0 +1,4 @@
+interface:
+  display_name: "Accelerate Java Verification"
+  short_description: "Run long Java checks with safe parallelism"
+  default_prompt: "Use $jaipilot-fast-execution to run this substantial Java verification as quickly as the repository and available hardware safely allow."

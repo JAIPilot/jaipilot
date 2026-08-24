@@ -1,6 +1,6 @@
 ---
 name: jaipilot-review-diff
-description: Review and verify Java changes in Git using the repository's existing build, tests, coverage, mutation, architecture, and static-analysis tools. Use for Java diff review, pull-request review, pre-commit checks, changed-code risk, regression analysis, or requests to prove a Java change.
+description: Review a complete Java Git change for behavioral regressions, unnecessary code, compatibility risk, and missing proof using repository-native checks. Use for pull-request or pre-commit review, changed-code risk, architecture drift, regression analysis, or a request to verify a Java change.
 ---
 
 # Review a Java diff
@@ -26,13 +26,18 @@ and keep the host agent in control.
 1. Read every changed production file, relevant tests, and directly affected contracts.
 2. Look for incorrect behavior, missing edge cases, compatibility breaks, unsafe resource or
    concurrency behavior, architecture drift, dead code, duplication, needless abstractions, and
-   unrelated edits.
+   unrelated edits. For normalization, lookup, sorting, collection, or caching changes, explicitly
+   compare nulls, empty values, duplicates and multiplicity, locale or Unicode, ordering,
+   exceptions, identity, mutability, and missing-value behavior.
 3. Prefer deletion and reuse. Keep only lines required by the request or its proof.
 4. Treat repository-configured compiler checks, Checkstyle, PMD, SpotBugs, Error Prone, ArchUnit,
    SonarQube reports, and similar tools as evidence. Do not invent equivalent findings when a tool
    is absent.
 5. Make corrections only when the user asked for implementation. Otherwise report findings with
    file, location, impact, and the smallest reasonable fix.
+6. For JDK, wrapper, plugin, framework, BOM, or dependency edits, verify authoritative stable
+   release selection, migration requirements, resolved graph changes, runtime compatibility, and
+   the repository's downstream-consumer baseline. Reject unrelated version churn.
 
 ## Verify
 
@@ -40,11 +45,15 @@ and keep the host agent in control.
 2. Run the normal module or repository verification command after the diff stabilizes.
 3. Run configured JaCoCo, PIT, ArchUnit, OpenRewrite, or static-analysis tasks when they apply.
    Do not add plugins, dependencies, exclusions, suppressions, or weaker thresholds merely to pass.
-4. Confirm that changed tests actually executed. Do not infer test quality from a green build or
-   line coverage alone.
+   Inspect declarations, executions, profiles, and lifecycle bindings before calling configured
+   evidence unavailable.
+4. Confirm that changed tests actually executed. For behavior-sensitive production edits, require
+   comparable focused behavior evidence before and after the edit when the original state can be
+   reproduced safely. Review characterization tests for observable assertions. Do not infer test
+   quality from a green build or line coverage alone.
 5. Re-read the final diff after verification and check that generated output did not enter it.
 6. If a command cannot run, report the exact failure and leave that property unavailable.
-7. Use `$jaipilot-remote-java` only when an expensive check materially benefits from remote
+7. Use the `jaipilot-remote-java` skill only when an expensive check materially benefits from remote
    hardware and the exact candidate is already a GitHub-available commit. Remote `HEAD` results do
    not verify staged, unstaged, or untracked files.
 

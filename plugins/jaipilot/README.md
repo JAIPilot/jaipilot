@@ -1,26 +1,22 @@
 # JAIPilot
 
-JAIPilot bundles four Java engineering skills with an optional remote-execution MCP server:
+JAIPilot gives Codex and Claude Code six focused Java engineering workflows:
 
-- jaipilot-review-diff
-- jaipilot-generate-tests
-- jaipilot-clean-java
-- jaipilot-remote-java
+- `jaipilot-optimize-java`: turn a bounded Java change into its smallest verified form;
+- `jaipilot-generate-tests`: lock behavior or run a meaningful coverage campaign;
+- `jaipilot-clean-java`: remove proven waste, simplify, modernize, or optimize safely;
+- `jaipilot-review-diff`: find behavioral risk, unnecessary code, and missing proof;
+- `jaipilot-fast-execution`: reduce Java verification time with safe resource-aware execution; and
+- `jaipilot-remote-java`: offload long commands for an exact committed GitHub revision.
 
-The host agent owns reasoning, edits, shell commands, retries, cancellation, Git, and user
-interaction. The first three skills use the repository's existing Git, Maven or Gradle wrapper,
-tests, and configured analysis tools. The remote skill lets the host agent run long builds, tests,
-analyzers, profilers, or benchmarks on a disposable Java workspace at one exact committed GitHub
-SHA.
+The customer's coding agent remains the only planner and editor. JAIPilot contributes engineering
+workflows and, when explicitly selected, disposable execution hardware. It does not install hooks,
+watch repositories, run background scans, commit, push, or merge.
 
-Remote execution never includes staged, unstaged, or untracked local files. It does not synchronize
-remote edits back to the local checkout and receives no GitHub write credential. It is currently an
-operator preview requiring Deno 2.x, the JAIPilot GitHub App, and separately provisioned
-authentication. The shared workspace has public outbound access but no customer VPN/VPC, private
-artifact repository, internal database, or enterprise service connectivity; those checks remain
-local.
-
-JAIPilot does not install hooks, watch repositories, run automatically, lower quality gates, or
-claim unavailable evidence passed.
+Local skills use the repository's existing Git, Maven or Gradle wrapper, tests, and configured
+analysis tools. Remote execution excludes staged, unstaged, and untracked files; returns no edits;
+and receives no GitHub write credential. The current remote service is a limited operator preview
+requiring Deno 2.x, the JAIPilot GitHub App, and separately provisioned authentication. It has no
+customer VPN/VPC, private artifact repository, internal database, or enterprise-service access.
 
 Learn more at <https://github.com/JAIPilot/jaipilot>.

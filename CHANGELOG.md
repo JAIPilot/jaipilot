@@ -1,5 +1,26 @@
 # Changelog
 
+## [5.4.0] - 2026-08-24
+
+### Added
+
+- Added `jaipilot-optimize-java`, a controlling workflow that turns a bounded Java change into its
+  smallest behavior-locked, repository-verified form.
+- Added `jaipilot-fast-execution`, a resource-aware workflow for reducing Maven/Gradle build, test,
+  analysis, and benchmark wall time without weakening proof.
+
+### Changed
+
+- Strengthened test generation with explicit behavior-lock and coverage-campaign modes, lifecycle-
+  aware JaCoCo/PIT discovery, semantic collection edge cases, and baseline/candidate proof.
+- Strengthened cleanup and review with concrete AI-clutter criteria, honest complexity reduction,
+  stable-upgrade scope, semantic replacement checks, and compatibility evidence.
+- Rewrote plugin, marketplace, skill, and repository descriptions around one clear outcome:
+  behavior-locked Java engineering performed by the customer's own coding agent.
+- Simplified the public repository by removing internal OpenAI submission paperwork and the
+  historical Cloud campaign inventory; retained only source, distribution, verification, security,
+  community, and release material.
+
 ## [5.3.0] - 2026-08-24
 
 ### Added

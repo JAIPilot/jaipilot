@@ -1,4 +1,4 @@
 interface:
-  display_name: "Run Java Remotely"
-  short_description: "Run committed Java proof on remote hardware"
-  default_prompt: "Use $jaipilot-remote-java to run this committed Java build or benchmark on a disposable remote workspace and return exact evidence."
+  display_name: "Run Java on Remote Hardware"
+  short_description: "Offload long checks for an exact commit"
+  default_prompt: "Use $jaipilot-remote-java to run this committed Java build or benchmark on disposable remote hardware and return exact evidence."

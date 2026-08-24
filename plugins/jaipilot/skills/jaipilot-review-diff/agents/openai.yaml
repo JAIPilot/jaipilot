@@ -1,4 +1,4 @@
 interface:
-  display_name: "Review Java Diff"
-  short_description: "Review and verify Java changes"
-  default_prompt: "Use $jaipilot-review-diff to review and verify my current Java diff with the repository's own tools."
+  display_name: "Verify a Java Change"
+  short_description: "Find risk, waste, and missing proof in a diff"
+  default_prompt: "Use $jaipilot-review-diff to review my complete Java diff and verify it with the repository's own evidence."

@@ -1,7 +1,7 @@
 # Contributing
 
 JAIPilot is a small Java skills and remote-execution plugin. Contributions should make one of its
-four workflows or the six-tool MCP boundary clearer, safer, or more useful.
+six workflows or the six-tool MCP boundary clearer, safer, or more useful.
 
 ## Setup
 
@@ -13,7 +13,7 @@ deno task check
 
 ## Rules
 
-- Keep plugins/jaipilot limited to manifests, four skills, UI metadata, SVG assets, the reviewed
+- Keep plugins/jaipilot limited to manifests, six skills, UI metadata, SVG assets, the reviewed
   Deno MCP adapter, and its short README.
 - Keep remote execution to exact committed GitHub SHAs, six bounded lifecycle tools, and
   agent-selected commands. Do not add another reasoning agent, hooks, a daemon, dashboard,

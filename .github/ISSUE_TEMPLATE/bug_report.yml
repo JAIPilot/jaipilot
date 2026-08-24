@@ -21,9 +21,12 @@ body:
     attributes:
       label: Skill
       options:
+        - Optimize a Java change
         - Review Java diff
         - Generate Java tests
         - Clean Java
+        - Accelerate Java verification
+        - Remote Java execution
         - Plugin installation or discovery
         - Other
     validations:

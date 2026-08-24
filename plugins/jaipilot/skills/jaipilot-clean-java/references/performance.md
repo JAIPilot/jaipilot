@@ -31,13 +31,13 @@ threads do not make CPU-bound algorithms faster.
 
 ## Prove each hypothesis
 
-1. Add or strengthen regression tests with `$jaipilot-generate-tests` before changing observable
+1. Add or strengthen regression tests with the `jaipilot-generate-tests` skill before changing observable
    ordering, timeouts, concurrency, resource ownership, or failure behavior.
 2. Apply one hypothesis at a time and rerun the identical benchmark for at least five observations.
 3. Reject improvements within noise, regressions in p95 or resources, throughput gains that increase
    errors, and changes that move cost outside the measured boundary.
 4. Run clean functional verification, configured stress or race tests, architecture and analysis,
-   and inspect the final diff with `$jaipilot-review-diff`.
+   and inspect the final diff with the `jaipilot-review-diff` skill.
 
 Report the workload, environment, raw baseline and candidate runs, median and p95, profile evidence,
 correctness results, resource tradeoffs, accepted and rejected hypotheses, and remaining unmeasured

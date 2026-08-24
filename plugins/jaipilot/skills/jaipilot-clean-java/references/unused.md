@@ -37,6 +37,12 @@ Require all applicable conditions:
    descriptors by default. Remove one only when requested, all static and dynamic uses are excluded,
    applicable profiles pass, and packaging or runtime smoke evidence exists.
 
+Treat "AI slop" as observable waste, never an authorship judgment: redundant comments that restate
+code, unused imports or locals, unreachable branches, duplicate guards, needless temporary
+collections, forwarding methods with no policy, speculative extension points, and abstractions with
+one trivial use. Do not delete domain rationale, compatibility adapters, generated sources, or
+framework entry points merely because they look verbose.
+
 An item already dirty at the saved starting state is not automatically unrelated. If it is inside
 the user's explicit cleanup boundary, evaluate it normally; otherwise preserve it. Track accepted
 deletions against the starting snapshot so the final report does not mislabel the agent's own edit

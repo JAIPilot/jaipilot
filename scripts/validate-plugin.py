@@ -18,7 +18,9 @@ PLUGIN_FILES = (
 )
 SKILLS = (
     "jaipilot-clean-java",
+    "jaipilot-fast-execution",
     "jaipilot-generate-tests",
+    "jaipilot-optimize-java",
     "jaipilot-remote-java",
     "jaipilot-review-diff",
 )
@@ -105,6 +107,7 @@ def validate_skills() -> None:
     skills_root = PLUGIN / "skills"
     actual = sorted(path.name for path in skills_root.iterdir() if path.is_dir())
     require(actual == list(SKILLS), f"Expected exactly {list(SKILLS)}; found {actual}")
+    known_skills = set(SKILLS)
 
     for name in SKILLS:
         directory = skills_root / name
@@ -116,22 +119,34 @@ def validate_skills() -> None:
                 f"{name}: frontmatter must contain only name and description")
         require(re.search(rf"^name:\s*{re.escape(name)}\s*$", match.group(1), re.MULTILINE)
                 is not None, f"{name}: name must match its directory")
-        require(re.search(r"^description:\s*\S.+$", match.group(1), re.MULTILINE)
-                is not None, f"{name}: description is required")
+        description = re.search(r"^description:\s*(\S.+)$", match.group(1), re.MULTILINE)
+        require(description is not None, f"{name}: description is required")
+        require(40 <= len(description.group(1)) <= 1024,
+                f"{name}: description must contain 40-1024 characters")
         require(len(skill.splitlines()) <= 120, f"{name}: keep SKILL.md at or below 120 lines")
         require(re.search(r"\b(?:TODO|TBD)\b", skill, re.IGNORECASE) is None,
                 f"{name}: unresolved placeholder found")
         require(re.search(
-            r"jaipilot-toolkit|bin/jaipilot|proof receipt|127\.0\.0\.1|localhost",
+            r"jaipilot-toolkit|bin/jaipilot|proof receipt|127\.0\.0\.1|localhost|"
+            r"JAIPILOT_MODE|JAIPILOT_BASE_SHA|/workspace/repo|/mnt/session|package-result",
             skill,
             re.IGNORECASE,
-        ) is None, f"{name}: runtime-era instruction found")
+        ) is None, f"{name}: local plugin contains a retired or cloud-only instruction")
+        referenced_skills = set(re.findall(r"`(jaipilot-[a-z0-9-]+)`", skill))
+        require(referenced_skills <= known_skills,
+                f"{name}: references unknown skills {sorted(referenced_skills - known_skills)}")
 
         metadata = read(directory / "agents" / "openai.yaml")
         for field in ("display_name", "short_description", "default_prompt"):
             require(re.search(rf"^\s*{field}:\s*.+$", metadata, re.MULTILINE) is not None,
                     f"{name}: agents/openai.yaml is missing {field}")
         require("$" + name in metadata, f"{name}: default prompt must mention the skill")
+        short_description = re.search(
+            r'^\s*short_description:\s*"([^"]+)"\s*$', metadata, re.MULTILINE
+        )
+        require(short_description is not None
+                and 25 <= len(short_description.group(1)) <= 64,
+                f"{name}: short_description must contain 25-64 characters")
 
 
 def validate_mcp_server(
@@ -244,7 +259,7 @@ def main() -> None:
     validate_marketplaces(expected_version)
     count, size = validate_lean_payload()
     print(
-        f"Validated JAIPilot {expected_version}: 4 skills, 6 remote tools, "
+        f"Validated JAIPilot {expected_version}: {len(SKILLS)} skills, 6 remote tools, "
         f"{count} files, {size} bytes."
     )
 
