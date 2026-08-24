@@ -16,17 +16,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Verify release identity
         run: |
           test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
           git fetch origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
-      - name: Validate skills-only plugin
-        run: python3 scripts/validate-plugin.py
+      - name: Validate skills and MCP plugin
+        run: deno task check
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          name: JAIPilot Skills
+          name: JAIPilot Plugin
           generate_release_notes: true

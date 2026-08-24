@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate JAIPilot's dependency-free, skills-only plugin."""
+"""Validate JAIPilot's lean skills and remote-execution plugin."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ PLUGIN_FILES = (
 SKILLS = (
     "jaipilot-clean-java",
     "jaipilot-generate-tests",
+    "jaipilot-remote-java",
     "jaipilot-review-diff",
 )
 FORBIDDEN_PATHS = (
@@ -27,7 +28,6 @@ FORBIDDEN_PATHS = (
     ROOT / "mvnw",
     ROOT / "mvnw.cmd",
     ROOT / ".mvn",
-    PLUGIN / ".mcp.json",
     PLUGIN / ".app.json",
     PLUGIN / "bin",
     PLUGIN / "hooks",
@@ -37,11 +37,15 @@ FORBIDDEN_PATHS = (
 ALLOWED_PLUGIN_ROOTS = {
     ".claude-plugin",
     ".codex-plugin",
+    ".mcp.json",
     "README.md",
     "assets",
+    "mcp",
     "plugin.json",
     "skills",
 }
+MCP_SOURCE = PLUGIN / "mcp" / "jaipilot-mcp.ts"
+MCP_API_URL = "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud"
 PRIVACY_URL = "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md"
 TERMS_URL = "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md"
 
@@ -81,6 +85,11 @@ def validate_manifests(expected_version: str) -> None:
 
     codex = load(PLUGIN / ".codex-plugin" / "plugin.json")
     require(codex.get("skills") == "./skills/", "Codex manifest must expose ./skills/")
+    codex_mcp = codex.get("mcpServers")
+    require(isinstance(codex_mcp, dict) and set(codex_mcp) == {"jaipilot-remote"},
+            "Codex manifest must inline only the bundled Codex MCP binding")
+    require(load(PLUGIN / "plugin.json").get("mcpServers") == "./.mcp.json",
+            "Compatibility manifest must expose the bundled .mcp.json")
     interface = codex.get("interface")
     require(isinstance(interface, dict), "Codex interface is required")
     prompts = interface.get("defaultPrompt")
@@ -113,8 +122,7 @@ def validate_skills() -> None:
         require(re.search(r"\b(?:TODO|TBD)\b", skill, re.IGNORECASE) is None,
                 f"{name}: unresolved placeholder found")
         require(re.search(
-            r"jaipilot_|jaipilot-toolkit|\.mcp\.json|bin/jaipilot|proof receipt|"
-            r"127\.0\.0\.1|localhost",
+            r"jaipilot-toolkit|bin/jaipilot|proof receipt|127\.0\.0\.1|localhost",
             skill,
             re.IGNORECASE,
         ) is None, f"{name}: runtime-era instruction found")
@@ -124,6 +132,63 @@ def validate_skills() -> None:
             require(re.search(rf"^\s*{field}:\s*.+$", metadata, re.MULTILINE) is not None,
                     f"{name}: agents/openai.yaml is missing {field}")
         require("$" + name in metadata, f"{name}: default prompt must mention the skill")
+
+
+def validate_mcp_server(
+        server: object,
+        label: str,
+        expected_args: list[str],
+        expected_cwd: object,
+        expected_env_vars: object,
+) -> None:
+    require(isinstance(server, dict), "jaipilot-remote must be an object")
+    require(server.get("type") == "stdio", "jaipilot-remote must use stdio")
+    require(server.get("command") == "deno", "jaipilot-remote must use the Deno runtime")
+    require(server.get("args") == expected_args,
+            f"{label}: jaipilot-remote must retain its bounded runtime permissions and path")
+    require(server.get("cwd") == expected_cwd,
+            f"{label}: jaipilot-remote has an unexpected working directory")
+    require(server.get("env_vars") == expected_env_vars,
+            f"{label}: jaipilot-remote has unexpected inherited environment variables")
+    require(server.get("env") == {"JAIPILOT_CLOUD_API_URL": MCP_API_URL},
+            "MCP config must contain only the non-secret production API URL")
+
+
+def validate_mcp() -> None:
+    common_args = [
+        "run",
+        "--quiet",
+        "--allow-env=JAIPILOT_CLOUD_API_URL,JAIPILOT_CLOUD_TRIGGER_SECRET",
+        "--allow-net=otxfylhjrlaesjagfhfi.supabase.co",
+    ]
+    claude = load(PLUGIN / ".mcp.json").get("mcpServers")
+    require(isinstance(claude, dict) and set(claude) == {"jaipilot-remote"},
+            "Claude MCP config must contain only jaipilot-remote")
+    validate_mcp_server(
+        claude["jaipilot-remote"],
+        ".mcp.json",
+        common_args + ["${CLAUDE_PLUGIN_ROOT}/mcp/jaipilot-mcp.ts"],
+        None,
+        None,
+    )
+    codex = load(PLUGIN / ".codex-plugin" / "plugin.json").get("mcpServers")
+    require(isinstance(codex, dict) and set(codex) == {"jaipilot-remote"},
+            "Codex manifest must contain only jaipilot-remote")
+    validate_mcp_server(
+        codex["jaipilot-remote"],
+        ".codex-plugin/plugin.json",
+        common_args + ["mcp/jaipilot-mcp.ts"],
+        ".",
+        ["JAIPILOT_CLOUD_TRIGGER_SECRET"],
+    )
+
+    source = read(MCP_SOURCE)
+    require("JAIPILOT_CLOUD_TRIGGER_SECRET" in source,
+            "MCP source must require the Cloud bearer at tool-call time")
+    require("workspace_destroy" in source and "process_cancel" in source,
+            "MCP source must expose cancellation and workspace cleanup")
+    require(re.search(r"gh[pousr]_[A-Za-z0-9]+|-----BEGIN [A-Z ]*PRIVATE KEY-----|sk-ant-", source)
+            is None, "MCP source must not contain credential material")
 
 
 def validate_marketplaces(expected_version: str) -> None:
@@ -152,20 +217,22 @@ def validate_marketplaces(expected_version: str) -> None:
 
 def validate_lean_payload() -> tuple[int, int]:
     for path in FORBIDDEN_PATHS:
-        require(not path.exists(), f"Skills-only product must not contain {path.relative_to(ROOT)}")
+        require(not path.exists(), f"Plugin must not contain {path.relative_to(ROOT)}")
     require({path.name for path in PLUGIN.iterdir()} == ALLOWED_PLUGIN_ROOTS,
-            "Plugin root contains an unexpected runtime or auxiliary entry")
+            "Plugin root contains an unexpected entry")
 
     files = [path for path in PLUGIN.rglob("*") if path.is_file()]
     require(not any(path.is_symlink() for path in PLUGIN.rglob("*")),
             "Plugin must not contain symbolic links")
     require(not any(path.suffix in {".class", ".jar", ".py", ".sh"} for path in files),
-            "Plugin must contain no executable source or runtime payload")
+            "Plugin must contain no binary, shell, or package-manager runtime payload")
+    require([path for path in files if path.suffix == ".ts"] == [MCP_SOURCE],
+            "Plugin may contain only the reviewed JAIPilot MCP TypeScript source")
     require(not any(path.stat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                     for path in files),
             "Plugin files must not be executable")
     total = sum(path.stat().st_size for path in files)
-    require(total <= 131_072, f"Plugin payload must remain at or below 128 KiB; found {total}")
+    require(total <= 196_608, f"Plugin payload must remain at or below 192 KiB; found {total}")
     return len(files), total
 
 
@@ -173,9 +240,13 @@ def main() -> None:
     expected_version = version()
     validate_manifests(expected_version)
     validate_skills()
+    validate_mcp()
     validate_marketplaces(expected_version)
     count, size = validate_lean_payload()
-    print(f"Validated JAIPilot {expected_version}: 3 skills, {count} files, {size} bytes, no runtime.")
+    print(
+        f"Validated JAIPilot {expected_version}: 4 skills, 6 remote tools, "
+        f"{count} files, {size} bytes."
+    )
 
 
 if __name__ == "__main__":

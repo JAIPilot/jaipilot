@@ -4,31 +4,33 @@
 
 # JAIPilot
 
-**Java engineering skills that help coding agents make smaller, safer, better-proven changes.**
+**Java engineering skills with opt-in remote build and test execution.**
 
-JAIPilot is a skills-only plugin for ChatGPT, Codex, and Claude Code. It gives the coding agent three
-focused workflows for reviewing Java diffs, generating tests, and cleaning Java code.
+JAIPilot is one plugin for ChatGPT, Codex, and Claude Code. It gives the customer’s coding agent
+four focused Java workflows and six remote-execution tools. The customer agent still reasons,
+edits, chooses commands, owns Git, and talks to the user. JAIPilot Remote supplies disposable Java
+hardware only when the agent decides it materially helps.
 
-There is no JAIPilot runtime, MCP server, dashboard, background process, installer, or automatic
-hook. Installing the plugin adds Markdown instructions and brand assets—nothing starts, downloads,
-or scans a repository.
+Nothing runs on repository open, file change, commit, or agent shutdown. There are no hooks,
+watchers, dashboards, background scans, or automatic code changes.
 
 ## Why
 
 Large Java repositories contain behavior, integrations, exceptions, and architectural constraints
 that no agent can hold perfectly in context. Agents drift sooner when code has hidden coupling,
-duplicated logic, weak tests, and unclear boundaries.
+duplicated logic, weak tests, and unclear boundaries. Long builds, profilers, and benchmark runs can
+also make the developer laptop the bottleneck.
 
-JAIPilot does not try to replace the agent or build another analysis platform. It gives the agent a
-repeatable engineering checklist:
+JAIPilot gives the host agent a repeatable engineering loop:
 
-- establish the exact requested scope;
-- preserve unrelated work;
+- establish the exact requested scope and preserve unrelated work;
 - inspect the complete Java and build diff;
-- use the repository's existing Maven or Gradle wrapper;
-- use configured tests, JaCoCo, PIT, ArchUnit, OpenRewrite, and static analyzers when applicable;
-- keep the smallest coherent change; and
-- report what was actually run, what passed, and what remains unknown.
+- lock observable behavior with meaningful tests;
+- remove only proved-unused or genuinely redundant code;
+- modernize only to releases the repository can prove compatible;
+- optimize only measured workloads;
+- use configured JaCoCo, PIT, ArchUnit, OpenRewrite, and analyzers when applicable; and
+- optionally run expensive commands on a disposable exact-SHA Java workspace.
 
 ## Install
 
@@ -48,16 +50,21 @@ Run inside Claude Code:
 /plugin install jaipilot@jaipilot
 ~~~
 
-No Java version is required to install JAIPilot itself. The Java repository still needs its normal
-JDK, build wrapper, dependencies, and configured engineering tools.
+The skills need no JAIPilot runtime. The optional MCP server uses Deno 2.x and starts with the
+plugin. Its tools call JAIPilot Cloud only when selected. Remote execution is currently an operator
+preview: it requires the JAIPilot GitHub App on the repository and a separately provisioned
+internal credential in the host environment. Do not distribute or paste that credential into
+prompts. Public customer authentication is not shipped in this release. Codex and Claude Code use
+small host-specific bindings to launch the same reviewed adapter from the installed plugin.
 
-## Three skills
+## Four skills
 
 | Skill | Use it for |
 | --- | --- |
-| jaipilot-review-diff | Review a Java Git diff, find risk or unnecessary code, and run the repository's applicable verification. |
-| jaipilot-generate-tests | Raise meaningful per-class Java coverage with bounded parallel workers and fresh configured JaCoCo or PIT evidence. |
+| jaipilot-review-diff | Review a Java Git diff, find risk or unnecessary code, and run applicable repository checks. |
+| jaipilot-generate-tests | Raise meaningful per-class Java coverage with bounded workers and fresh configured JaCoCo or PIT evidence. |
 | jaipilot-clean-java | Safely remove unused code, consolidate logic, modernize Java/dependencies, and optimize measured performance. |
+| jaipilot-remote-java | Run long builds, tests, analyzers, profilers, or benchmarks remotely for an exact committed GitHub SHA. |
 
 Example requests:
 
@@ -68,53 +75,82 @@ Use JAIPilot to remove everything the repository can prove unused, retaining any
 Use JAIPilot to consolidate equivalent services and reduce classes without changing behavior.
 Use JAIPilot to upgrade this project to the newest stable JDK and dependencies it can prove compatible.
 Use JAIPilot to optimize this workload from profiler and benchmark evidence.
+Use JAIPilot Remote to run this committed Java build on disposable remote hardware.
 ~~~
 
-The skills can also trigger naturally when the request clearly matches their descriptions.
+The skills can trigger naturally when a request clearly matches their descriptions. Remote hardware
+is never mandatory for the other three skills.
 
-For a coverage campaign, the test skill assigns one production class to each available worker and
-runs bounded waves in isolated worktrees or build outputs. It does not run concurrent Maven or
-Gradle processes in one checkout, assume shared tests are runtime-independent, or turn missing
-JaCoCo data into a pass. After integration, the agent refreshes one aggregate report and lists the
-baseline and final coverage of every eligible class, including honest blockers below 80%.
+## Remote execution
 
-The clean skill has four composable modes: fail-closed unused removal, behavior-locked
-consolidation, verified stable modernization, and measured performance optimization. It can invoke
-the test skill for characterization and regression coverage and the review skill for final proof.
-It does not treat fewer lines, larger version numbers, virtual threads, or one passing test suite as
-success by themselves. Anything uncertain stays in place and is reported.
+The bundled MCP exposes a deliberately small contract:
+
+| Tool | Purpose |
+| --- | --- |
+| workspace_create | Check out an exact GitHub commit in a private TTL-bounded Java workspace. |
+| process_start | Start one asynchronous repository command. |
+| process_status | Read durable running state and the final exit code. |
+| process_logs | Read a bounded final 200 KiB log tail. |
+| process_cancel | Stop and remove a process session. |
+| workspace_destroy | Delete the workspace, processes, files, and same-workspace caches. |
+
+The immutable Java images include Temurin JDK 17, 21, and 25, Maven 3.9.16, and Gradle 9.7.0;
+repository wrappers remain preferred. Maven and Gradle caches persist only for the life of one
+workspace.
+
+The boundary is strict:
+
+- only a lowercase 40-character commit available through GitHub is mounted;
+- staged, unstaged, and untracked local files are not uploaded;
+- the sandbox receives a short-lived repository-scoped read token for checkout and no GitHub write
+  credential;
+- remote edits stay disposable and are not synchronized locally or pushed;
+- commands have outbound network access and execute repository build code; and
+- the agent must cancel abandoned processes and destroy every workspace when finished.
+
+The current shared workspace is suitable for public or self-contained Java builds. It does not
+have a customer's corporate VPN/VPC, private artifact repositories, internal databases, licensed
+services, or arbitrary enterprise secrets. When one of those is required, the skill keeps the
+check local and reports remote evidence as unavailable instead of classifying the repository as
+broken or retrying the cloud.
+
+This means a remote run of committed `HEAD` is not proof of dirty local changes. The skill reports
+that limitation instead of manufacturing a green result.
 
 ## What the agent should return
 
 Every workflow ends with a concise record:
 
 ~~~text
-Scope: module and files reviewed
-Changes: what the agent changed and why
-Commands: exact builds, tests, and analyzers executed
+Scope: revision, module, and files reviewed
+Changes: what changed and why
+Commands: exact local or remote commands
 Evidence: passed, failed, skipped, or unavailable results
-Limitations: anything that was not measured
+Limitations: unmeasured or excluded boundaries
+Cleanup: remote process and workspace destruction outcome, when used
 ~~~
 
-Missing JaCoCo, PIT, ArchUnit, OpenRewrite, or another analyzer is reported as unavailable. JAIPilot
-does not silently add tooling, lower thresholds, or describe an unmeasured property as passing.
+Missing JaCoCo, PIT, ArchUnit, OpenRewrite, authentication, private services, or another dependency
+is reported as unavailable. JAIPilot does not silently add tooling, lower thresholds, or describe
+an unmeasured property as passing.
 
 ## Deliberate boundary
 
-JAIPilot is procedural guidance, not an enforcement engine. It cannot guarantee correctness,
-business intent, coverage, architecture, or agent compliance. Its value is helping the agent use the
-real repository toolchain consistently and explain the resulting evidence.
+JAIPilot’s skills are procedural guidance, not an enforcement engine. The MCP is execution
+infrastructure, not another AI agent. Neither guarantees correctness, business intent, coverage,
+architecture, performance, or host-agent compliance.
 
-The plugin has no telemetry and uploads nothing. Repository commands may still execute project build
-scripts and resolve dependencies according to that project's configuration. Treat untrusted builds
-as executable code.
+Local workflows stay on the developer machine apart from normal repository tool behavior. When the
+remote skill is explicitly used, the selected committed repository is processed by GitHub,
+Supabase, and Daytona under their respective service terms and data boundaries. See
+[Privacy](PRIVACY.md), [Security](SECURITY.md), and [Terms](TERMS.md).
 
-The previous runtime-based implementation—including MCP, metrics, and the local dashboard—is
-preserved at [v4.0.8](https://github.com/JAIPilot/jaipilot/releases/tag/v4.0.8).
+The previous all-local runtime, metrics, and dashboard implementation is preserved at
+[v4.0.8](https://github.com/JAIPilot/jaipilot/releases/tag/v4.0.8).
 
 ## Project
 
-- [JAIPilot Cloud campaign results](CLOUD_RESULTS.md) — a separate bounded GitHub App experiment
+- [JAIPilot Cloud campaign results](CLOUD_RESULTS.md)
 - [Contributing](CONTRIBUTING.md)
 - [Support](SUPPORT.md)
 - [Security](SECURITY.md)

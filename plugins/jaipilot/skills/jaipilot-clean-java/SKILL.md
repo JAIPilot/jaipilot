@@ -56,6 +56,9 @@ result against a fresh benchmark.
    adequately locked before a sensitive change. Do not add hollow tests merely to permit a rewrite.
 6. After integration, use `$jaipilot-review-diff` to inspect the complete Java and build diff and run
    the repository's applicable final proof.
+7. Use `$jaipilot-remote-java` when a build, analyzer, profiler, or benchmark materially benefits
+   from disposable remote hardware and the exact state is already a GitHub-available commit. Do not
+   treat committed remote evidence as proof of dirty local edits.
 
 ## Shared acceptance rules
 

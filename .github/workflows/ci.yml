@@ -11,8 +11,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Validate skills-only plugin
-        run: python3 scripts/validate-plugin.py
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Validate skills and MCP plugin
+        run: deno task check
 
       - name: Reject whitespace errors
         run: git show --check --format= HEAD

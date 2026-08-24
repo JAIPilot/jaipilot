@@ -5,20 +5,21 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Java engineering skills for smaller, safer, better-proven agent changes."
+    "description": "Java engineering skills with opt-in remote build and test execution."
   },
   "plugins": [
     {
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
-      "description": "Review Java diffs, generate tests, and clean code with repository-native tools.",
-      "version": "5.2.0",
+      "description": "Review, test, clean, and remotely verify committed Java revisions.",
+      "version": "5.3.0",
       "category": "development",
       "tags": [
         "java",
         "testing",
         "refactoring",
-        "code-quality"
+        "code-quality",
+        "remote-execution"
       ]
     }
   ]

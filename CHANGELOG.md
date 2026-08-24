@@ -1,5 +1,29 @@
 # Changelog
 
+## [5.3.0] - 2026-08-24
+
+### Added
+
+- Bundled the six-tool JAIPilot Remote MCP server with the existing Java skills for Codex and
+  Claude Code.
+- Added `jaipilot-remote-java` to run long builds, tests, analyzers, profilers, and benchmarks on
+  disposable Java hardware at one exact committed GitHub SHA.
+- Added pinned remote Java environments with JDK 17, 21, and 25, Maven 3.9.16, and Gradle 9.7.0.
+- Added Deno protocol tests and structural validation for the MCP manifest, permissions, adapter,
+  and secret-free distribution boundary.
+- Added separate Codex and Claude Code launch bindings for one shared adapter, including the Codex
+  plugin-relative working-directory path required by current hosts.
+
+### Changed
+
+- Kept the host agent responsible for reasoning, edits, command selection, Git, and user
+  interaction; the MCP supplies execution hardware only.
+- Made remote execution opt-in and fail closed for staged, unstaged, or untracked local changes.
+- Updated privacy, security, terms, contribution, and submission documentation for the hosted
+  execution boundary.
+- Explicitly kept builds requiring corporate VPN/VPC access, private artifacts, internal services,
+  or unavailable secrets on the developer's existing execution boundary.
+
 ## [5.2.0] - 2026-08-16
 
 ### Changed

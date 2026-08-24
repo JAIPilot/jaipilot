@@ -1,12 +1,12 @@
 # OpenAI plugin submission packet
 
-This file is the reproducible source for the OpenAI Platform submission form. It describes the
-exact skills-only bundle at version 5.2.0 and must not be interpreted as approval or publication by
-OpenAI.
+This file is the reproducible source for a future OpenAI Platform submission. It describes version
+5.3.0 and must not be interpreted as approval or publication by OpenAI. Do not submit this MCP
+release publicly until customer authentication replaces the internal operator credential.
 
 ## Listing
 
-- **Submission type:** Skills only
+- **Submission type:** Skills + MCP server
 - **Name:** JAIPilot
 - **Category:** Productivity
 - **Short description:** Java workflows for safer reviews, meaningful tests, and focused cleanup.
@@ -18,14 +18,16 @@ OpenAI.
 
 ### Long description
 
-JAIPilot gives ChatGPT and Codex three repeatable Java engineering workflows: review complete Git
+JAIPilot gives ChatGPT and Codex four repeatable Java engineering workflows: review complete Git
 diffs, raise meaningful class-level test coverage through bounded parallel workers, and safely
 remove unused code, consolidate logic, modernize dependencies or JDKs, and optimize measured
-performance. It uses each
+performance. A fourth workflow lets the customer agent run long builds, tests, analyzers, profilers,
+or benchmarks on a disposable Java workspace at one exact committed GitHub SHA. It uses each
 repository's existing Maven or Gradle wrapper and configured tools such as JaCoCo, PIT, ArchUnit,
 OpenRewrite, Checkstyle, PMD, SpotBugs, Error Prone, or SonarQube reports. Missing evidence is
-reported as unavailable. JAIPilot does not add dependencies, weaken gates, run background
-processes, or upload repository data.
+reported as unavailable. JAIPilot does not add dependencies, weaken gates, install hooks, or run
+automatically. Remote execution happens only after an MCP tool call; it excludes local dirty files
+and returns bounded command evidence to the customer agent.
 
 ## Starter prompts
 
@@ -129,6 +131,18 @@ processes, or upload repository data.
 - **Expected result shape:** Workload and environment, raw runs, median, p95, throughput/resources,
   correctness tests, accepted and rejected hypotheses, and unmeasured production differences.
 
+### 9. Run a committed Java build remotely
+
+- **Prompt:** This clean Java branch is pushed. Run its full Maven verification remotely because it
+  is too expensive for my laptop, then clean up the workspace.
+- **Fixture:** A GitHub-hosted Maven repository with the JAIPilot App installed, an exact committed
+  SHA, Deno 2.x, and valid operator-preview authentication.
+- **Expected:** Select `jaipilot-remote-java`; verify the clean worktree, origin, and exact SHA;
+  create one medium workspace; run the repository wrapper asynchronously; poll status and bounded
+  logs; report the final exit code; and destroy the workspace.
+- **Expected result shape:** Repository/SHA, profile, exact command, exit code, executed tests,
+  truncation status, unavailable services, and confirmed workspace destruction.
+
 ## Negative reviewer cases
 
 ### 1. Non-Java repository
@@ -153,30 +167,43 @@ processes, or upload repository data.
   and ask for direction only if safe isolation is impossible.
 - **Why:** Resetting, cleaning, or stashing can lose or conceal work outside the requested scope.
 
+### 4. Remotely verify dirty local files
+
+- **Prompt:** My Java edits are uncommitted. Upload them and tell me the remote build proves they
+  pass.
+- **Expected:** Do not claim or perform that proof. Explain that version 5.3.0 mounts only an exact
+  committed GitHub SHA, preserve the dirty files, and offer local verification or a user-authorized
+  Git workflow.
+- **Why:** The current MCP does not synchronize staged, unstaged, or untracked files.
+
 ## Availability
 
-Recommended selection: all countries and regions offered by the submission form. JAIPilot has no
-hosted backend, account, authentication flow, geographic data processing, or region-dependent
-service. The publisher must confirm the final selection and any applicable legal restrictions in
-the portal.
+Do not submit version 5.3.0 to the public directory yet. The remote MCP uses an internal
+operator-preview bearer and has not implemented customer authentication, entitlement, or public
+regional availability. Re-evaluate countries, provider processing regions, privacy disclosures,
+and legal restrictions after that boundary exists. The static skills remain usable without the
+remote service.
 
 ## Release notes
 
-Version 5.2.0 expands JAIPilot's cleanup workflow into four composable modes: fail-closed unused
-removal, behavior-locked logical consolidation, verified stable JDK and dependency modernization,
-and measurement-first performance optimization. It can use the existing test and diff-review skills
-for characterization and final proof. It adds no runtime, backend, authentication, telemetry,
-automatic execution, or package-manager distribution.
+Version 5.3.0 bundles the existing Java review, test-generation, cleanup, modernization, and
+performance skills with a six-tool remote-execution MCP server. The host agent remains the planner
+and editor. Remote work is opt-in, exact-SHA-only, asynchronous, TTL-bounded, and disposable, with
+preinstalled JDK 17/21/25, Maven, and Gradle. This release is an operator preview and is not ready
+for public OpenAI submission until customer authentication is implemented.
 
 ## Attestation notes
 
-- The submitted bundle contains only manifests, three skills, skill UI metadata, two SVG logo
-  assets, and a short README.
-- It contains no executable file, dependency, network client, secret, account flow, background
-  process, MCP server, hook, CLI, installer, or telemetry.
+- The bundle contains manifests, four skills, skill UI metadata, two SVG logo assets, one reviewed
+  dependency-free Deno MCP adapter, and a short README.
+- It contains no secret, hook, watcher, installer, downloaded binary, npm dependency, dashboard, or
+  telemetry SDK.
+- The MCP exposes only workspace create/destroy and asynchronous process start/status/logs/cancel.
+  It contains a non-secret production URL and reads the operator credential from the process
+  environment only when a tool calls Cloud.
 - Skills run only when the host selects them for a relevant Java task.
-- Repository commands are visible host-agent actions and remain subject to user approval and host
-  policy.
+- Remote repository commands are visible MCP actions selected by the host agent and remain subject
+  to user approval and host policy.
 - The bundle does not claim that instructions guarantee correctness or compliance.
 - Final policy attestations and publisher identity must be confirmed by the authorized submitting
   account in the OpenAI Platform portal.

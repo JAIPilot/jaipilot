@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "5.2.0",
-  "description": "Java engineering skills for smaller, safer, better-proven agent changes.",
+  "version": "5.3.0",
+  "description": "Java engineering skills with opt-in remote build and test execution.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
@@ -15,16 +15,35 @@
     "testing",
     "openrewrite",
     "refactoring",
-    "code-quality"
+    "code-quality",
+    "remote-execution"
   ],
   "skills": "./skills/",
+  "mcpServers": {
+    "jaipilot-remote": {
+      "type": "stdio",
+      "command": "deno",
+      "args": [
+        "run",
+        "--quiet",
+        "--allow-env=JAIPILOT_CLOUD_API_URL,JAIPILOT_CLOUD_TRIGGER_SECRET",
+        "--allow-net=otxfylhjrlaesjagfhfi.supabase.co",
+        "mcp/jaipilot-mcp.ts"
+      ],
+      "cwd": ".",
+      "env": {
+        "JAIPILOT_CLOUD_API_URL": "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud"
+      },
+      "env_vars": ["JAIPILOT_CLOUD_TRIGGER_SECRET"]
+    }
+  },
   "interface": {
     "displayName": "JAIPilot",
-    "shortDescription": "Practical Java engineering skills",
-    "longDescription": "Guide coding agents through disciplined Java diff review, behavior-focused test generation, and minimal cleanup using the repository's own build and analysis tools.",
+    "shortDescription": "Java skills with remote execution",
+    "longDescription": "Guide coding agents through disciplined Java review, tests, cleanup, modernization, and performance work, with optional disposable remote hardware for exact committed GitHub revisions.",
     "developerName": "JAIPilot",
     "category": "Productivity",
-    "capabilities": [],
+    "capabilities": ["Interactive"],
     "websiteURL": "https://github.com/JAIPilot/jaipilot",
     "privacyPolicyURL": "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md",

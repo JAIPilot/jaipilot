@@ -1,21 +1,24 @@
 # Contributing
 
-JAIPilot is a small, skills-only plugin. Contributions should make one of its three Java workflows
-clearer, safer, or more useful without adding runtime machinery.
+JAIPilot is a small Java skills and remote-execution plugin. Contributions should make one of its
+four workflows or the six-tool MCP boundary clearer, safer, or more useful.
 
 ## Setup
 
-You need Git and Python 3. Codex and Claude Code are useful for host-level validation.
+You need Git, Python 3, and Deno 2.x. Codex and Claude Code are required for distribution changes.
 
 ~~~bash
-python3 scripts/validate-plugin.py
+deno task check
 ~~~
 
 ## Rules
 
-- Keep plugins/jaipilot limited to manifests, skills, UI metadata, SVG assets, and its short README.
-- Do not add MCP, a runtime, CLI, hook, daemon, installer, backend, package-manager dependency, or
-  automatic repository work.
+- Keep plugins/jaipilot limited to manifests, four skills, UI metadata, SVG assets, the reviewed
+  Deno MCP adapter, and its short README.
+- Keep remote execution to exact committed GitHub SHAs, six bounded lifecycle tools, and
+  agent-selected commands. Do not add another reasoning agent, hooks, a daemon, dashboard,
+  installer, package-manager dependency, or automatic repository work.
+- Never commit or print credentials, customer source, remote logs, or generated artifacts.
 - Keep skill instructions concise and imperative.
 - Prefer repository wrappers and configured tools.
 - Never tell an agent to discard unrelated work, weaken a gate, or add tooling without approval.
@@ -26,14 +29,14 @@ Before submitting a change:
 
 ~~~bash
 git diff --check
-python3 scripts/validate-plugin.py
+deno task check
 python3 /path/to/skill-creator/scripts/quick_validate.py plugins/jaipilot/skills/<skill>
 python3 /path/to/plugin-creator/scripts/validate_plugin.py plugins/jaipilot
 claude plugin validate plugins/jaipilot
 ~~~
 
-Include the affected skill, the test prompt, repository shape, host version, commands, and observed
-result. Do not include proprietary source, credentials, or private paths.
+Include the affected skill or tool, test prompt, repository shape, host version, commands, cleanup
+outcome, and observed result. Do not include proprietary source, credentials, or private paths.
 
 ## Releases
 

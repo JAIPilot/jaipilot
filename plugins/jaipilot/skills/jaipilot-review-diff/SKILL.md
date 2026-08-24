@@ -44,6 +44,9 @@ and keep the host agent in control.
    line coverage alone.
 5. Re-read the final diff after verification and check that generated output did not enter it.
 6. If a command cannot run, report the exact failure and leave that property unavailable.
+7. Use `$jaipilot-remote-java` only when an expensive check materially benefits from remote
+   hardware and the exact candidate is already a GitHub-available commit. Remote `HEAD` results do
+   not verify staged, unstaged, or untracked files.
 
 ## Report
 

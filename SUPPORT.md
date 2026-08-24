@@ -8,6 +8,10 @@
 Include the JAIPilot version, Codex or Claude Code version, skill name, exact request, Java project
 shape, build tool, commands the agent ran, sanitized output, and expected behavior.
 
-JAIPilot can improve its skill instructions and metadata. It does not own the host agent, project
-build, third-party analyzers, or repository-specific configuration. A minimal public reproduction
-helps identify which boundary failed.
+For remote-execution problems, also include the exact commit SHA, hardware profile, process exit
+code, whether logs were truncated, and whether workspace destruction succeeded. Never include the
+Cloud bearer, installation token, private repository contents, or unsanitized logs.
+
+JAIPilot can improve its skills, MCP adapter, and metadata. It does not own the host agent, project
+build, third-party analyzers, repository configuration, or external provider availability. A
+minimal public reproduction helps identify which boundary failed.

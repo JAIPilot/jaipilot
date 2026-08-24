@@ -73,6 +73,9 @@ For the assigned production class:
    implementation detail. Never label a best effort as passing.
 5. Run related tests and the repository's normal final verification command. Re-read the complete
    diff and remove hollow tests, duplication, unused fixtures, debug output, and unrelated changes.
+6. Use `$jaipilot-remote-java` for a long aggregate build only when the integrated candidate is
+   already a GitHub-available commit. Never use a remote run of `HEAD` as coverage or test proof for
+   dirty local test files.
 
 ## Report
 

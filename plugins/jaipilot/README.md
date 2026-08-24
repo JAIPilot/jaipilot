@@ -1,23 +1,26 @@
 # JAIPilot
 
-JAIPilot provides three Java engineering skills:
+JAIPilot bundles four Java engineering skills with an optional remote-execution MCP server:
 
 - jaipilot-review-diff
 - jaipilot-generate-tests
 - jaipilot-clean-java
+- jaipilot-remote-java
 
-The host agent uses the target repository's existing Git, Maven or Gradle wrapper, tests, and
-configured analysis tools. JAIPilot adds no executable, MCP server, hook, installer, background
-process, dashboard, account, or telemetry.
+The host agent owns reasoning, edits, shell commands, retries, cancellation, Git, and user
+interaction. The first three skills use the repository's existing Git, Maven or Gradle wrapper,
+tests, and configured analysis tools. The remote skill lets the host agent run long builds, tests,
+analyzers, profilers, or benchmarks on a disposable Java workspace at one exact committed GitHub
+SHA.
 
-Ask the agent to review a Java diff, raise meaningful per-class test coverage, or safely reduce,
-consolidate, modernize, and optimize Java. The test skill can assign one production class to each
-available worker in bounded, isolated waves. The clean skill composes fail-closed unused removal,
-behavior-locked consolidation, verified stable upgrades, and measured performance work; it can use
-the other two skills for tests and final review. Every selected skill establishes scope, preserves
-unrelated work, runs applicable repository-native checks, and reports evidence and limitations.
+Remote execution never includes staged, unstaged, or untracked local files. It does not synchronize
+remote edits back to the local checkout and receives no GitHub write credential. It is currently an
+operator preview requiring Deno 2.x, the JAIPilot GitHub App, and separately provisioned
+authentication. The shared workspace has public outbound access but no customer VPN/VPC, private
+artifact repository, internal database, or enterprise service connectivity; those checks remain
+local.
 
-JAIPilot is guidance, not an enforcement engine. It does not silently add build plugins, lower
-quality gates, or claim that unavailable evidence passed.
+JAIPilot does not install hooks, watch repositories, run automatically, lower quality gates, or
+claim unavailable evidence passed.
 
 Learn more at <https://github.com/JAIPilot/jaipilot>.
