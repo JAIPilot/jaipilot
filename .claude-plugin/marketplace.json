@@ -12,7 +12,7 @@
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
       "description": "Give Codex or Claude Code Java-specific guardrails and ready hardware for long builds, tests, profiling, and benchmarks.",
-      "version": "6.0.3",
+      "version": "6.0.4",
       "category": "development",
       "tags": [
         "java",

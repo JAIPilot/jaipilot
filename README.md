@@ -60,8 +60,10 @@ same `./mvnw -q clean verify` command, and fresh JaCoCo 0.8.14 reports.
 ## Start with one prompt
 
 ```text
-Use JAIPilot to make my current Java change as lean, safe, and fast as possible. Preserve behavior,
-run the repository's real checks, and use remote hardware for substantial work when useful.
+Make my current Java changes production-ready without changing their behavior. Add any missing
+tests, remove unnecessary code, simplify the implementation, improve performance where you can
+measure a real benefit, and run the project's full verification before you finish. Use JAIPilot's
+remote environment if the heavier checks would be better run away from my laptop.
 ```
 
 JAIPilot may add meaningful tests, remove unused code, simplify equivalent logic, improve measured
