@@ -80,6 +80,10 @@ Deno.test("performance workflow uses one large workspace and rejects weak eviden
   assert.match(performance, /median improves by at least\s+10%/);
   assert.match(performance, /at least seven comparable runs/);
   assert.match(performance, /JAIPILOT_MEASUREMENTS_V1/);
+  assert.match(performance, /keep those proof sources byte-identical/);
+  assert.match(performance, /primaryMetric\.rawData/);
+  assert.match(performance, /\(n - 1\) \* 0\.95/);
+  assert.match(performance, /do\s+not mix it into the operation-level result/);
   assert.match(performance, /remote edits never\s+replace or synchronize the local patch/);
 });
 

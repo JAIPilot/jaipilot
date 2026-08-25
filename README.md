@@ -15,9 +15,9 @@ remote Java machine whenever the task does not require laptop-only access or sta
 JAIPilot does not replace your coding agent or add another AI. It gives your agent focused Java
 workflows, remote compute, and one rule: **show evidence, not confidence.**
 
-| **87.5–92.4% faster** | **8 → 2** SQL statements | **75 → 85** tests     | **0% → 100%** target coverage |
-| --------------------- | ------------------------ | --------------------- | ----------------------------- |
-| Calcite JMH medians   | N+1 removed              | +13.3%, zero failures | Lines and branches            |
+| **12.2–80.3% faster** | **61.3–62.5% faster** | **87.5–92.4% faster** | **8 → 2** SQL statements |
+| --------------------- | --------------------- | --------------------- | ------------------------ |
+| OTel lookup medians   | Micrometer merges     | Calcite JMH medians   | N+1 removed              |
 
 ## JAIPilot vs no JAIPilot
 
@@ -69,6 +69,54 @@ tests with 0 failures and 155 skips, and the tested remote diff matched the loca
 
 This is a controlled result for Calcite's existing graph-removal workloads, not a claim that every
 Java workload becomes faster.
+
+## Measured performance: OpenTelemetry Java
+
+On `skrcode/opentelemetry-java` at exact commit
+[`35636ae`](https://github.com/skrcode/opentelemetry-java/tree/35636aec8d3dc6706bb483bad92383fdd6012af0),
+JAIPilot found that immutable attribute sets were sorted by key name during construction but still
+used a full linear scan for every lookup. This matters at the default span limit of 128 attributes.
+
+The [three-file draft change](https://github.com/skrcode/opentelemetry-java/pull/3) preserves the
+small-set and first-four-entry fast path, then uses binary search for the rest. It also adds a
+large-set behavior test and a repository-native JMH benchmark. Lower values are better:
+
+| Lookup          | Baseline median (ns/op) | JAIPilot median (ns/op) | Improvement | Baseline p95 | JAIPilot p95 | Improvement |
+| --------------- | ----------------------: | ----------------------: | ----------: | -----------: | ------------: | ----------: |
+| First           |                   2.483 |                   2.179 |   **12.2%** |        2.637 |         2.272 |   **13.8%** |
+| Middle          |                 169.124 |                  85.905 |   **49.2%** |      178.250 |        88.537 |   **50.3%** |
+| Last            |                 346.195 |                  87.323 |   **74.8%** |      358.321 |        90.084 |   **74.9%** |
+| Missing         |                 141.560 |                  69.552 |   **50.9%** |      150.321 |        74.261 |   **50.6%** |
+| Last as `Value` |                 368.629 |                  72.684 |   **80.3%** |      387.467 |        78.087 |   **79.8%** |
+
+Baseline and candidate ran in the same large remote workspace with Temurin JDK 21, the same JMH
+jar, command, warm-up, and workload. Each row has 21 observations. The new focused behavior test
+passed before and after the production edit; a clean `:api:all:check` passed all 147 tasks including
+Animal Sniffer, Checkstyle, Spotless, tests, and japicmp. The tested remote Git delta matched the
+local candidate digest. The `Value` workload still allocates about 16 B/op; JAIPilot reports the
+lookup-time win without claiming that allocation disappeared.
+
+## Measured performance: Micrometer
+
+On `skrcode/micrometer` at exact commit
+[`22207bf`](https://github.com/skrcode/micrometer/tree/22207bf9ccc973a1b1bc3890b33645e53fb2e475),
+JAIPilot found that adding or replacing one `Tag` or `KeyValue` went through temporary varargs and
+iterable merge machinery even though the backing arrays were already sorted.
+
+The [six-file draft change](https://github.com/skrcode/micrometer/pull/3) adds a bounded binary-search
+merge for the single-value overloads, behavior tests, and four workloads in Micrometer's existing
+JMH module:
+
+| Replacement workload | Baseline median (ns/op) | JAIPilot median (ns/op) | Improvement | Baseline p95 | JAIPilot p95 | Improvement | Allocation |
+| -------------------- | ----------------------: | ----------------------: | ----------: | -----------: | ------------: | ----------: | ---------: |
+| `KeyValues.and`      |                  57.941 |                  22.449 |   **61.3%** |       63.554 |        23.487 |   **63.0%** | **136 → 104 B/op** |
+| `Tags.and`           |                  58.968 |                  22.101 |   **62.5%** |       63.388 |        24.425 |   **61.5%** | **136 → 104 B/op** |
+
+Single-value insertion reduced median allocation by 17.6% and p95 allocation by 46.2%. Its median
+latency improved by only 6.7–8.9%, below JAIPilot's 10% shared-hardware threshold, so it is not
+presented as a speed win. The same-workspace experiment used 21 observations per workload; 92
+focused tests and the final clean scoped build passed, with 1,132 tests, zero failures, and the
+remote production diff matching the local digest.
 
 ## Measured database work: Petclinic
 
@@ -132,6 +180,8 @@ Additional acceptance runs used repository-native verification:
 | Use case                                                                                            | Result                                                                                                                                                                                           |
 | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Optimize Apache Calcite graph removal                                                               | Existing JMH workload medians improved by **87.5–92.4%** across 10%, 50%, and 90% removal cases; matching behavior tests and a **16,644-test** clean check passed.                               |
+| Optimize OpenTelemetry attribute lookup                                                             | Five 128-attribute lookup workloads improved by **12.2–80.3%** at median and **13.8–79.8%** at p95; clean API compatibility and verification passed.                                           |
+| Optimize Micrometer single-value merges                                                             | Replacement merges improved by **61.3–62.5%** at median and allocated **23.5% less**; sub-threshold insertion latency was not marketed as a speed win.                                        |
 | [Cover previously untested behavior](https://github.com/skrcode/spring-framework-petclinic/pull/34) | **7** focused tests added with **no production or dependency change**; target coverage moved from **0% to 100%** for lines and branches; **82/82** tests passed independently on Java 17 and 21. |
 | Run the current change remotely                                                                     | An uncommitted file reached the workspace; `./mvnw clean test` passed **75/75** tests in **44.6 seconds**; job recovery, cancellation, and workspace deletion were verified.                     |
 | Remove a JDBC N+1 query                                                                              | Vet listing SQL statements fell from **8 to 2** on the six-vet fixture; **15/15** focused and **79/79** clean-build tests passed, with identical local/remote diff digests.                 |

@@ -32,6 +32,12 @@ for the 10%, 50%, and 90% removal workloads on the same large remote workspace. 
 tests passed before and after the production edit, and a fresh clean check completed **16,644 tests
 with zero failures**. See the repository README for the complete median, p95, and methodology.
 
+On OpenTelemetry Java, JAIPilot replaced large immutable-attribute linear scans with a bounded
+linear-plus-binary lookup. Across five 128-attribute workloads, medians improved by **12.2–80.3%**
+and p95 by **13.8–79.8%** over 21 observations per side. On Micrometer, single-value replacement
+merges improved by **61.3–62.5%** at median and allocated **23.5% less**. Both candidates passed
+same-command behavior checks, clean repository-native verification, and local/remote diff matching.
+
 ```text
 Make my current Java changes production-ready without changing their behavior. Add missing tests,
 remove unnecessary code, simplify anything overcomplicated, improve only measurable performance,

@@ -29,6 +29,16 @@ the commands and disposable source state that the agent selects.
    warmup, and cache boundary. Destroy the workspace after the experiment; remote edits never
    replace or synchronize the local patch.
 
+For repository-native JMH, add or strengthen the behavior test and benchmark before the baseline,
+then keep those proof sources byte-identical for the candidate. Change only production code between
+measurements. Read `primaryMetric.rawData`, not only JMH's aggregate score; require matching
+benchmark names, parameters, mode, threads, forks, warmup and measurement settings, JDK, JVM
+arguments, and workload inputs. Flatten the per-fork observations, sort them, use the middle value
+for the median, and compute p95 at `(n - 1) * 0.95` with linear interpolation. Compare relevant
+secondary metrics such as `gc.alloc.rate.norm`, but do not turn near-zero profiler overhead into an
+allocation claim. Gradle or Maven task time is experiment setup when the measured path is JMH; do
+not mix it into the operation-level result.
+
 When the workload is one stable shell command, call `process_start` with `warmup_runs: 2` and
 `measurement_runs: 7`. Use the final `JAIPILOT_MEASUREMENTS_V1` record for bounded raw nanoseconds,
 median, and p95. Do not use this wrapper for a command whose build, dependency download, fixture

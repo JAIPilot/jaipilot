@@ -1,5 +1,22 @@
 # Changelog
 
+## [6.4.0] - 2026-08-26
+
+### Added
+
+- Added a deterministic native-JMH comparison contract: hold proof sources constant, compare raw
+  fork observations, verify experiment identity, compute median and p95 reproducibly, and separate
+  measured operations from build setup.
+
+### Changed
+
+- Published controlled OpenTelemetry Java results: large attribute lookups improved by **12.2% to
+  80.3%** at median and **13.8% to 79.8%** at p95 across five workloads.
+- Published controlled Micrometer results: single-tag replacement merges improved by **61.3% to
+  62.5%** at median while allocation fell by **23.5%**.
+- Kept the evidence honest: Micrometer insertion latency below the 10% threshold is not presented
+  as a speed claim, and OpenTelemetry `Value` allocation is reported as unchanged.
+
 ## [6.3.2] - 2026-08-25
 
 ### Changed
