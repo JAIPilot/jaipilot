@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.4.1] - 2026-08-26
+
+### Changed
+
+- Moved installation and a copy-paste first-use prompt ahead of the detailed acceptance evidence.
+- Replaced the `large` hardware label with the exact 4 CPU/8 GiB workspace size.
+- Reduced remote source upload to a user-level approval and sign-in flow, with explicit fail-closed
+  behavior when packaging or integrity verification fails.
+- Removed the compute-hours statement from the public README.
+
 ## [6.4.0] - 2026-08-26
 
 ### Added

@@ -12,7 +12,7 @@
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
       "description": "Ship better Java with your coding agent.",
-      "version": "6.4.0",
+      "version": "6.4.1",
       "category": "development",
       "tags": [
         "java",
