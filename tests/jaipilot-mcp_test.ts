@@ -32,6 +32,9 @@ Deno.test("remote source upload requires repository-specific affirmative consent
   assert.match(remote, /Before the first upload for this repository/);
   assert.match(remote, /Require affirmative user confirmation/);
   assert.match(remote, /consent for another repository/);
+  assert.match(remote, /do not name a loop or\s+scalar variable `path`/);
+  assert.match(remote, /Treat any HTTP 2xx response as success/);
+  assert.match(remote, /Supabase signed uploads normally return 200/);
 
   const optimize = await Deno.readTextFile(
     new URL("skills/jaipilot-optimize-java/SKILL.md", PLUGIN),

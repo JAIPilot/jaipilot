@@ -21,6 +21,11 @@ new method, and an unused helper. With JAIPilot: **85 tests**, **100%** line and
 the method, **7 net production lines removed**, and class complexity reduced from **25 to 24**. Both
 states passed clean Maven verification.
 
+In a separate measured Petclinic run, JAIPilot removed a JDBC N+1 path: listing six vets fell from
+**8 SQL statements (`2 + N`) to exactly 2**. The added behavior and query-count tests passed 15/15,
+the clean build passed 79/79, and matching local/remote diff digests proved the tested code was the
+candidate kept locally. This is deterministic query-count evidence, not an invented latency claim.
+
 ```text
 Make my current Java changes production-ready without changing their behavior. Add missing tests,
 remove unnecessary code, simplify anything overcomplicated, improve only measurable performance,

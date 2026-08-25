@@ -1,5 +1,17 @@
 # Changelog
 
+## [6.3.1] - 2026-08-25
+
+### Changed
+
+- Added the verified Petclinic JDBC result: six-vet listing queries fell from 8 (`2 + N`) to a
+  constant 2 while 15 focused and 79 clean-build tests passed.
+- Made remote source packaging robust in zsh by reserving its special `path` variable, accepting
+  every successful HTTP 2xx upload response, and documenting exact-file cleanup for restrictive
+  host policies.
+- Live-tested seven-sample measurement output, durable cancellation, idempotent repeated
+  cancellation, and confirmed workspace deletion on the public remote service.
+
 ## [6.3.0] - 2026-08-25
 
 ### Added

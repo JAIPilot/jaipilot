@@ -43,11 +43,15 @@ selection, and user interaction. JAIPilot Remote is not another coding agent.
    staged, unstaged, and untracked files, and excludes `.git` and ignored build output. Include only
    listed paths that still exist so staged or unstaged deletions remain absent. Reject filenames
    containing newlines and links the service cannot safely extract. Inspect the list for credentials
-   or inappropriate data; never add files outside the repository.
+   or inappropriate data; never add files outside the repository. In zsh, do not name a loop or
+   scalar variable `path`: zsh treats `path` as the array backing `PATH`, so assigning a filename to
+   it can make later commands disappear. Use a task-specific name such as `source_file`.
 5. Compute the archive's lowercase SHA-256. Upload its raw bytes with HTTP `PUT` to the short-lived
    `upload_url`, `content-type: application/gzip`, and `x-upsert: false`. Do not echo or retain the
-   signed URL. Delete the local temporary archive immediately after `workspace_create` succeeds or
-   fails.
+   signed URL. Treat any HTTP 2xx response as success; Supabase signed uploads normally return 200,
+   not 201. Delete the exact local temporary archive and file list immediately after
+   `workspace_create` succeeds or fails. Prefer exact-file `unlink` plus removal of the now-empty
+   temporary directory when the host blocks broad `rm` commands.
 6. Call `workspace_create` with `upload_id`, the exact archive SHA-256, and the shortest practical
    15-120 minute lifetime. Use the `large` profile for substantial profiling, benchmarks, or builds
    that benefit from 4 CPU and 8 GiB; otherwise use `medium`. The service verifies ownership, byte

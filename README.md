@@ -15,9 +15,9 @@ remote Java machine whenever the task does not require laptop-only access or sta
 JAIPilot does not replace your coding agent or add another AI. It gives your agent focused Java
 workflows, remote compute, and one rule: **show evidence, not confidence.**
 
-| **75 → 85** tests     | **0% → 100%** target coverage | **7** net production lines removed | **25 → 24** class complexity |
-| --------------------- | ----------------------------- | ---------------------------------- | ---------------------------- |
-| +13.3%, zero failures | Lines and branches            | Same behavior                      | One unused method removed    |
+| **8 → 2** SQL statements | **75 → 85** tests     | **0% → 100%** target coverage | **7** net production lines removed |
+| ------------------------ | --------------------- | ----------------------------- | ---------------------------------- |
+| N+1 removed               | +13.3%, zero failures | Lines and branches            | Same behavior                      |
 
 ## JAIPilot vs no JAIPilot
 
@@ -42,6 +42,25 @@ the edge cases became executable tests, and production code became smaller.
 
 The comparison uses the original PR head and JAIPilot's direct child commit, clean worktrees, the
 same `./mvnw -q clean verify` command, and fresh JaCoCo 0.8.14 reports.
+
+## A measured performance result
+
+On the current Petclinic JDBC vet listing, JAIPilot found a real N+1 query path: six vets required
+eight SQL statements (`2 + N`). It kept the ordered vet query and replaced the per-vet specialty
+lookups with one joined association query.
+
+| Evidence                  | Baseline | JAIPilot candidate |
+| ------------------------- | -------: | ------------------: |
+| SQL statements, six vets |        8 |               **2** |
+| Growth with vet count     |  `2 + N` |       **constant 2** |
+| Focused JDBC tests        |    11/11 |           **15/15** |
+| Clean repository build    |    75/75 |           **79/79** |
+
+The new tests lock vet ordering, specialty ordering, vets without specialties, duplicate links,
+shared specialty identity, empty data, and the exact two-statement ceiling. The final clean Maven
+build and JaCoCo report passed on a large remote workspace, and the local and remote binary diff
+digests matched. This is deterministic query-count evidence; JAIPilot does not turn it into an
+invented latency claim.
 
 ## Why teams use JAIPilot
 
@@ -87,6 +106,7 @@ Additional Petclinic acceptance runs used repository-native verification:
 | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [Cover previously untested behavior](https://github.com/skrcode/spring-framework-petclinic/pull/34) | **7** focused tests added with **no production or dependency change**; target coverage moved from **0% to 100%** for lines and branches; **82/82** tests passed independently on Java 17 and 21. |
 | Run the current change remotely                                                                     | An uncommitted file reached the workspace; `./mvnw clean test` passed **75/75** tests in **44.6 seconds**; job recovery, cancellation, and workspace deletion were verified.                     |
+| Remove a JDBC N+1 query                                                                              | Vet listing SQL statements fell from **8 to 2** on the six-vet fixture; **15/15** focused and **79/79** clean-build tests passed, with identical local/remote diff digests.                 |
 
 These are reproducible acceptance results, not claims that every repository will see the same
 coverage, code reduction, or speed.
