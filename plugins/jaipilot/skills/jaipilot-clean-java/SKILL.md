@@ -1,6 +1,6 @@
 ---
 name: jaipilot-clean-java
-description: Safely remove unused Java, consolidate equivalent logic, reduce real complexity, modernize compatible dependencies or JDKs, and optimize measured workloads. Use for dead code, AI-generated clutter, duplication, excessive classes or methods, OpenRewrite migrations, stable upgrades, slow algorithms, allocation, I/O, contention, or virtual-thread evaluation.
+description: Safely remove unused Java, consolidate equivalent logic, reduce real complexity, enforce stable architecture rules, modernize compatible dependencies or JDKs, and optimize measured workloads. Use for dead code, AI-generated clutter, duplication, excessive classes or methods, ArchUnit rules, OpenRewrite migrations, stable upgrades, slow algorithms, allocation, I/O, contention, or virtual-thread evaluation.
 ---
 
 # Make Java smaller, newer, and faster without guessing
@@ -20,7 +20,9 @@ Read only the references needed for the request:
 - [modernize.md](references/modernize.md): upgrade the JDK, build, framework, plugins, and public
   dependencies to verified compatible stable releases; and
 - [performance.md](references/performance.md): improve measured algorithms, allocation, I/O, and
-  concurrency, including virtual threads when the workload proves they fit.
+  concurrency, including virtual threads when the workload proves they fit;
+- [architecture-and-rewrites.md](references/architecture-and-rewrites.md): use ArchUnit for a stable
+  architectural invariant or OpenRewrite for a bounded deterministic transformation.
 
 Use only the modes requested by the user or controlling workflow. For a comprehensive request, use
 this order unless repository constraints justify another: remove proven unused leaves, consolidate
@@ -44,9 +46,9 @@ in isolated batches. Evaluating a mode does not require editing in it.
 
 ## Work in reversible evidence-backed batches
 
-1. When OpenRewrite is configured, inspect its pinned version and recipes. Run the smallest
-   applicable dry run before manual cleanup or migration and review every proposed edit. Never add
-   tooling without approval.
+1. When an architecture rule or automated rewrite would materially improve proof, follow
+   [architecture-and-rewrites.md](references/architecture-and-rewrites.md). Prefer configured tools;
+   never add ArchUnit, OpenRewrite, recipes, plugins, or build configuration without approval.
 2. Use an isolated worktree or equivalent reversible copy when relevant state can be reproduced
    without hiding dirty work. Never reset, clean, or stash unrelated work.
 3. Apply one coherent leaf, consolidation seam, performance hypothesis, or upgrade axis at a time.
@@ -82,7 +84,7 @@ Return:
 
 - modes, boundary, initial worktree state, baseline, and unavailable evidence;
 - candidate or hypothesis ledger with accepted, rejected, and retained items;
-- OpenRewrite recipes and proposed edits accepted or rejected;
+- ArchUnit rules and violations, plus OpenRewrite recipes and proposed edits accepted or rejected;
 - exact commands and pass, fail, skipped, or unavailable results;
 - before/after code shape, resolved versions, or performance measurements as applicable;
 - the final diff relative to the saved starting state, not only relative to `HEAD`;

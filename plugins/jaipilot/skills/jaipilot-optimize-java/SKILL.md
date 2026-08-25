@@ -40,6 +40,8 @@ Prefer no production change to a plausible change with incomplete proof.
    meaningful edge cases; do not add implementation-coupled or coverage-only assertions.
 5. **Review and verify.** Invoke the `jaipilot-review-diff` skill and finish with the repository's
    normal clean verification. Confirm intended tests and configured quality gates actually executed.
+   When a durable architecture invariant or bounded migration justifies it, use the ArchUnit or
+   OpenRewrite procedure from `jaipilot-clean-java`; adding tooling still requires user approval.
 
 Use the `jaipilot-fast-execution` skill for substantial command work when safe batching or bounded native
 parallelism materially reduces wall time. Use the `jaipilot-remote-java` skill when substantial work

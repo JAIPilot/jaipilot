@@ -40,6 +40,9 @@ repository-wide campaign.
 6. Use configured PIT when practical. Strengthen meaningful survivors; do not assert incidental
    implementation details merely to kill mutations.
 7. Change production code only with user approval for a necessary testability change or defect fix.
+8. Use configured ArchUnit when the requested proof is a stable architecture invariant. If adding
+   ArchUnit would provide durable value, follow the `jaipilot-clean-java` tool procedure and obtain
+   approval before changing build dependencies or configuration.
 
 ## Run a coverage campaign when requested
 

@@ -46,7 +46,9 @@ and keep the host agent in control.
 3. Run configured JaCoCo, PIT, ArchUnit, OpenRewrite, or static-analysis tasks when they apply.
    Do not add plugins, dependencies, exclusions, suppressions, or weaker thresholds merely to pass.
    Inspect declarations, executions, profiles, and lifecycle bindings before calling configured
-   evidence unavailable.
+   evidence unavailable. If implementation was requested and a new durable ArchUnit rule or bounded
+   OpenRewrite migration would materially help, follow the `jaipilot-clean-java` tool procedure and
+   obtain approval before adding tooling.
 4. Confirm that changed tests actually executed. For behavior-sensitive production edits, require
    focused coverage of the affected contract and edge cases. Review tests for observable assertions.
    Do not infer test quality from a green build or line coverage alone.

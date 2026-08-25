@@ -1,5 +1,33 @@
 # Changelog
 
+## [6.1.0] - 2026-08-25
+
+### Added
+
+- Added bounded ArchUnit guidance for durable repository architecture invariants.
+- Added pinned, dry-run-first OpenRewrite guidance for reviewed cleanup and migration recipes.
+
+### Changed
+
+- Routed optimization, test generation, and diff review through the shared tool procedure when
+  either tool would materially improve proof.
+- Kept adding dependencies, plugins, recipes, or lasting build configuration behind explicit user
+  approval.
+
+## [6.0.4] - 2026-08-25
+
+### Changed
+
+- Replaced the README's product-language example with a natural behavior-preserving Java hardening
+  request.
+
+## [6.0.3] - 2026-08-25
+
+### Changed
+
+- Required repository-specific affirmative consent before the first remote source upload in a
+  conversation.
+
 ## [6.0.2] - 2026-08-25
 
 ### Changed

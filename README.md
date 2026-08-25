@@ -108,7 +108,7 @@ JAIPilot runtime is required.
 | ------------------------- | ------------------------------------------------------- |
 | `jaipilot-optimize-java`  | Make one bounded Java change leaner, safer, and faster. |
 | `jaipilot-generate-tests` | Add meaningful tests and fresh coverage evidence.       |
-| `jaipilot-clean-java`     | Remove proven waste and simplify real complexity.       |
+| `jaipilot-clean-java`     | Remove waste, enforce architecture, and simplify code.   |
 | `jaipilot-review-diff`    | Find regressions, unnecessary code, and missing proof.  |
 | `jaipilot-fast-execution` | Run substantial Java verification efficiently.          |
 | `jaipilot-remote-java`    | Run long Java commands on disposable remote hardware.   |

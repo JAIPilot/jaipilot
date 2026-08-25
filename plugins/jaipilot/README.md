@@ -21,8 +21,9 @@ the method, **7 net production lines removed**, and class complexity reduced fro
 states passed clean Maven verification.
 
 ```text
-Use JAIPilot to make my current Java change as lean, safe, and fast as possible. Preserve behavior
-and prove the result with the repository's real checks.
+Make my current Java changes production-ready without changing their behavior. Add missing tests,
+remove unnecessary code, simplify anything overcomplicated, improve only measurable performance,
+and run the project's full verification before you finish.
 ```
 
 The skills work locally without an account. Sign in when your agent first uses remote hardware.
