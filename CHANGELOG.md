@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.5] - 2026-08-25
+
+### Changed
+
+- Removed an underpowered local-skills comparison from public product positioning because it did
+  not exercise JAIPilot Remote, the product's primary execution benefit.
+
 ## [6.1.4] - 2026-08-25
 
 ### Added
