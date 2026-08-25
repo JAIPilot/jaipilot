@@ -27,6 +27,8 @@ Deno.test("remote source upload requires repository-specific affirmative consent
   const remote = await Deno.readTextFile(
     new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),
   );
+  assert.match(remote, /Before the first upload for each repository/);
+  assert.match(remote, /ordinary task request does not count/);
   assert.match(remote, /Before the first upload for this repository/);
   assert.match(remote, /Require affirmative user confirmation/);
   assert.match(remote, /consent for another repository/);

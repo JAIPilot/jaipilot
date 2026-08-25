@@ -1,6 +1,6 @@
 ---
 name: jaipilot-remote-java
-description: Run Java builds, tests, analyzers, profilers, benchmarks, and toolchain work on authenticated disposable JAIPilot hardware by default whenever the laptop provides no concrete advantage. Keep work local only for laptop-bound resources, lower latency on tiny commands, or remote unavailability.
+description: Run Java builds, tests, analyzers, profilers, benchmarks, and toolchain work on authenticated disposable JAIPilot hardware by default whenever the laptop provides no concrete advantage. Before the first upload for each repository, require affirmative source-upload confirmation; an ordinary task request does not count. Keep work local only for laptop-bound resources, lower latency on tiny commands, or remote unavailability.
 ---
 
 # Run substantial Java work remotely
