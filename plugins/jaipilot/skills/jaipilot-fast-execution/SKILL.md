@@ -65,9 +65,10 @@ If acceleration plausibly causes a failure, run the repository-native serial equ
 serial passes, stop using the unsafe option and report the fallback; if serial also fails, preserve
 the real failure. Never retry blindly or kill unrelated processes.
 
-Use the `jaipilot-remote-java` skill when substantial verification materially benefits from ready
-remote hardware. Keep local execution when the requested proof needs private network or artifact
-access, unavailable secrets, or machine-specific services.
+Default substantial compilation, test, analysis, profiling, benchmark, and toolchain execution to
+the `jaipilot-remote-java` skill whenever the laptop provides no concrete advantage. Keep it local
+only for private network or artifact access, unavailable secrets or services, machine-specific
+state, a command too small to justify workspace setup, or remote unavailability.
 
 ## Report
 

@@ -73,8 +73,11 @@ repository-wide campaign.
    effort as passing.
 4. Run related tests and the normal final clean verification. Re-read the complete diff and confirm
    intended tests executed.
-5. Use the `jaipilot-remote-java` skill only for a long aggregate command whose exact candidate is
-   already a GitHub-available commit; remote `HEAD` does not prove dirty local test files.
+5. Default focused and aggregate test execution, coverage, mutation analysis, and final clean
+   verification to the `jaipilot-remote-java` skill whenever the laptop provides no concrete
+   advantage under that skill's routing rules. Remote proof covers only the uploaded tracked and
+   unignored working tree; upload the latest state again after changing local tests or production
+   files.
 
 ## Report
 

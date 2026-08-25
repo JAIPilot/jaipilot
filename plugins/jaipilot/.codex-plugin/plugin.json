@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "6.1.5",
+  "version": "6.2.0",
   "description": "Ship better Java with your coding agent.",
   "author": {
     "name": "JAIPilot",
@@ -30,7 +30,7 @@
   "interface": {
     "displayName": "JAIPilot",
     "shortDescription": "Ship better Java with your coding agent.",
-    "longDescription": "Give Codex or Claude Code focused Java engineering workflows plus authenticated, disposable hardware for long Maven and Gradle builds, tests, analyzers, profilers, and benchmarks.",
+    "longDescription": "Give Codex or Claude Code focused Java engineering workflows plus authenticated disposable hardware used by default for applicable Maven and Gradle builds, tests, analyzers, profilers, and benchmarks.",
     "developerName": "JAIPilot",
     "category": "Productivity",
     "capabilities": [
@@ -42,7 +42,7 @@
     "defaultPrompt": [
       "Optimize my current Java change without changing its behavior.",
       "Add meaningful tests for this Java behavior and report fresh coverage evidence.",
-      "Run this Java build or benchmark on JAIPilot remote hardware and report the evidence."
+      "Run this Java work on JAIPilot remote hardware unless it requires laptop-only resources, and report the evidence."
     ],
     "brandColor": "#2457D6",
     "logo": "./assets/jaipilot-logo.svg",

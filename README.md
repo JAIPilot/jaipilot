@@ -9,8 +9,8 @@
 JAIPilot helps Codex and Claude Code clean, test, review, modernize, and optimize real Java
 repositories without drifting into unnecessary code or unproved changes.
 
-For heavy builds, tests, analysis, and benchmarks, your agent can use a ready remote Java machine
-instead of tying up your laptop.
+By default, your agent runs Java builds, tests, analysis, profiling, and benchmarks on a ready
+remote Java machine whenever the task does not require laptop-only access or state.
 
 JAIPilot does not replace your coding agent or add another AI. It gives your agent focused Java
 workflows, remote compute, and one rule: **show evidence, not confidence.**
@@ -50,8 +50,8 @@ same `./mvnw -q clean verify` command, and fresh JaCoCo 0.8.14 reports.
   modernize safely, and optimize measured bottlenecks.
 - **Real verification** — use the repository's Maven or Gradle build, tests, coverage, architecture
   rules, and performance measurements.
-- **Free up your laptop** — move long Java work to disposable remote hardware with JDK 17, 21, and
-  25, Maven, and Gradle ready.
+- **Remote-first execution** — use disposable hardware with JDK 17, 21, and 25, Maven, and Gradle
+  ready unless private networks, local services, secrets, hardware, or state require the laptop.
 - **Works on your current change** — staged, unstaged, and untracked files can be tested without
   committing or pushing first.
 - **Your agent stays in control** — Codex or Claude Code chooses every edit and command and reports
@@ -62,8 +62,8 @@ same `./mvnw -q clean verify` command, and fresh JaCoCo 0.8.14 reports.
 ```text
 Make my current Java changes production-ready without changing their behavior. Add any missing
 tests, remove unnecessary code, simplify the implementation, improve performance where you can
-measure a real benefit, and run the project's full verification before you finish. Use JAIPilot's
-remote environment if the heavier checks would be better run away from my laptop.
+measure a real benefit, and run the project's full verification before you finish. Use JAIPilot
+Remote for Java execution unless the work genuinely requires resources available only on my laptop.
 ```
 
 JAIPilot may add meaningful tests, remove unused code, simplify equivalent logic, improve measured
@@ -104,9 +104,9 @@ Clients that consume the official MCP Registry can discover the hosted remote to
 `io.github.JAIPilot/jaipilot`. This installs remote execution only; install the Codex or Claude Code
 plugin above for the six Java engineering skills as well.
 
-The Java skills work locally immediately. When your agent first needs JAIPilot remote hardware, sign
-in to JAIPilot when prompted. No VM account, API key, SSH configuration, GitHub App, or local
-JAIPilot runtime is required.
+The Java skills work locally immediately. When your agent first uses JAIPilot remote hardware, sign
+in and approve the repository upload when prompted. No VM account, API key, SSH configuration,
+GitHub App, or local JAIPilot runtime is required.
 
 ## Included skills
 
@@ -117,7 +117,7 @@ JAIPilot runtime is required.
 | `jaipilot-clean-java`     | Remove waste, enforce architecture, and simplify code.   |
 | `jaipilot-review-diff`    | Find regressions, unnecessary code, and missing proof.  |
 | `jaipilot-fast-execution` | Run substantial Java verification efficiently.          |
-| `jaipilot-remote-java`    | Run long Java commands on disposable remote hardware.   |
+| `jaipilot-remote-java`    | Default applicable Java execution to remote hardware.   |
 
 JAIPilot can work with repository-configured tools such as JaCoCo, PIT, ArchUnit, OpenRewrite,
 Checkstyle, PMD, SpotBugs, SonarQube, JMH, and JFR. It never weakens a quality gate merely to get a
@@ -126,8 +126,10 @@ green result.
 ## Remote build beta
 
 The beta includes one active remote workspace and five compute hours per user each month. Remote
-work is disposable and never commits, pushes, or publishes code. Use it for repositories that build
-without a corporate VPN, private artifact service, internal database, or unavailable secret.
+work is disposable and never commits, pushes, or publishes code. JAIPilot defaults applicable Java
+execution to remote hardware; it stays local when a corporate VPN, private artifact service,
+internal database, unavailable secret, machine-specific state, or another laptop-only resource is
+required.
 
 See [Security](SECURITY.md), [Privacy](PRIVACY.md), [Support](SUPPORT.md), [Terms](TERMS.md), and
 the [Changelog](CHANGELOG.md).

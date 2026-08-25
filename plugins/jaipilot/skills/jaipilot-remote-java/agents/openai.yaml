@@ -1,7 +1,7 @@
 interface:
   display_name: "Run Java on Remote Hardware"
-  short_description: "Run long Java checks on ready hardware"
-  default_prompt: "Use $jaipilot-remote-java to run this substantial Java build or benchmark on authenticated disposable hardware and report the exact evidence and benefit."
+  short_description: "Default Java execution to ready remote hardware"
+  default_prompt: "Use $jaipilot-remote-java for this Java build, test, analysis, or benchmark unless it genuinely requires laptop-only resources, and report the exact evidence and benefit."
 
 dependencies:
   tools:

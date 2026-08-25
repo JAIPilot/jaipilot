@@ -38,6 +38,28 @@ Deno.test("remote source upload requires repository-specific affirmative consent
   assert.match(optimize, /exact tracked and unignored working-tree/);
 });
 
+Deno.test("Java verification workflows prefer remote execution without a laptop advantage", async () => {
+  const remote = await Deno.readTextFile(
+    new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),
+  );
+  assert.match(remote, /hardware by default whenever the laptop provides no concrete advantage/);
+  assert.match(remote, /Keep execution local only when the laptop provides a concrete advantage/);
+
+  for (
+    const name of [
+      "jaipilot-clean-java",
+      "jaipilot-fast-execution",
+      "jaipilot-generate-tests",
+      "jaipilot-optimize-java",
+      "jaipilot-review-diff",
+    ]
+  ) {
+    const skill = await Deno.readTextFile(new URL(`skills/${name}/SKILL.md`, PLUGIN));
+    assert.match(skill, /Default[\s\S]+`jaipilot-remote-java`/);
+    assert.match(skill, /laptop provides no concrete\s+advantage/);
+  }
+});
+
 async function json<T>(path: string): Promise<T> {
   return JSON.parse(await Deno.readTextFile(new URL(path, PLUGIN)));
 }

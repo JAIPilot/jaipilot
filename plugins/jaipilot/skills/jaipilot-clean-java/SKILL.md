@@ -59,9 +59,10 @@ in isolated batches. Evaluating a mode does not require editing in it.
    retained change exposes a specific regression gap. Do not add hollow tests merely to permit a rewrite.
 6. After integration, use the `jaipilot-review-diff` skill to inspect the complete Java and build
    diff, then run the repository's applicable final clean proof.
-7. Use the `jaipilot-remote-java` skill when a build, analyzer, profiler, or benchmark materially benefits
-   from disposable remote hardware and the exact state is already a GitHub-available commit. Do not
-   treat committed remote evidence as proof of dirty local edits.
+7. Default compilation, tests, analyzers, profilers, benchmarks, and final clean proof to the
+   `jaipilot-remote-java` skill whenever the laptop provides no concrete advantage under that
+   skill's routing rules. Remote proof covers only the uploaded tracked and unignored working tree;
+   upload the latest state again after relevant local edits.
 
 ## Shared acceptance rules
 

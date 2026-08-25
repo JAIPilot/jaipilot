@@ -10,7 +10,7 @@ JAIPilot helps your coding agent:
 - review risky Java changes;
 - modernize compatible dependencies and JDKs;
 - optimize measured bottlenecks; and
-- run heavy Maven or Gradle work on ready remote hardware.
+- run applicable Maven and Gradle work on ready remote hardware by default.
 
 Your coding agent remains the only planner and editor. JAIPilot supplies focused Java workflows,
 compute, and repository-native evidence.
@@ -23,10 +23,13 @@ states passed clean Maven verification.
 ```text
 Make my current Java changes production-ready without changing their behavior. Add missing tests,
 remove unnecessary code, simplify anything overcomplicated, improve only measurable performance,
-and run the project's full verification before you finish.
+and run the project's full verification before you finish. Use JAIPilot Remote for Java execution
+unless the work genuinely requires resources available only on my laptop.
 ```
 
-The skills work locally without an account. Sign in when your agent first uses remote hardware.
-Remote work is disposable and never commits, pushes, or publishes code.
+The skills work locally without an account. Sign in and approve the repository upload when your
+agent first uses remote hardware. Remote work is disposable and never commits, pushes, or publishes
+code. Private networks, local services, secrets, hardware, or state remain valid reasons to run on
+the laptop.
 
 Learn more at <https://github.com/JAIPilot/jaipilot>.

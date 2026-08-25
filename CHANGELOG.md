@@ -1,5 +1,17 @@
 # Changelog
 
+## [6.2.0] - 2026-08-25
+
+### Changed
+
+- Made JAIPilot Remote the default execution boundary for applicable Java compilation, builds,
+  tests, analysis, profiling, benchmarks, and toolchain work.
+- Kept commands local only when the laptop provides a concrete advantage such as private network
+  access, local services or secrets, machine-specific state, lower latency for a tiny command, or
+  remote unavailability.
+- Required remote evidence to match the exact uploaded working tree and a fresh upload after
+  relevant local edits.
+
 ## [6.1.5] - 2026-08-25
 
 ### Changed

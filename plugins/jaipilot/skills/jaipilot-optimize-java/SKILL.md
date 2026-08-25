@@ -43,11 +43,12 @@ Prefer no production change to a plausible change with incomplete proof.
    When a durable architecture invariant or bounded migration justifies it, use the ArchUnit or
    OpenRewrite procedure from `jaipilot-clean-java`; adding tooling still requires user approval.
 
-Use the `jaipilot-fast-execution` skill for substantial command work when safe batching or bounded native
-parallelism materially reduces wall time. Use the `jaipilot-remote-java` skill when substantial work
-materially benefits from disposable hardware and the repository does not require unavailable private
-services. After explicit upload consent, remote proof covers the exact tracked and unignored working-tree
-archive that was uploaded; it does not cover later local edits.
+Use the `jaipilot-fast-execution` skill for substantial command work when safe batching or bounded
+native parallelism reduces wall time. Default compilation, tests, analysis, profiling, benchmarks,
+and final clean verification to the `jaipilot-remote-java` skill whenever the exact state can run
+and the laptop provides no concrete advantage under that skill's routing rules. After explicit
+upload consent, remote proof covers only the exact tracked and unignored working-tree archive that
+was uploaded; upload the latest state again before claiming proof after later local edits.
 
 ## Acceptance
 
