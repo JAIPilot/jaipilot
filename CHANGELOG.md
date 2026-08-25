@@ -1,5 +1,19 @@
 # Changelog
 
+## [6.3.0] - 2026-08-25
+
+### Added
+
+- Added a large-hardware performance workflow for one representative Java workload, an exact
+  digest-matched candidate, and same-workspace baseline/candidate evidence.
+
+### Changed
+
+- Raised performance evidence to seven raw observations with median and p95 reporting, a 10%
+  shared-hardware wall-time threshold, and deterministic count evidence for smaller wins.
+- Kept the coding agent as the only planner and local editor; remote candidate changes remain
+  disposable and are never synchronized or published.
+
 ## [6.2.0] - 2026-08-25
 
 ### Changed

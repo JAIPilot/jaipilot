@@ -49,7 +49,9 @@ selection, and user interaction. JAIPilot Remote is not another coding agent.
    signed URL. Delete the local temporary archive immediately after `workspace_create` succeeds or
    fails.
 6. Call `workspace_create` with `upload_id`, the exact archive SHA-256, and the shortest practical
-   15-120 minute lifetime. The service verifies ownership, byte size, and digest before extraction.
+   15-120 minute lifetime. Use the `large` profile for substantial profiling, benchmarks, or builds
+   that benefit from 4 CPU and 8 GiB; otherwise use `medium`. The service verifies ownership, byte
+   size, and digest before extraction.
 7. Treat the upload as an immutable evidence boundary. If relevant local files change afterward,
    destroy the stale workspace and upload the latest state before claiming focused or final proof.
 
@@ -63,9 +65,13 @@ selection, and user interaction. JAIPilot Remote is not another coding agent.
    The final exit code is authoritative; a truncated log is incomplete evidence.
 3. Keep focused iteration separate from final repository-native clean verification. Confirm that
    intended tests, analyzers, and modules actually ran.
-4. For performance claims, use the same workspace, JDK, command, input, warmup, and resource
-   boundary for baseline and candidate, with at least five observations. Report raw values, median,
-   p95, and noise; do not call noise a win.
+4. For performance claims, upload the exact starting state before editing, profile it on `large`,
+   and compare only a bounded local candidate whose patch and remote Git delta digests match. Use
+   the same workspace, JDK, command, input, warmup, and resource boundary for both states, with at
+   least seven observations. For one stable shell workload, set `warmup_runs` and
+   `measurement_runs` on `process_start` and use its final `JAIPILOT_MEASUREMENTS_V1` record. Keep
+   source and patch contents out of command output. Report raw values, median, p95, and noise; do
+   not call noise a win.
 5. Cancel abandoned commands. Always call `workspace_destroy` after success, failure, cancellation,
    or an interrupted plan. The hard lifetime is only a recovery backstop.
 

@@ -29,8 +29,10 @@ Prefer no production change to a plausible change with incomplete proof.
    and generated-looking ceremony without moving complexity elsewhere or erasing domain rationale.
 2. **Improve measured performance.** Use the performance mode of the `jaipilot-clean-java` skill only for a
    defined workload or deterministic operation count. Prefer algorithmic, I/O, allocation, parsing,
-   and contention improvements. Require comparable baseline and candidate evidence; make no speed
-   claim from inspection or one noisy timing.
+   and contention improvements. For substantial profiling or timing, use one large remote
+   workspace for the exact starting state and a digest-matched bounded candidate. Require
+   comparable baseline and candidate evidence; make no speed claim from inspection or one noisy
+   timing.
 3. **Modernize when justified.** Use the modernization mode of the `jaipilot-clean-java` skill when the user
    requested it, the changed code requires it, or the affected build path is already in scope.
    Evaluate authoritative stable releases and accept only independently reversible upgrades proved

@@ -62,6 +62,24 @@ Deno.test("Java verification workflows prefer remote execution without a laptop 
   }
 });
 
+Deno.test("performance workflow uses one large workspace and rejects weak evidence", async () => {
+  const remote = await Deno.readTextFile(
+    new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),
+  );
+  assert.match(remote, /Use the `large` profile for substantial profiling/);
+  assert.match(remote, /same workspace, JDK, command, input, warmup/);
+  assert.match(remote, /patch and remote Git delta digests match/);
+
+  const performance = await Deno.readTextFile(
+    new URL("skills/jaipilot-clean-java/references/performance.md", PLUGIN),
+  );
+  assert.match(performance, /initial Git commit is the immutable experiment baseline/);
+  assert.match(performance, /median improves by at least\s+10%/);
+  assert.match(performance, /at least seven comparable runs/);
+  assert.match(performance, /JAIPILOT_MEASUREMENTS_V1/);
+  assert.match(performance, /remote edits never\s+replace or synchronize the local patch/);
+});
+
 async function json<T>(path: string): Promise<T> {
   return JSON.parse(await Deno.readTextFile(new URL(path, PLUGIN)));
 }

@@ -10,7 +10,8 @@ JAIPilot helps your coding agent:
 - review risky Java changes;
 - modernize compatible dependencies and JDKs;
 - optimize measured bottlenecks; and
-- run applicable Maven and Gradle work on ready remote hardware by default.
+- run applicable Maven and Gradle work on ready remote hardware by default; and
+- profile and compare a bounded optimization on one large remote workspace.
 
 Your coding agent remains the only planner and editor. JAIPilot supplies focused Java workflows,
 compute, and repository-native evidence.

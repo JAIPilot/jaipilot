@@ -52,6 +52,8 @@ same `./mvnw -q clean verify` command, and fresh JaCoCo 0.8.14 reports.
   rules, and performance measurements.
 - **Remote-first execution** — use disposable hardware with JDK 17, 21, and 25, Maven, and Gradle
   ready unless private networks, local services, secrets, hardware, or state require the laptop.
+- **Remote performance lab** — profile and compare a bounded optimization on one large workspace,
+  with matching patch identity, raw observations, median, p95, and correctness evidence.
 - **Works on your current change** — staged, unstaged, and untracked files can be tested without
   committing or pushing first.
 - **Your agent stays in control** — Codex or Claude Code chooses every edit and command and reports
@@ -69,6 +71,13 @@ Remote for Java execution unless the work genuinely requires resources available
 JAIPilot may add meaningful tests, remove unused code, simplify equivalent logic, improve measured
 performance, evaluate compatible upgrades, review the complete diff, and run a final clean build. If
 no safe improvement can be proved, it should make no change.
+
+For a performance-focused run:
+
+```text
+Use JAIPilot to profile this Java workload on large remote hardware, make one small local
+optimization, and keep it only if the same-workspace measurements and full build prove a real win.
+```
 
 ## More proven results
 

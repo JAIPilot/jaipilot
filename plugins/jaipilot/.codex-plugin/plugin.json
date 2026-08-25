@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "6.2.0",
+  "version": "6.3.0",
   "description": "Ship better Java with your coding agent.",
   "author": {
     "name": "JAIPilot",
@@ -40,7 +40,7 @@
     "privacyPolicyURL": "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md",
     "defaultPrompt": [
-      "Optimize my current Java change without changing its behavior.",
+      "Profile and optimize this Java workload on large remote hardware, keeping only a proved win.",
       "Add meaningful tests for this Java behavior and report fresh coverage evidence.",
       "Run this Java work on JAIPilot remote hardware unless it requires laptop-only resources, and report the evidence."
     ],
