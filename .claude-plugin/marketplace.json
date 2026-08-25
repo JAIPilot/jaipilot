@@ -5,14 +5,14 @@
     "url": "https://github.com/JAIPilot"
   },
   "metadata": {
-    "description": "Verified Java engineering skills with authenticated remote build hardware."
+    "description": "Ship better Java with your coding agent."
   },
   "plugins": [
     {
       "name": "jaipilot",
       "source": "./plugins/jaipilot",
-      "description": "Give Codex or Claude Code Java-specific guardrails and ready hardware for long builds, tests, profiling, and benchmarks.",
-      "version": "6.1.2",
+      "description": "Ship better Java with your coding agent.",
+      "version": "6.1.3",
       "category": "development",
       "tags": [
         "java",

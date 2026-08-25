@@ -52,6 +52,7 @@ MCP_REGISTRY_SCHEMA = (
 MCP_REGISTRY_NAME = "io.github.JAIPilot/jaipilot"
 REPOSITORY_URL = "https://github.com/JAIPilot/jaipilot"
 REPOSITORY_ID = "1181029327"
+TAGLINE = "Ship better Java with your coding agent."
 PRIVACY_URL = "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md"
 TERMS_URL = "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md"
 RETIRED_BEHAVIOR_LOCK = re.compile(
@@ -91,8 +92,8 @@ def validate_manifests(expected_version: str) -> None:
         require(manifest.get("version") == expected_version,
                 f"{label}: version must match VERSION ({expected_version})")
         description = manifest.get("description")
-        require(isinstance(description, str) and 20 <= len(description) <= 140,
-                f"{label}: description must contain 20-140 characters")
+        require(description == TAGLINE,
+                f"{label}: description must use the canonical tagline")
 
     codex = load(PLUGIN / ".codex-plugin" / "plugin.json")
     require(codex.get("skills") == "./skills/", "Codex manifest must expose ./skills/")
@@ -110,6 +111,8 @@ def validate_manifests(expected_version: str) -> None:
             "Codex interface must publish the canonical privacy policy URL")
     require(interface.get("termsOfServiceURL") == TERMS_URL,
             "Codex interface must publish the canonical terms URL")
+    require(interface.get("shortDescription") == TAGLINE,
+            "Codex interface must use the canonical tagline")
 
 
 def validate_skills() -> None:
@@ -210,8 +213,8 @@ def validate_mcp_registry(expected_version: str) -> None:
     require(server.get("title") == "JAIPilot Remote",
             "server.json must publish the JAIPilot Remote title")
     description = server.get("description")
-    require(isinstance(description, str) and 20 <= len(description) <= 100,
-            "server.json description must contain 20-100 characters")
+    require(description == TAGLINE,
+            "server.json description must use the canonical tagline")
     require(server.get("version") == expected_version,
             f"server.json version must match VERSION ({expected_version})")
     require(server.get("websiteUrl") == REPOSITORY_URL,
@@ -252,6 +255,9 @@ def validate_marketplaces(expected_version: str) -> None:
             "Codex marketplace source must be ./plugins/jaipilot")
 
     claude = load(ROOT / ".claude-plugin" / "marketplace.json")
+    metadata = claude.get("metadata")
+    require(isinstance(metadata, dict) and metadata.get("description") == TAGLINE,
+            "Claude marketplace metadata must use the canonical tagline")
     entries = claude.get("plugins")
     require(isinstance(entries, list) and len(entries) == 1,
             "Claude marketplace must contain exactly one plugin")
@@ -259,8 +265,15 @@ def validate_marketplaces(expected_version: str) -> None:
     require(isinstance(entry, dict)
             and entry.get("name") == "jaipilot"
             and entry.get("source") == "./plugins/jaipilot"
+            and entry.get("description") == TAGLINE
             and entry.get("version") == expected_version,
-            "Claude marketplace name, source, and version must align")
+            "Claude marketplace name, source, description, and version must align")
+
+
+def validate_tagline() -> None:
+    for path in (ROOT / "README.md", PLUGIN / "README.md"):
+        require(f"**{TAGLINE}**" in read(path),
+                f"{path.relative_to(ROOT)} must use the canonical tagline")
 
 
 def validate_lean_payload() -> tuple[int, int]:
@@ -292,6 +305,7 @@ def main() -> None:
     validate_mcp()
     validate_mcp_registry(expected_version)
     validate_marketplaces(expected_version)
+    validate_tagline()
     count, size = validate_lean_payload()
     print(
         f"Validated JAIPilot {expected_version}: {len(SKILLS)} skills, 8 remote tools, "

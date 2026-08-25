@@ -1,6 +1,6 @@
 # JAIPilot
 
-**Ship better Java with Codex or Claude Code.**
+**Ship better Java with your coding agent.**
 
 JAIPilot helps your coding agent:
 

@@ -4,7 +4,7 @@
 
 # JAIPilot
 
-**Ship better Java with the coding agent you already use.**
+**Ship better Java with your coding agent.**
 
 JAIPilot helps Codex and Claude Code clean, test, review, modernize, and optimize real Java
 repositories without drifting into unnecessary code or unproved changes.

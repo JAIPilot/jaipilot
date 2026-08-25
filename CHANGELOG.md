@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.3] - 2026-08-25
+
+### Changed
+
+- Standardized the product tagline across the README, plugin metadata, and MCP Registry listing:
+  "Ship better Java with your coding agent."
+
 ## [6.1.2] - 2026-08-25
 
 ### Added

@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.JAIPilot/jaipilot",
   "title": "JAIPilot Remote",
-  "description": "Run Java builds, tests, and analysis on disposable machines pinned to exact GitHub commits.",
-  "version": "6.1.2",
+  "description": "Ship better Java with your coding agent.",
+  "version": "6.1.3",
   "websiteUrl": "https://github.com/JAIPilot/jaipilot",
   "repository": {
     "url": "https://github.com/JAIPilot/jaipilot",

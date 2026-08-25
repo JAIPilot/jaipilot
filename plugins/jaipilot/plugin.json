@@ -1,7 +1,7 @@
 {
   "name": "jaipilot",
-  "version": "6.1.2",
-  "description": "Verified Java engineering skills and authenticated remote build hardware for Codex and Claude Code.",
+  "version": "6.1.3",
+  "description": "Ship better Java with your coding agent.",
   "author": {
     "name": "JAIPilot",
     "url": "https://github.com/JAIPilot"
