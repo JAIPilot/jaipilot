@@ -26,6 +26,12 @@ In a separate measured Petclinic run, JAIPilot removed a JDBC N+1 path: listing 
 the clean build passed 79/79, and matching local/remote diff digests proved the tested code was the
 candidate kept locally. This is deterministic query-count evidence, not an invented latency claim.
 
+On Apache Calcite's existing graph-removal JMH benchmark, JAIPilot found repeated full-edge-set
+scans and produced a two-file +28/-5 candidate. Median times improved by **92.4%, 87.8%, and 87.5%**
+for the 10%, 50%, and 90% removal workloads on the same large remote workspace. Matching behavior
+tests passed before and after the production edit, and a fresh clean check completed **16,644 tests
+with zero failures**. See the repository README for the complete median, p95, and methodology.
+
 ```text
 Make my current Java changes production-ready without changing their behavior. Add missing tests,
 remove unnecessary code, simplify anything overcomplicated, improve only measurable performance,

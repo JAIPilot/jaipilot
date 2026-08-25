@@ -1,5 +1,14 @@
 # Changelog
 
+## [6.3.2] - 2026-08-25
+
+### Changed
+
+- Published the controlled Apache Calcite performance result: existing graph-removal JMH workload
+  medians improved by 87.5–92.4% across three removal sizes on one large remote workspace.
+- Recorded the paired benchmark method, p95 results, matching 15-test behavior proof, two-file
+  candidate scope, and fresh 16,644-test clean verification.
+
 ## [6.3.1] - 2026-08-25
 
 ### Changed

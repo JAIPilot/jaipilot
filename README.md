@@ -15,9 +15,9 @@ remote Java machine whenever the task does not require laptop-only access or sta
 JAIPilot does not replace your coding agent or add another AI. It gives your agent focused Java
 workflows, remote compute, and one rule: **show evidence, not confidence.**
 
-| **8 → 2** SQL statements | **75 → 85** tests     | **0% → 100%** target coverage | **7** net production lines removed |
-| ------------------------ | --------------------- | ----------------------------- | ---------------------------------- |
-| N+1 removed               | +13.3%, zero failures | Lines and branches            | Same behavior                      |
+| **87.5–92.4% faster** | **8 → 2** SQL statements | **75 → 85** tests     | **0% → 100%** target coverage |
+| --------------------- | ------------------------ | --------------------- | ----------------------------- |
+| Calcite JMH medians   | N+1 removed              | +13.3%, zero failures | Lines and branches            |
 
 ## JAIPilot vs no JAIPilot
 
@@ -43,7 +43,34 @@ the edge cases became executable tests, and production code became smaller.
 The comparison uses the original PR head and JAIPilot's direct child commit, clean worktrees, the
 same `./mvnw -q clean verify` command, and fresh JaCoCo 0.8.14 reports.
 
-## A measured performance result
+## Measured performance: Apache Calcite
+
+On `skrcode/calcite` at exact commit
+[`d3a5d8d`](https://github.com/skrcode/calcite/tree/d3a5d8d9e6713c5fd483810e1aa1f38652d2dd8d),
+JAIPilot profiled Calcite's existing
+`DefaultDirectedGraphBenchmark.removeAllVertices{10,50,90}Benchmark`. The 50% workload attributed
+31.1% of runnable samples to `Collection.removeIf`: the implementation scanned the complete global
+edge set once for every removed vertex.
+
+The candidate changed two files (+28/-5), removed the repeated scans, and added behavior tests for
+the majority-removal and self-loop paths. Lower JMH scores are better:
+
+| Removed vertices | Baseline median (µs/op) | JAIPilot median (µs/op) | Improvement | Baseline p95 (µs/op) | JAIPilot p95 (µs/op) | Improvement |
+| ---------------: | ----------------------: | ----------------------: | ----------: | -------------------: | -------------------: | ----------: |
+|              10% |                  26.710 |                   2.029 |   **92.4%** |               27.142 |                2.439 |   **91.0%** |
+|              50% |                  74.619 |                   9.140 |   **87.8%** |               87.245 |               14.993 |   **82.8%** |
+|              90% |                  77.423 |                   9.677 |   **87.5%** |               89.514 |               10.052 |   **88.8%** |
+
+Baseline and candidate ran on the same large remote workspace with the same Temurin JDK 17, built
+JMH jar, command, and workload. Each row contains 21 measured observations: seven forks with three
+measured iterations per fork after warm-up. The identical focused command passed 15/15 tests before
+and after the production edit. A fresh exact-SHA `:core:clean :core:check` then completed 16,644
+tests with 0 failures and 155 skips, and the tested remote diff matched the local candidate digest.
+
+This is a controlled result for Calcite's existing graph-removal workloads, not a claim that every
+Java workload becomes faster.
+
+## Measured database work: Petclinic
 
 On the current Petclinic JDBC vet listing, JAIPilot found a real N+1 query path: six vets required
 eight SQL statements (`2 + N`). It kept the ordered vet query and replaced the per-vet specialty
@@ -100,10 +127,11 @@ optimization, and keep it only if the same-workspace measurements and full build
 
 ## More proven results
 
-Additional Petclinic acceptance runs used repository-native verification:
+Additional acceptance runs used repository-native verification:
 
 | Use case                                                                                            | Result                                                                                                                                                                                           |
 | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Optimize Apache Calcite graph removal                                                               | Existing JMH workload medians improved by **87.5–92.4%** across 10%, 50%, and 90% removal cases; matching behavior tests and a **16,644-test** clean check passed.                               |
 | [Cover previously untested behavior](https://github.com/skrcode/spring-framework-petclinic/pull/34) | **7** focused tests added with **no production or dependency change**; target coverage moved from **0% to 100%** for lines and branches; **82/82** tests passed independently on Java 17 and 21. |
 | Run the current change remotely                                                                     | An uncommitted file reached the workspace; `./mvnw clean test` passed **75/75** tests in **44.6 seconds**; job recovery, cancellation, and workspace deletion were verified.                     |
 | Remove a JDBC N+1 query                                                                              | Vet listing SQL statements fell from **8 to 2** on the six-vet fixture; **15/15** focused and **79/79** clean-build tests passed, with identical local/remote diff digests.                 |
