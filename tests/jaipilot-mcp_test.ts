@@ -65,13 +65,13 @@ Deno.test("Java verification workflows prefer remote execution without a laptop 
   }
 });
 
-Deno.test("performance workflow uses one large workspace and rejects weak evidence", async () => {
+Deno.test("performance workflow uses one exact-capacity workspace and rejects weak evidence", async () => {
   const remote = await Deno.readTextFile(
     new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),
   );
-  assert.match(remote, /Use the `large` profile for substantial profiling/);
+  assert.match(remote, /API profile `large` \(4 CPU, 8 GiB\)/);
   assert.match(remote, /same workspace, JDK, command, input, warmup/);
-  assert.match(remote, /patch and remote Git delta digests match/);
+  assert.match(remote, /patch and remote Git\s+delta digests match/);
 
   const performance = await Deno.readTextFile(
     new URL("skills/jaipilot-clean-java/references/performance.md", PLUGIN),

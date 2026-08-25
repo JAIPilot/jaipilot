@@ -1,5 +1,14 @@
 # Changelog
 
+## [6.4.2] - 2026-08-26
+
+### Changed
+
+- Described the `large` API profile by its exact 4 CPU/8 GiB capacity instead of implying an
+  unspecified larger machine.
+- Removed the undocumented compute-hours allowance from agent-facing remote-execution guidance.
+- Prepared the hosted skill catalog for the same immutable public-plugin release used by Claude.
+
 ## [6.4.1] - 2026-08-26
 
 ### Changed
