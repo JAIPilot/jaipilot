@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.JAIPilot/jaipilot",
+  "title": "JAIPilot Remote",
+  "description": "Run Java builds, tests, and analysis on disposable machines pinned to exact GitHub commits.",
+  "version": "6.1.2",
+  "websiteUrl": "https://github.com/JAIPilot/jaipilot",
+  "repository": {
+    "url": "https://github.com/JAIPilot/jaipilot",
+    "source": "github",
+    "id": "1181029327"
+  },
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/JAIPilot/jaipilot/main/plugins/jaipilot/assets/jaipilot-logo.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp"
+    }
+  ]
+}

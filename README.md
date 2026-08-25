@@ -98,6 +98,12 @@ codex plugin add jaipilot@jaipilot
 /plugin install jaipilot@jaipilot
 ```
 
+### MCP Registry
+
+Clients that consume the official MCP Registry can discover the hosted remote tools as
+`io.github.JAIPilot/jaipilot`. This installs remote execution only; install the Codex or Claude Code
+plugin above for the six Java engineering skills as well.
+
 The Java skills work locally immediately. When your agent first needs JAIPilot remote hardware, sign
 in to JAIPilot when prompted. No VM account, API key, SSH configuration, GitHub App, or local
 JAIPilot runtime is required.

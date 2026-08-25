@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.2] - 2026-08-25
+
+### Added
+
+- Added an official MCP Registry listing for the hosted JAIPilot Remote server.
+- Added release-time registry publication through GitHub OIDC with a digest-pinned publisher.
+
 ## [6.1.1] - 2026-08-25
 
 ### Changed

@@ -46,6 +46,12 @@ ALLOWED_PLUGIN_ROOTS = {
     "skills",
 }
 MCP_API_URL = "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp"
+MCP_REGISTRY_SCHEMA = (
+    "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json"
+)
+MCP_REGISTRY_NAME = "io.github.JAIPilot/jaipilot"
+REPOSITORY_URL = "https://github.com/JAIPilot/jaipilot"
+REPOSITORY_ID = "1181029327"
 PRIVACY_URL = "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md"
 TERMS_URL = "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md"
 RETIRED_BEHAVIOR_LOCK = re.compile(
@@ -195,6 +201,44 @@ def validate_mcp() -> None:
     ) is None, "Plugin must not expose provider details or credential configuration")
 
 
+def validate_mcp_registry(expected_version: str) -> None:
+    server = load(ROOT / "server.json")
+    require(server.get("$schema") == MCP_REGISTRY_SCHEMA,
+            "server.json must use the pinned MCP Registry schema")
+    require(server.get("name") == MCP_REGISTRY_NAME,
+            "server.json must use the JAIPilot GitHub namespace")
+    require(server.get("title") == "JAIPilot Remote",
+            "server.json must publish the JAIPilot Remote title")
+    description = server.get("description")
+    require(isinstance(description, str) and 20 <= len(description) <= 100,
+            "server.json description must contain 20-100 characters")
+    require(server.get("version") == expected_version,
+            f"server.json version must match VERSION ({expected_version})")
+    require(server.get("websiteUrl") == REPOSITORY_URL,
+            "server.json must link to the public product documentation")
+    require(server.get("repository") == {
+        "url": REPOSITORY_URL,
+        "source": "github",
+        "id": REPOSITORY_ID,
+    }, "server.json must publish the stable public repository identity")
+    require(server.get("remotes") == [{
+        "type": "streamable-http",
+        "url": MCP_API_URL,
+    }], "server.json must publish only the hosted Streamable HTTP endpoint")
+    icons = server.get("icons")
+    require(isinstance(icons, list) and len(icons) == 1,
+            "server.json must publish one JAIPilot icon")
+    icon = icons[0]
+    require(isinstance(icon, dict)
+            and icon.get("src") == (
+                "https://raw.githubusercontent.com/JAIPilot/jaipilot/main/"
+                "plugins/jaipilot/assets/jaipilot-logo.svg"
+            )
+            and icon.get("mimeType") == "image/svg+xml"
+            and icon.get("sizes") == ["any"],
+            "server.json must publish the canonical scalable JAIPilot icon")
+
+
 def validate_marketplaces(expected_version: str) -> None:
     codex = load(ROOT / ".agents" / "plugins" / "marketplace.json")
     entries = codex.get("plugins")
@@ -246,6 +290,7 @@ def main() -> None:
     validate_skills()
     validate_retired_features()
     validate_mcp()
+    validate_mcp_registry(expected_version)
     validate_marketplaces(expected_version)
     count, size = validate_lean_payload()
     print(

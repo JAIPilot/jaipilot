@@ -35,3 +35,45 @@ jobs:
         with:
           name: JAIPilot Plugin
           generate_release_notes: true
+
+  publish-mcp:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      MCP_PUBLISHER_VERSION: "1.8.1"
+      MCP_PUBLISHER_SHA256: "a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check whether this version is already published
+        id: registry
+        run: |
+          VERSION=$(cat VERSION)
+          URL="https://registry.modelcontextprotocol.io/v0.1/servers/io.github.JAIPilot%2Fjaipilot/versions/$VERSION"
+          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" "$URL")
+          case "$STATUS" in
+            200) echo "published=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "published=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "MCP Registry lookup failed with HTTP $STATUS" >&2; exit 1 ;;
+          esac
+
+      - name: Install pinned MCP publisher
+        if: steps.registry.outputs.published == 'false'
+        run: |
+          ARCHIVE="mcp-publisher_linux_amd64.tar.gz"
+          curl -fsSLo "$ARCHIVE" \
+            "https://github.com/modelcontextprotocol/registry/releases/download/v${MCP_PUBLISHER_VERSION}/$ARCHIVE"
+          echo "$MCP_PUBLISHER_SHA256  $ARCHIVE" | sha256sum --check --strict
+          tar -xzf "$ARCHIVE" mcp-publisher
+
+      - name: Authenticate to the official MCP Registry
+        if: steps.registry.outputs.published == 'false'
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish JAIPilot Remote
+        if: steps.registry.outputs.published == 'false'
+        run: ./mcp-publisher publish server.json

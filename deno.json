@@ -4,6 +4,7 @@
     "semiColons": true,
     "singleQuote": false,
     "include": [
+      "server.json",
       "plugins/jaipilot/.mcp.json",
       "plugins/jaipilot/.codex-plugin/plugin.json",
       "tests/jaipilot-mcp_test.ts",
