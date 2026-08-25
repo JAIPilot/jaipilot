@@ -23,6 +23,21 @@ Deno.test("the distributable contains no provider or shared-secret configuration
   assert.equal(files.some((file) => file.endsWith(".ts")), false);
 });
 
+Deno.test("remote source upload requires repository-specific affirmative consent", async () => {
+  const remote = await Deno.readTextFile(
+    new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),
+  );
+  assert.match(remote, /Before the first upload for this repository/);
+  assert.match(remote, /Require affirmative user confirmation/);
+  assert.match(remote, /consent for another repository/);
+
+  const optimize = await Deno.readTextFile(
+    new URL("skills/jaipilot-optimize-java/SKILL.md", PLUGIN),
+  );
+  assert.equal(optimize.includes("exact candidate is already committed"), false);
+  assert.match(optimize, /exact tracked and unignored working-tree/);
+});
+
 async function json<T>(path: string): Promise<T> {
   return JSON.parse(await Deno.readTextFile(new URL(path, PLUGIN)));
 }

@@ -249,7 +249,7 @@ def main() -> None:
     validate_marketplaces(expected_version)
     count, size = validate_lean_payload()
     print(
-        f"Validated JAIPilot {expected_version}: {len(SKILLS)} skills, 7 remote tools, "
+        f"Validated JAIPilot {expected_version}: {len(SKILLS)} skills, 8 remote tools, "
         f"{count} files, {size} bytes."
     )
 

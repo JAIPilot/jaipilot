@@ -24,19 +24,26 @@ selection, and user interaction. JAIPilot Remote is not another coding agent.
 1. Confirm this is a Java Maven or Gradle Git repository. Record `git status --short` and preserve
    every unrelated change. Never fetch, commit, push, reset, clean, stash, or switch branches merely
    to use remote hardware.
-2. Call `workspace_prepare` once with the repository directory name. If the host requests browser
+2. Before the first upload for this repository in the current conversation, show the repository
+   root and explain that tracked plus unignored staged, unstaged, and untracked files will run in a
+   managed workspace with outbound network access; `.git`, ignored build output, and files outside
+   the repository are excluded. Require affirmative user confirmation immediately before
+   `workspace_prepare`. An explicit request to use JAIPilot Remote for this repository counts as
+   confirmation; installation, consent for another repository, or a general request to optimize
+   code does not. Ask again if the repository or upload scope changes.
+3. Call `workspace_prepare` once with the repository directory name. If the host requests browser
    authentication, let the user sign in at JAIPilot; never request, copy, or store an access token.
-3. Outside the repository, create one temporary gzip tar archive from
+4. Outside the repository, create one temporary gzip tar archive from
    `git ls-files -co --exclude-standard -z`. This deliberately includes tracked files plus unignored
    staged, unstaged, and untracked files, and excludes `.git` and ignored build output. Include only
    listed paths that still exist so staged or unstaged deletions remain absent. Reject filenames
    containing newlines and links the service cannot safely extract. Inspect the list for credentials
    or inappropriate data; never add files outside the repository.
-4. Compute the archive's lowercase SHA-256. Upload its raw bytes with HTTP `PUT` to the short-lived
+5. Compute the archive's lowercase SHA-256. Upload its raw bytes with HTTP `PUT` to the short-lived
    `upload_url`, `content-type: application/gzip`, and `x-upsert: false`. Do not echo or retain the
    signed URL. Delete the local temporary archive immediately after `workspace_create` succeeds or
    fails.
-5. Call `workspace_create` with `upload_id`, the exact archive SHA-256, and the shortest practical
+6. Call `workspace_create` with `upload_id`, the exact archive SHA-256, and the shortest practical
    15-120 minute lifetime. The service verifies ownership, byte size, and digest before extraction.
 
 ## Execute deliberately

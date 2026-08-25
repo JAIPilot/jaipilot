@@ -42,9 +42,10 @@ Prefer no production change to a plausible change with incomplete proof.
    normal clean verification. Confirm intended tests and configured quality gates actually executed.
 
 Use the `jaipilot-fast-execution` skill for substantial command work when safe batching or bounded native
-parallelism materially reduces wall time. Use the `jaipilot-remote-java` skill only when the exact candidate
-is already committed and available through GitHub; a remote result for `HEAD` never proves dirty
-local files.
+parallelism materially reduces wall time. Use the `jaipilot-remote-java` skill when substantial work
+materially benefits from disposable hardware and the repository does not require unavailable private
+services. After explicit upload consent, remote proof covers the exact tracked and unignored working-tree
+archive that was uploaded; it does not cover later local edits.
 
 ## Acceptance
 
