@@ -1,5 +1,18 @@
 # Changelog
 
+## [6.1.4] - 2026-08-25
+
+### Added
+
+- Published a matched JAIPilot-versus-control evaluation across Apache Commons Lang, Gson, and
+  Apache Calcite, using exact pre-fix commits and accepted upstream tests held out until both agents
+  finished.
+
+### Changed
+
+- Reframed the public product claim around the result the evaluation supports: repeatable Java
+  proof and scoped verification, not an unsupported increase in model intelligence.
+
 ## [6.1.3] - 2026-08-25
 
 ### Changed

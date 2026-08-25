@@ -43,6 +43,30 @@ the edge cases became executable tests, and production code became smaller.
 The comparison uses the original PR head and JAIPilot's direct child commit, clean worktrees, the
 same `./mvnw -q clean verify` command, and fresh JaCoCo 0.8.14 reports.
 
+## Does it actually help?
+
+**Yes—when the hard part is proving a Java change, not inventing one.** We also ran a matched
+three-repository trial against already-accepted upstream fixes. The same Codex model, effort,
+prompt, and exact pre-fix commit ran once with plugins disabled and once with JAIPilot 6.1.3.
+Accepted upstream tests stayed hidden until both agents finished.
+
+| Held-out task | Without JAIPilot | With JAIPilot | Honest outcome |
+| --- | ---: | ---: | --- |
+| [Commons Lang negated-range boundary](https://github.com/apache/commons-lang/pull/1775) | 19/19 passed | 19/19 passed | Correctness tie; the plain patch was smaller. |
+| [Gson deserialization diagnostics](https://github.com/google/gson/pull/3096) | 149/155 passed | 149/155 passed | Tie; both missed the same six accepted message/path details. |
+| [Calcite remapped function lookup](https://github.com/apache/calcite/pull/5197) | 1/1 passed | 1/1 passed | Same one-line fix; JAIPilot added a non-remapped control and selected the scoped 16,632-test gate. |
+
+That is **zero hidden-correctness wins, zero losses, and three ties** for JAIPilot. We are publishing
+it because it answers the real product question: JAIPilot is not a second model and does not make a
+strong coding agent magically smarter. Its value is the repeatable engineering discipline around
+the answer—baseline first, focused regression proof, repository-native gates, scoped execution,
+and an explicit final diff review. On Calcite that discipline added a missing control and avoided an
+unrelated repository-wide Docker failure; on the other two tasks it did not improve the accepted
+outcome.
+
+Read the [full protocol, exact commits, commands, results, and limitations](EVALUATION.md). Then try
+JAIPilot on a Java change where verification is expensive. Keep it only if the evidence is better.
+
 ## Why teams use JAIPilot
 
 - **Less agent drift** — changes stay bounded, lean, and aligned with the repository.
