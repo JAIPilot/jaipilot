@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "6.1.0",
+  "version": "6.1.1",
   "description": "Verified Java engineering skills and authenticated remote build hardware for Codex and Claude Code.",
   "author": {
     "name": "JAIPilot",
@@ -24,7 +24,7 @@
   "mcpServers": {
     "jaipilot-remote": {
       "type": "http",
-      "url": "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud/mcp"
+      "url": "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp"
     }
   },
   "interface": {

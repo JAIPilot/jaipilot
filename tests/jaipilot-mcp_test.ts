@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 const ROOT = new URL("../", import.meta.url);
 const PLUGIN = new URL("plugins/jaipilot/", ROOT);
-const MCP_URL = "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud/mcp";
+const MCP_URL = "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp";
 type McpManifest = {
   mcpServers: Record<string, { type: string; url: string }>;
 };

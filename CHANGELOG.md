@@ -1,5 +1,11 @@
 # Changelog
 
+## [6.1.1] - 2026-08-25
+
+### Changed
+
+- Replaced the raw Supabase MCP hostname with the stable `api.jaipilot.com` public API domain.
+
 ## [6.1.0] - 2026-08-25
 
 ### Added

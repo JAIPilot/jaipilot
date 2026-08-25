@@ -9,4 +9,4 @@ dependencies:
       value: "jaipilot-remote"
       description: "Authenticated disposable Java execution"
       transport: "streamable_http"
-      url: "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud/mcp"
+      url: "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp"

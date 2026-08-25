@@ -45,7 +45,7 @@ ALLOWED_PLUGIN_ROOTS = {
     "plugin.json",
     "skills",
 }
-MCP_API_URL = "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/jaipilot-cloud/mcp"
+MCP_API_URL = "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp"
 PRIVACY_URL = "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md"
 TERMS_URL = "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md"
 RETIRED_BEHAVIOR_LOCK = re.compile(
