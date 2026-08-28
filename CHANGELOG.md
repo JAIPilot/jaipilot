@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.8.1] - 2026-08-28
+
+### Changed
+
+- Expanded the post-install README examples across JAIPilot's Java workflows, including maintainer
+  research, meaningful test generation, cleanup, diff review, measured optimization, and efficient
+  remote verification.
+- Added copy-paste prompts for verified dependency, build-tool, framework, wrapper, and JDK upgrades
+  plus Dependabot and Renovate repair work.
+
 ## [6.8.0] - 2026-08-28
 
 ### Added

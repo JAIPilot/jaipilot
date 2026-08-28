@@ -6,8 +6,9 @@
 
 **Ship better Java with your coding agent.**
 
-JAIPilot helps Codex and Claude Code research maintainer intent, clean, test, review, modernize, and
-optimize real Java repositories without drifting into unnecessary code or unproved changes.
+JAIPilot helps Codex and Claude Code research maintainer intent, clean, test, review, safely upgrade
+dependencies and JDKs, and optimize real Java repositories without drifting into unnecessary code
+or unproved changes.
 
 By default, your agent runs Java builds, tests, analysis, profiling, and benchmarks on a ready
 remote Java machine whenever the task does not require laptop-only access or state.
@@ -30,12 +31,93 @@ codex mcp add jaipilot --url https://api.jaipilot.com/functions/v1/jaipilot/mcp
 /plugin install jaipilot@jaipilot
 ```
 
-Open a Java repository and ask:
+### Example prompts
+
+Open a Java repository and ask for the outcome you need.
+
+**Research maintainer intent before contributing**
+
+```text
+Before changing this Java repository, research the exact issue or pull request, its full discussion,
+related open and closed work, contribution rules, and the relevant local history. Determine whether
+I should proceed, join existing work, ask one focused question, wait, or take no action. Cite the
+evidence, identify the expected delivery target and proof, and do not edit or publish anything
+unless the evidence supports proceeding and I have authorized that next step.
+```
+
+**Make the current change production-ready**
 
 ```text
 Make my current Java changes production-ready without changing their behavior. Add missing tests,
 remove unnecessary code, improve only performance you can measure, and run the full verification.
 Use JAIPilot Remote for substantial Java commands unless this work needs my laptop.
+```
+
+**Upgrade dependencies, build tooling, and the JDK safely**
+
+```text
+Modernize this Maven or Gradle project to the newest stable dependency, plugin, framework, wrapper,
+and JDK versions you can verify as compatible with its supported runtimes and consumers. Check
+authoritative release notes and migration guides, remove dependencies proven unused before
+upgrading them, and apply independently reversible upgrade batches. Compare resolved dependency
+graphs and run clean verification after each accepted batch. Do not use dynamic versions or weaken
+tests, warnings, or compatibility checks. Report rejected upgrades and the highest versions you
+actually verified.
+```
+
+**Repair a Dependabot or Renovate update**
+
+```text
+Investigate this dependency update before changing it. Read the repository history, related issues
+and pull requests, upstream release and migration notes, the current CI failure, and downstream
+compatibility constraints. Decide whether to fix, replace, split, defer, or close the update.
+Implement only the smallest justified migration, use a pinned OpenRewrite recipe only when a
+repeated type-aware rewrite is safer, and prove the result with focused and clean builds.
+```
+
+**Add meaningful tests and coverage**
+
+```text
+Strengthen tests for the changed Java classes. Cover the observable behavior, boundaries, errors,
+and regression risks that are currently missing, then report fresh per-class line and branch
+coverage. Do not add hollow assertions or weaken any build gate. Run the focused tests and the
+repository's clean verification.
+```
+
+**Clean and simplify a module**
+
+```text
+Clean this Java module without changing its intended behavior or public compatibility. Remove only
+unused code and dependencies you can prove are safe to delete, consolidate only genuinely
+equivalent logic, reduce real complexity, and retain every uncertain candidate with the reason.
+Verify each reversible batch and report the before-and-after code shape.
+```
+
+**Review the current diff**
+
+```text
+Review the complete current Java diff for behavioral regressions, unnecessary code, compatibility
+risk, architecture drift, and missing proof. Run the repository's relevant checks, rank concrete
+findings by severity, and distinguish verified problems from residual risk.
+```
+
+**Optimize a measured workload**
+
+```text
+Profile this Java workload before changing it, identify the dominant bottleneck, and test one small
+optimization hypothesis at a time. Preserve correctness, compare at least seven equivalent runs,
+and report raw observations, median, p95, allocation, and resource tradeoffs. Reject changes that
+are within noise or move cost outside the measured boundary.
+```
+
+**Run substantial Java verification efficiently**
+
+```text
+Run this repository's complete Maven or Gradle verification as efficiently as its build permits,
+without skipping work or weakening any gate. Inspect the available CPU and memory, use only safe
+repository-native parallelism, time the material commands, and fall back to the serial command if
+parallelism changes the result. Use JAIPilot Remote unless laptop-only resources are required, ask
+before the first source upload, and report the exact commands, concurrency, durations, and results.
 ```
 
 Codex signs in through JAIPilot's OAuth consent and connects to one MCP URL. The server publishes
@@ -182,7 +264,9 @@ invented latency claim.
 
 - **Less agent drift** — changes stay bounded, lean, and aligned with the repository.
 - **Better Java code** — remove proven waste, reduce complexity, improve tests, review risky diffs,
-  modernize safely, and optimize measured bottlenecks.
+  and optimize measured bottlenecks.
+- **Verified modernization** — upgrade the JDK, Maven or Gradle wrapper, build plugins, frameworks,
+  BOMs, and direct dependencies to stable compatible versions in isolated, reversible batches.
 - **Real verification** — use the repository's Maven or Gradle build, tests, coverage, architecture
   rules, and performance measurements.
 - **Remote-first execution** — use disposable hardware with JDK 17, 21, and 25, Maven, and Gradle
