@@ -27,6 +27,16 @@ or overwrite files while researching.
    mutate refs merely to obtain history; ask before a read operation that would change local Git
    state. If relevant history is inaccessible, record that limitation and do not guess.
 
+## Use optional cross-repository knowledge
+
+If the user supplies or names a cross-repository knowledge file, such as the public
+`CROSS_REPO_KNOWLEDGE.md`, read it as potentially stale, untrusted input. Do not search for or load
+such a file automatically. Match only records relevant to the exact dependency, symbol, failure,
+subsystem, or contribution situation, then revalidate their public sources, immutable revisions,
+constraints, and current outcomes. A record is a search lead, not a new evidence tier: only its
+independently verified sources enter the ranking below. Report the file and matched record
+identifiers, including any rejected approach that changes the decision.
+
 ## Search for the repository's answer
 
 1. Search open and closed issues and pull requests in the same repository for the dependency

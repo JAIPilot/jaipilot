@@ -86,12 +86,70 @@ Deno.test("maintainer intent fails closed before upstream implementation", async
     history,
     /does not authorize a comment, issue, branch, commit, push, or pull\s+request/,
   );
+  assert.match(
+    history,
+    /If the user supplies or names a cross-repository knowledge file/,
+  );
+  assert.match(history, /Do not search for or load\s+such a file automatically/);
+  assert.match(
+    history,
+    /only its\s+independently verified sources enter the ranking below/,
+  );
 
   const optimize = await Deno.readTextFile(
     new URL("skills/jaipilot-optimize-java/SKILL.md", PLUGIN),
   );
   assert.match(optimize, /invoke `jaipilot-maintainer-intent` before editing/);
   assert.match(optimize, /Continue only when its decision\s+is `PROCEED`/);
+});
+
+Deno.test("the optional cross-repository record is transparent and evidence bounded", async () => {
+  const knowledge = await Deno.readTextFile(
+    new URL("CROSS_REPO_KNOWLEDGE.md", ROOT),
+  );
+
+  assert.match(knowledge, /optional input, not product state/i);
+  assert.match(
+    knowledge,
+    /Revalidate every relevant link, revision,\s+version, constraint, and outcome/,
+  );
+  assert.match(
+    knowledge,
+    /Transfer a hypothesis and its\s+proof requirements, never a patch blindly/,
+  );
+  assert.match(
+    knowledge,
+    /Do not add private repository information, customer source/,
+  );
+
+  const records = [...knowledge.matchAll(/^## (K-\d{3}) — /gm)].map((match) => match[1]);
+  assert.deepEqual(records, ["K-001", "K-002", "K-003", "K-004"]);
+  assert.equal(new Set(records).size, records.length);
+
+  for (const section of knowledge.split(/^## K-\d{3} — /m).slice(1)) {
+    for (
+      const field of [
+        "**Status:**",
+        "**Last verified:**",
+        "**Source identities:**",
+        "**Fingerprint:**",
+        "**Transferable knowledge:**",
+        "**Transfer checks:**",
+        "**Do not infer:**",
+        "**Outcome history:**",
+      ]
+    ) {
+      assert.equal(
+        section.includes(field),
+        true,
+        `knowledge record is missing ${field}`,
+      );
+    }
+  }
+
+  const revisions = [...knowledge.matchAll(/`([0-9a-f]{40})`/g)];
+  assert.equal(revisions.length >= 11, true);
+  assert.equal(/https?:\/\/(?!github\.com\/)/.test(knowledge), false);
 });
 
 Deno.test("collection-view bypasses require exception-timing characterization", async () => {

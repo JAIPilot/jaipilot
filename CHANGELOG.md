@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.6.0] - 2026-08-28
+
+### Added
+
+- Added a transparent public cross-repository maintenance record with immutable source identities,
+  transfer constraints, rejected approaches, and dated outcomes.
+- Let `jaipilot-maintainer-intent` use an explicitly supplied knowledge file as optional search
+  input while requiring every relevant source and outcome to be revalidated before its final
+  decision. The skill never discovers or loads the file automatically.
+
 ## [6.5.2] - 2026-08-28
 
 ### Changed
