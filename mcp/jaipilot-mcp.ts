@@ -90,6 +90,15 @@ export async function handleMcpHttpRequest(
   if (Number.isFinite(declaredLength) && declaredLength > MAX_HTTP_REQUEST_BYTES) {
     return json({ error: "Request too large" }, 413);
   }
+  if (!/^Bearer \S+$/.test(request.headers.get("authorization") ?? "")) {
+    return new Response(JSON.stringify({ error: "Missing OAuth access token" }), {
+      status: 401,
+      headers: {
+        ...JSON_HEADERS,
+        "www-authenticate": oauthChallenge(request),
+      },
+    });
+  }
 
   let body: string;
   let rpcRequest: JsonRpcRequest;
@@ -231,21 +240,21 @@ async function forwardRemoteTools(
     if (value) responseHeaders.set(name, value);
   }
   if (upstream.status === 401 && responseHeaders.has("www-authenticate")) {
-    responseHeaders.set(
-      "www-authenticate",
-      `Bearer resource_metadata="${
-        publicMcpUrl(request).replace(
-          /\/mcp$/,
-          "/.well-known/oauth-protected-resource",
-        )
-      }", scope="email"`,
-    );
+    responseHeaders.set("www-authenticate", oauthChallenge(request));
   }
   return new Response(upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: responseHeaders,
   });
+}
+
+function oauthChallenge(request: Request): string {
+  const metadata = publicMcpUrl(request).replace(
+    /\/mcp$/,
+    "/.well-known/oauth-protected-resource",
+  );
+  return `Bearer resource_metadata="${metadata}", scope="email"`;
 }
 
 function publicMcpUrl(request: Request): string {

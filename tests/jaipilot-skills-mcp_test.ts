@@ -119,7 +119,10 @@ Deno.test("Skills methods fail closed on invalid cursors and unlisted URIs", () 
 Deno.test("HTTP skill reads stay local and do not contact remote execution", async () => {
   let upstreamCalled = false;
   const response = await handleMcpHttpRequest(
-    request({ jsonrpc: "2.0", id: "skills", method: "skills/list", params: {} }),
+    request(
+      { jsonrpc: "2.0", id: "skills", method: "skills/list", params: {} },
+      "Bearer public-skill-reader",
+    ),
     () => {
       upstreamCalled = true;
       return Promise.reject(new Error("must not be called"));
@@ -129,6 +132,17 @@ Deno.test("HTTP skill reads stay local and do not contact remote execution", asy
   assert.equal(upstreamCalled, false);
   const body = await response.json();
   assert.equal(body.result.skills.length, 5);
+});
+
+Deno.test("HTTP MCP initialization starts the Codex OAuth handshake", async () => {
+  const response = await handleMcpHttpRequest(
+    request({ jsonrpc: "2.0", id: "initialize", method: "initialize", params: {} }),
+  );
+  assert.equal(response.status, 401);
+  assert.equal(
+    response.headers.get("www-authenticate"),
+    'Bearer resource_metadata="https://api.jaipilot.com/functions/v1/jaipilot/.well-known/oauth-protected-resource", scope="email"',
+  );
 });
 
 Deno.test("HTTP transport publishes OAuth metadata for the combined public resource", async () => {
@@ -211,10 +225,12 @@ function result<T>(response: JsonRpcResponse | undefined): T {
   return response.result as T;
 }
 
-function request(body: unknown): Request {
+function request(body: unknown, authorization?: string): Request {
+  const headers = new Headers({ "content-type": "application/json" });
+  if (authorization) headers.set("authorization", authorization);
   return new Request("https://api.jaipilot.com/functions/v1/jaipilot/mcp", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
 }

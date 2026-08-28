@@ -38,16 +38,17 @@ remove unnecessary code, improve only performance you can measure, and run the f
 Use JAIPilot Remote for substantial Java commands unless this work needs my laptop.
 ```
 
-Codex discovers the eight Java skills from that MCP server through standard `skills/list`,
-`skills/get`, and `resources/read` requests. It reads only the selected skill files and refreshes
-them when their SHA-256 digests change; there is no Codex plugin or local skill-copy installation.
-Claude Code retains the plugin path for clients that do not yet consume the Skills extension.
+Codex signs in through JAIPilot's OAuth consent, then discovers the eight Java skills from that MCP
+server through standard `skills/list`, `skills/get`, and `resources/read` requests. It reads only the
+selected skill files and refreshes them when their SHA-256 digests change; signing in creates no
+upload, workspace, or compute, and there is no Codex plugin or local skill-copy installation. Claude
+Code retains the plugin path for clients that do not yet consume the Skills extension.
 
 When remote execution is useful, your agent asks before uploading the current tracked and unignored
-Git files. Approve the upload and sign in when prompted; the agent handles packaging, integrity
-checking, upload, execution, logs, and workspace deletion. You do not create an archive, configure a
-VM, provide an API key, or copy files manually. `.git`, ignored files, and remote edits are never
-transferred back automatically.
+Git files. Approve the upload; if authentication is not already active, sign in when prompted. The
+agent handles packaging, integrity checking, upload, execution, logs, and workspace deletion. You do
+not create an archive, configure a VM, provide an API key, or copy files manually. `.git`, ignored
+files, and remote edits are never transferred back automatically.
 
 If packaging or upload cannot be verified, JAIPilot does not create the workspace. Your agent must
 show the failing step instead of silently uploading a different source tree.
