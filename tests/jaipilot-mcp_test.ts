@@ -75,6 +75,26 @@ Deno.test("Java verification workflows prefer remote execution without a laptop 
   }
 });
 
+Deno.test("test generation processes and executes every safely independent scoped class in parallel", async () => {
+  const tests = await Deno.readTextFile(
+    new URL("skills/jaipilot-generate-tests/SKILL.md", PLUGIN),
+  );
+  const generalPlan = tests.indexOf("## Parallelize the complete scoped class queue");
+  const coverageCampaign = tests.indexOf("## Run a coverage campaign when requested");
+  assert.equal(generalPlan > 0 && generalPlan < coverageCampaign, true);
+  assert.match(tests, /Apply this plan to every request that contains multiple test classes/);
+  assert.match(tests, /Every\s+scoped class must receive useful tests or a reported reason/);
+  assert.match(tests, /execute every safely independent changed test class in parallel/);
+  assert.match(tests, /repository-configured JUnit, TestNG, Surefire, Failsafe, Gradle/);
+  assert.match(tests, /isolated worktrees and output directories/);
+  assert.match(tests, /Never run concurrent Maven or Gradle processes against one checkout/);
+  assert.match(tests, /fails only in parallel[\s\S]+serially once/);
+  assert.match(
+    tests,
+    /workers or a safe parallel mechanism are unavailable[\s\S]+state that limitation/,
+  );
+});
+
 Deno.test("OpenRewrite migrations stay pinned, previewed, reviewable, and verified", async () => {
   const rewrite = await Deno.readTextFile(
     new URL("skills/jaipilot-openrewrite/SKILL.md", PLUGIN),

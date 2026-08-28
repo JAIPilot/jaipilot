@@ -29,6 +29,34 @@ repository-wide campaign.
 6. Run the existing focused tests before editing tests. Record existing failures without weakening
    tests, build gates, dependencies, exclusions, suppressions, or timeouts.
 
+## Parallelize the complete scoped class queue
+
+Apply this plan to every request that contains multiple test classes, not only an explicit coverage
+campaign.
+
+1. Enumerate every production class and corresponding test class in the user's exact scope. Do not
+   stop after convenient classes or silently widen a bounded request to the whole repository. Every
+   scoped class must receive useful tests or a reported reason why no test was added.
+2. Treat test classes as independent only after checking shared fixtures, mutable static or
+   singleton state, system properties, ports, files, databases, external services, framework
+   contexts, and ordered-test constraints. Queue every safely independent class for parallel work;
+   serialize an unsafe group and report the shared constraint instead of assuming independence.
+3. Choose a bounded worker count from available agent slots, CPU, memory, and repository services.
+   Assign one production class and normally one corresponding test class per creation worker. Keep
+   overlapping fixture or production edits with one owner.
+4. Give concurrent editing or build workers isolated worktrees and output directories. If dirty work
+   cannot be reproduced safely, parallelize read-only analysis, then serialize edits and execution.
+   Never run concurrent Maven or Gradle processes against one checkout and output tree.
+5. After integrating the patches, execute every safely independent changed test class in parallel.
+   Prefer repository-configured JUnit, TestNG, Surefire, Failsafe, Gradle, or module-level native
+   parallelism. Otherwise use isolated checkouts and outputs for targeted class commands when the
+   setup cost is justified. Do not silently change build configuration, inject unsupported forks,
+   or weaken test semantics merely to claim parallel execution.
+6. If a test fails only in parallel, rerun that exact class or unsafe group serially once. Preserve
+   a failure that also occurs serially; if serial passes, keep that group serialized and report the
+   shared-state or ordering risk. If workers or a safe parallel mechanism are unavailable, execute
+   sequentially and state that limitation explicitly.
+
 ## Add tests
 
 1. Follow the repository's framework, assertion, fixture, mocking, and naming conventions.
@@ -38,8 +66,9 @@ repository-wide campaign.
    and assertions that pass without reaching the intended branch.
 4. Keep setup concise. Reuse a small fixture helper or parameterized cases when that removes
    repetition without hiding the contract. Do not add redundant arrange/act/assert comments.
-5. Run the narrowest repository-native command that executes each changed test class. Confirm from
-   runner output or fresh reports that every intended test method executed.
+5. Use the parallel class plan above with the narrowest repository-native commands that execute all
+   changed test classes. Confirm from runner output or fresh reports that every intended test method
+   executed; task submission alone is not execution evidence.
 6. Use configured PIT when practical. Strengthen meaningful survivors; do not assert incidental
    implementation details merely to kill mutations.
 7. Change production code only with user approval for a necessary testability change or defect fix.
@@ -56,22 +85,18 @@ repository-wide campaign.
 3. Treat 80% fresh line coverage per eligible class as a default objective, not a guarantee or
    permission to add hollow tests. When JaCoCo is absent, continue with useful tests but ask before
    adding tooling and do not claim a percentage.
-4. Queue classes by missed lines, risk, and class name. Assign one production class per worker and
-   normally one corresponding test class.
-5. When the host supports workers, size a bounded batch for available agent slots, CPU, memory, and
-   repository services. Give editing/build workers isolated worktrees or output directories. Never
-   run concurrent Maven or Gradle builds against one checkout and output tree.
-6. If dirty work cannot be reproduced safely, parallelize read-only analysis and serialize edits
-   and builds. If workers are unavailable, process the same queue sequentially and report it.
-7. Each worker returns its test patch, exact command, executed tests, fresh class coverage, mutation
+4. Queue every scoped class by missed lines, risk, and class name, then process the complete queue
+   with the parallel class plan above.
+5. Each worker returns its test patch, exact command, executed tests, fresh class coverage, mutation
    evidence, and blockers. Do not commit or modify files outside the assignment unless asked.
 
 ## Integrate and verify
 
 1. Integrate isolated patches one at a time. Resolve overlapping fixtures centrally and remove
    duplicated setup, contradictory tests, debug output, and unrelated edits.
-2. Run focused tests together, refresh one aggregate configured report, and schedule another
-   targeted wave only where useful cases remain uncovered.
+2. Run every safely independent changed test class through the parallel plan, then refresh one
+   aggregate configured report. Schedule another targeted parallel wave only where useful cases
+   remain uncovered.
 3. For each class below the target, report the measured value and reason rather than labeling best
    effort as passing.
 4. Run related tests and the normal final clean verification. Re-read the complete diff and confirm

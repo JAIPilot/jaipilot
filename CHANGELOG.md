@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.9.0] - 2026-08-28
+
+### Changed
+
+- Made `jaipilot-generate-tests` process the complete requested multi-class scope through a bounded
+  parallel queue, with one production/test-class assignment per creation worker.
+- Made safely independent changed test classes execute in parallel through repository-configured
+  native support or isolated checkouts and outputs, with execution evidence, serial diagnosis for
+  concurrency-only failures, and explicit reporting when safe parallelism is unavailable.
+
 ## [6.8.1] - 2026-08-28
 
 ### Changed

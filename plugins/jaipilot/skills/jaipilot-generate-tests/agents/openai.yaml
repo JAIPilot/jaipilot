@@ -1,4 +1,4 @@
 interface:
   display_name: "Add Meaningful Java Tests"
   short_description: "Add useful tests or raise measured coverage"
-  default_prompt: "Use $jaipilot-generate-tests to add meaningful Java tests and report fresh coverage evidence when available."
+  default_prompt: "Use $jaipilot-generate-tests to add meaningful Java tests, parallelize safely independent test-class work, and report fresh coverage evidence when available."
