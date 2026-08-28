@@ -25,6 +25,8 @@
 
 - The public MCP forwards an OAuth bearer only for remote tool methods and never forwards cookies or
   browser origins. Skill discovery and resource reads create no upload, workspace, or compute.
+- The combined endpoint publishes its own protected-resource metadata and rewrites upstream OAuth
+  challenges to that identity so Codex can authenticate without receiving a mismatched resource.
 
 ## [6.7.0] - 2026-08-28
 

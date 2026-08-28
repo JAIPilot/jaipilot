@@ -7,6 +7,7 @@ import {
 } from "../mcp/jaipilot-mcp.ts";
 
 const REMOTE_MCP_URL = "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp";
+const PUBLIC_MCP_URL = "https://api.jaipilot.com/functions/v1/jaipilot/mcp";
 
 Deno.test("JAIPilot advertises the standard MCP Skills extension", () => {
   const response = handleMcpRequest({
@@ -130,6 +131,23 @@ Deno.test("HTTP skill reads stay local and do not contact remote execution", asy
   assert.equal(body.result.skills.length, 5);
 });
 
+Deno.test("HTTP transport publishes OAuth metadata for the combined public resource", async () => {
+  const response = await handleMcpHttpRequest(
+    new Request(
+      "https://api.jaipilot.com/functions/v1/jaipilot/.well-known/oauth-protected-resource",
+    ),
+  );
+  assert.equal(response.status, 200);
+  const metadata = await response.json();
+  assert.deepEqual(metadata, {
+    resource: PUBLIC_MCP_URL,
+    authorization_servers: ["https://otxfylhjrlaesjagfhfi.supabase.co/auth/v1"],
+    scopes_supported: ["email"],
+    bearer_methods_supported: ["header"],
+    resource_documentation: "https://github.com/JAIPilot/jaipilot#remote-build-beta",
+  });
+});
+
 Deno.test("HTTP tool methods preserve OAuth while forwarding no cookies or browser origin", async () => {
   const challenge =
     'Bearer resource_metadata="https://api.jaipilot.com/functions/v1/jaipilot-cloud/.well-known/oauth-protected-resource"';
@@ -166,7 +184,10 @@ Deno.test("HTTP tool methods preserve OAuth while forwarding no cookies or brows
   );
   assert.equal(forwarded, true);
   assert.equal(response.status, 401);
-  assert.equal(response.headers.get("www-authenticate"), challenge);
+  assert.equal(
+    response.headers.get("www-authenticate"),
+    'Bearer resource_metadata="https://api.jaipilot.com/functions/v1/jaipilot/.well-known/oauth-protected-resource", scope="email"',
+  );
 });
 
 Deno.test("HTTP transport rejects oversized requests before forwarding", async () => {

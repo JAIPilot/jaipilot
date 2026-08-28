@@ -4,6 +4,7 @@ const SKILL_PAGE_SIZE = 5;
 const SKILL_URI_PREFIX = "skill://jaipilot/";
 const CURSOR_PREFIX = "jaipilot-skills:";
 const REMOTE_MCP_URL = "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp";
+const AUTHORIZATION_SERVER = "https://otxfylhjrlaesjagfhfi.supabase.co/auth/v1";
 const MAX_HTTP_REQUEST_BYTES = 256 * 1024;
 const JSON_HEADERS = {
   "cache-control": "no-store",
@@ -73,6 +74,15 @@ export async function handleMcpHttpRequest(
   upstreamFetch: Fetcher = fetch,
 ): Promise<Response> {
   if (request.method === "GET") {
+    if (new URL(request.url).pathname.endsWith("/.well-known/oauth-protected-resource")) {
+      return json({
+        resource: publicMcpUrl(request),
+        authorization_servers: [AUTHORIZATION_SERVER],
+        scopes_supported: ["email"],
+        bearer_methods_supported: ["header"],
+        resource_documentation: "https://github.com/JAIPilot/jaipilot#remote-build-beta",
+      });
+    }
     return json({ service: "jaipilot", version: MCP_SKILL_BUNDLE.version, status: "ok" });
   }
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -220,11 +230,29 @@ async function forwardRemoteTools(
     const value = upstream.headers.get(name);
     if (value) responseHeaders.set(name, value);
   }
+  if (upstream.status === 401 && responseHeaders.has("www-authenticate")) {
+    responseHeaders.set(
+      "www-authenticate",
+      `Bearer resource_metadata="${
+        publicMcpUrl(request).replace(
+          /\/mcp$/,
+          "/.well-known/oauth-protected-resource",
+        )
+      }", scope="email"`,
+    );
+  }
   return new Response(upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: responseHeaders,
   });
+}
+
+function publicMcpUrl(request: Request): string {
+  const url = new URL(request.url);
+  const functionRoot = url.pathname.match(/^(.*\/functions\/v1\/jaipilot)(?:\/.*)?$/)?.[1];
+  if (!functionRoot) throw new Error("JAIPilot MCP requires its canonical function path");
+  return `${url.origin}${functionRoot}/mcp`;
 }
 
 function json(value: unknown, status = 200): Response {
