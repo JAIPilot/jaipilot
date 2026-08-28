@@ -21,6 +21,7 @@ SKILLS = (
     "jaipilot-fast-execution",
     "jaipilot-generate-tests",
     "jaipilot-maintainer-intent",
+    "jaipilot-openrewrite",
     "jaipilot-optimize-java",
     "jaipilot-remote-java",
     "jaipilot-review-diff",

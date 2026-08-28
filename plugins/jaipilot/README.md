@@ -10,7 +10,8 @@ JAIPilot helps your coding agent:
 - remove proven waste and simplify complexity;
 - review risky Java changes;
 - modernize compatible dependencies and JDKs;
-- optimize measured bottlenecks; and
+- apply clean, bounded OpenRewrite migrations;
+- optimize measured bottlenecks;
 - run applicable Maven and Gradle work on ready remote hardware by default; and
 - profile and compare a bounded optimization on one large remote workspace.
 

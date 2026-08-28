@@ -1,5 +1,25 @@
 # Changelog
 
+## [6.7.0] - 2026-08-28
+
+### Added
+
+- Added `jaipilot-openrewrite`, a dedicated provider-neutral workflow that chooses whether a clean
+  Java migration should use an existing recipe, approved temporary tooling, manual edits, or no
+  action.
+- Added pinned Maven and Gradle recipe execution guidance, mandatory dry-run and complete-diff
+  review, custom-recipe tests, repeat dry-run idempotence evidence, and repository-native proof.
+
+### Changed
+
+- Routed cleanup, modernization, optimization, and review workflows to the dedicated migration
+  skill instead of duplicating a smaller OpenRewrite checklist inside general cleanup.
+
+### Fixed
+
+- Corrected Kestra duplicate U-006 to reflect U-001's later accepted merge, and updated Camunda
+  U-009 with its final clean head, maintainer approval, merge commit, and still-open source upgrade.
+
 ## [6.6.2] - 2026-08-28
 
 ### Changed

@@ -1,8 +1,9 @@
-# Use ArchUnit and OpenRewrite when they add durable proof
+# Use ArchUnit for durable boundaries and route rewrites deliberately
 
-These tools solve different problems. Use ArchUnit to preserve a stable architectural boundary in
-executable tests. Use OpenRewrite to apply a bounded, repeatable source or build migration. Neither
-is a default requirement for ordinary cleanup, and neither proves behavior by itself.
+Use ArchUnit to preserve a stable architectural boundary in executable tests. For a bounded,
+repeatable source or build migration, invoke `jaipilot-openrewrite` and let that skill decide whether
+a configured recipe, approved temporary recipe, manual edit, or no action is appropriate. Neither
+tool is a default requirement for ordinary cleanup, and neither proves behavior by itself.
 
 Prefer repository-configured tooling. When a tool is absent, explain the concrete benefit and get
 user approval before adding a dependency, build plugin, recipe library, or lasting configuration.
@@ -24,21 +25,3 @@ versions and never use dynamic version ranges.
    the user explicitly accepts that debt boundary.
 5. Run the focused test after the edit and include it in the repository's normal verification.
    Report the exact invariant, imported scope, pre-existing violations, command, and outcome.
-
-## Apply an OpenRewrite recipe
-
-1. Prefer an existing pinned recipe and repository-native task. Otherwise select an official or
-   reviewed recipe whose documented preconditions match the repository's JDK, build tool,
-   framework, source level, and requested scope.
-2. Record the starting Git state, recipe coordinate, version, options, and affected modules. Run
-   recipe discovery or the smallest available dry run first; never start with a repository-wide
-   write when a narrower selection exists.
-3. Inspect every proposed file and reject unrelated formatting, generated output, speculative
-   modernization, behavior changes, and edits outside the agreed boundary. A recipe is a candidate
-   generator, not proof that its output is correct.
-4. Apply one coherent recipe or migration axis at a time. Preserve unrelated dirty work and do not
-   reset, clean, stash, or overwrite it. Remove temporary configuration after use unless the user
-   wants a repeatable repository-owned migration setup.
-5. Run focused compilation and behavior tests, then the normal clean verification and applicable
-   compatibility checks. Report accepted and rejected recipe edits, exact commands, and any
-   evidence that remained unavailable.

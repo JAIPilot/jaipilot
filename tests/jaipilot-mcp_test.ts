@@ -55,6 +55,7 @@ Deno.test("Java verification workflows prefer remote execution without a laptop 
       "jaipilot-clean-java",
       "jaipilot-fast-execution",
       "jaipilot-generate-tests",
+      "jaipilot-openrewrite",
       "jaipilot-optimize-java",
       "jaipilot-review-diff",
     ]
@@ -63,6 +64,30 @@ Deno.test("Java verification workflows prefer remote execution without a laptop 
     assert.match(skill, /Default[\s\S]+`jaipilot-remote-java`/);
     assert.match(skill, /laptop provides no concrete\s+advantage/);
   }
+});
+
+Deno.test("OpenRewrite migrations stay pinned, previewed, reviewable, and verified", async () => {
+  const rewrite = await Deno.readTextFile(
+    new URL("skills/jaipilot-openrewrite/SKILL.md", PLUGIN),
+  );
+  const running = await Deno.readTextFile(
+    new URL("skills/jaipilot-openrewrite/references/running-recipes.md", PLUGIN),
+  );
+
+  assert.match(
+    rewrite,
+    /`CONFIGURED_RECIPE`[\s\S]+`TEMPORARY_RECIPE`[\s\S]+`MANUAL`[\s\S]+`NO_ACTION`/,
+  );
+  assert.match(rewrite, /Never use `latest`, `latest\.release`, snapshots,\s+dynamic ranges/);
+  assert.match(rewrite, /obtain approval before\s+adding or running a plugin, recipe dependency/);
+  assert.match(rewrite, /dry run before any source-writing run/);
+  assert.match(rewrite, /Inspect every proposed file and hunk/);
+  assert.match(rewrite, /Re-run the same dry run after the candidate stabilizes/);
+  assert.match(rewrite, /never treat unreturned\s+remote workspace changes as the patch/);
+  assert.match(running, /rewrite:dryRun/);
+  assert.match(running, /rewriteDryRun/);
+  assert.match(running, /failOnInvalidActiveRecipes=true/);
+  assert.match(running, /second cycle that produces no further change/);
 });
 
 Deno.test("maintainer intent fails closed before upstream implementation", async () => {

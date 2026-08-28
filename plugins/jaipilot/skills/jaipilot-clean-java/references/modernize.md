@@ -37,8 +37,9 @@ Use the repository's toolchain and release conventions; do not merely change one
 
 ## Migrate and verify
 
-1. Prefer configured pinned OpenRewrite migration recipes, exactly scoped dry runs, and reviewed
-   patches. Otherwise make the smallest documented migration manually.
+1. When a repeated type-aware transformation justifies OpenRewrite, invoke
+   `jaipilot-openrewrite` for recipe selection, scoped dry runs, complete patch review, and
+   idempotence proof. Otherwise make the smallest documented migration manually.
 2. Snapshot resolved dependency trees and artifacts before and after each axis. Investigate new
    transitive dependencies, exclusions, split packages, license changes, and logging/provider swaps.
 3. Run compile and focused tests per batch, then clean verification across applicable profiles,

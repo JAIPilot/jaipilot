@@ -207,7 +207,7 @@ coverage, code reduction, or speed.
 
 Clients that consume the official MCP Registry can discover the hosted remote tools as
 `io.github.JAIPilot/jaipilot`. This installs remote execution only; install the Codex or Claude Code
-plugin above for the seven Java engineering skills as well.
+plugin above for the eight Java engineering skills as well.
 
 ## Included skills
 
@@ -217,6 +217,7 @@ plugin above for the seven Java engineering skills as well.
 | `jaipilot-optimize-java`     | Make one bounded Java change leaner, safer, and faster.   |
 | `jaipilot-generate-tests`    | Add meaningful tests and fresh coverage evidence.         |
 | `jaipilot-clean-java`        | Remove waste, enforce architecture, and simplify code.     |
+| `jaipilot-openrewrite`       | Apply clean, bounded, verified Java migrations.            |
 | `jaipilot-review-diff`       | Find regressions, unnecessary code, and missing proof.    |
 | `jaipilot-fast-execution`    | Run substantial Java verification efficiently.            |
 | `jaipilot-remote-java`       | Default applicable Java execution to remote hardware.     |

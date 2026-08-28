@@ -43,14 +43,17 @@ Prefer no production change to a plausible change with incomplete proof.
 3. **Modernize when justified.** Use the modernization mode of the `jaipilot-clean-java` skill when the user
    requested it, the changed code requires it, or the affected build path is already in scope.
    Evaluate authoritative stable releases and accept only independently reversible upgrades proved
-   compatible with the declared JDK, framework, runtime, build, and consumer boundary.
+   compatible with the declared JDK, framework, runtime, build, and consumer boundary. Invoke
+   `jaipilot-openrewrite` only when a repeated type-aware migration is safer and more reviewable
+   than manual edits.
 4. **Add useful tests.** Use the `jaipilot-generate-tests` skill when the request includes tests or
    coverage, or when a retained change exposes a concrete regression gap. Test public outcomes and
    meaningful edge cases; do not add implementation-coupled or coverage-only assertions.
 5. **Review and verify.** Invoke the `jaipilot-review-diff` skill and finish with the repository's
    normal clean verification. Confirm intended tests and configured quality gates actually executed.
-   When a durable architecture invariant or bounded migration justifies it, use the ArchUnit or
-   OpenRewrite procedure from `jaipilot-clean-java`; adding tooling still requires user approval.
+   When a durable architecture invariant justifies it, use the ArchUnit procedure from
+   `jaipilot-clean-java`. For a bounded OpenRewrite migration, invoke `jaipilot-openrewrite`;
+   adding tooling still requires user approval.
 
 Use the `jaipilot-fast-execution` skill for substantial command work when safe batching or bounded
 native parallelism reduces wall time. Default compilation, tests, analysis, profiling, benchmarks,

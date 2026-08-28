@@ -1,7 +1,7 @@
 # Contributing
 
 JAIPilot is a small Java skills and remote-execution plugin. Contributions should make one of its
-six workflows or the seven-tool hosted MCP boundary clearer, safer, or more useful.
+eight workflows or the eight-tool hosted MCP boundary clearer, safer, or more useful.
 
 ## Setup
 
@@ -13,9 +13,9 @@ deno task check
 
 ## Rules
 
-- Keep plugins/jaipilot limited to manifests, six skills, UI metadata, SVG assets, one hosted MCP
+- Keep plugins/jaipilot limited to manifests, eight skills, UI metadata, SVG assets, one hosted MCP
   URL, and its short README.
-- Keep remote execution to explicit bounded source uploads, seven lifecycle tools, and
+- Keep remote execution to explicit bounded source uploads, eight lifecycle tools, and
   agent-selected commands. Do not add another reasoning agent, hooks, a daemon, dashboard,
   installer, package-manager dependency, or automatic repository work.
 - Never commit or print credentials, customer source, remote logs, or generated artifacts.

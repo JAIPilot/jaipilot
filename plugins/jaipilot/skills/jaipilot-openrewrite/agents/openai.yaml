@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenRewrite Java Migrations"
+  short_description: "Run clean, bounded OpenRewrite migrations"
+  default_prompt: "Use $jaipilot-openrewrite to apply this Java migration with a pinned recipe, complete diff review, and repository-native verification."

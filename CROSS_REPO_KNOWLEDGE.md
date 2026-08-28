@@ -54,10 +54,10 @@ companion implementation.
 | U-003 | [PIT #1497](https://github.com/hcoles/pitest/pull/1497) | [#1460](https://github.com/hcoles/pitest/pull/1460) | Accepted | Merged |
 | U-004 | [Donkey Kong #51](https://github.com/mircoterenzi/donkey-kong/pull/51) | [#41](https://github.com/mircoterenzi/donkey-kong/pull/41) | Unadopted | Closed by repository actor |
 | U-005 | [Donkey Kong #50](https://github.com/mircoterenzi/donkey-kong/pull/50) | [#45](https://github.com/mircoterenzi/donkey-kong/pull/45) | Unadopted | Closed by repository actor |
-| U-006 | [Kestra #74](https://github.com/kestra-io/plugin-email/pull/74) | [#60](https://github.com/kestra-io/plugin-email/pull/60) | Unadopted | Self-closed; U-001 remains open |
+| U-006 | [Kestra #74](https://github.com/kestra-io/plugin-email/pull/74) | [#60](https://github.com/kestra-io/plugin-email/pull/60) | Unadopted | Self-closed duplicate; U-001 later merged |
 | U-007 | [MariaDB4j #1376](https://github.com/MariaDB4j/MariaDB4j/pull/1376) | [#1370](https://github.com/MariaDB4j/MariaDB4j/pull/1370) | Unadopted | Self-closed; U-017 remains open |
 | U-008 | [MeDev #43](https://github.com/MrSgemaSeny/MeDev/pull/43) | [#34](https://github.com/MrSgemaSeny/MeDev/pull/34) | Unadopted | Self-closed |
-| U-009 | [Camunda #61272](https://github.com/camunda/camunda/pull/61272) | [#60956](https://github.com/camunda/camunda/pull/60956) | Maintainer-directed | Open against `main` |
+| U-009 | [Camunda #61272](https://github.com/camunda/camunda/pull/61272) | [#60956](https://github.com/camunda/camunda/pull/60956) | Maintainer-directed | Merged into `main`; source remains open |
 | U-010 | [Maven Indexer #764](https://github.com/apache/maven-indexer/pull/764) | [#762](https://github.com/apache/maven-indexer/pull/762) | Maintainer-directed | Open against `master` |
 | U-011 | [Camunda #61284](https://github.com/camunda/camunda/pull/61284) | [#60956](https://github.com/camunda/camunda/pull/60956) | Unadopted | Self-closed duplicate of U-009 |
 | U-012 | [Spring Security #19605](https://github.com/spring-projects/spring-security/pull/19605) | [#19551](https://github.com/spring-projects/spring-security/pull/19551) | Candidate | Open |
@@ -185,7 +185,7 @@ and bot head `02f6b7d94b1d4395f7f5942d98676aa33f3050d0` as U-001.
 **Failure and candidate:** It performed the same recipient migration with a narrower MIME assertion
 description.
 
-**Outcome:** Unadopted and self-closed while U-001 remained open.
+**Outcome:** Unadopted and self-closed before U-001 was later accepted and merged.
 
 **Transfer:** Search the contributor's own open work before publishing. Two technically similar
 companions against one bot head fragment review and create no additional evidence.
@@ -225,17 +225,21 @@ exclusions is not a bounded precedent merely because one build passed.
 ## U-009 — NullAway exposed an independent source contract defect
 
 **Source upgrade:** Camunda [#60956](https://github.com/camunda/camunda/pull/60956), Renovate update
-of NullAway to 0.14.0, current observed source head `1d037d39ce818a9741f897f94e6956b3156858ea`.
+of NullAway to 0.14.0, current observed source head `2e4349f75d898cfbdd5af7a2d16f22a5e3fb5875`.
 
-**Companion:** [#61272](https://github.com/camunda/camunda/pull/61272), observed head
-`6d21f5045a31cf1dbac2cc1dc1cc59e03ca9920a`, now targeting `main`.
+**Companion:** [#61272](https://github.com/camunda/camunda/pull/61272), final head
+`d71bebee336701f613ab9cdbd029c9f5a398cb80`, merged as
+`340793fd0928d8b8ffedae6dfe91f18d76f397a0` into `main`.
 
 **Failure and candidate:** Aligned nullable generic upper bounds between `CompletableActorFuture`
 and `ActorFuture` without changing erased signatures.
 
-**Outcome:** Maintainer-directed. A maintainer said the independent source fix should land on
-`main`, or be cherry-picked into the Renovate branch. The PR was retargeted accordingly and remains
-open.
+**Outcome:** Maintainer-directed and merged. A maintainer said the independent source fix should
+land on `main`, or be cherry-picked into the Renovate branch. After the PR was retargeted, the
+maintainer requested removal of a merge commit. The contributor force-pushed the clean one-commit
+head recorded above; its status checks passed, the maintainer approved it, added it to the merge
+queue, and it merged at 2026-08-28 14:00 UTC. The source Renovate upgrade remains open, so this is
+maintainer-directed evidence rather than campaign-level accepted evidence.
 
 **Transfer:** An analyzer upgrade can reveal a real latent contract mismatch whose correct delivery
 is the default branch, not the bot branch. Ask when branch mechanics would create a merge commit.
@@ -260,7 +264,7 @@ literally named `jetty-core`. Follow the named architecture and sibling-reposito
 ## U-011 — Duplicate Camunda default-branch delivery
 
 **Source upgrade:** The same Camunda Renovate source [#60956](https://github.com/camunda/camunda/pull/60956)
-as U-009, current observed head `1d037d39ce818a9741f897f94e6956b3156858ea`.
+as U-009, current observed head `2e4349f75d898cfbdd5af7a2d16f22a5e3fb5875`.
 
 **Companion:** [#61284](https://github.com/camunda/camunda/pull/61284), head
 `e97ecbbc67da8774b44004de3e614df83428f896`, targeting `main`.
