@@ -250,9 +250,7 @@ async function forwardRemoteTools(
 
 function publicMcpUrl(request: Request): string {
   const url = new URL(request.url);
-  const functionRoot = url.pathname.match(/^(.*\/functions\/v1\/jaipilot)(?:\/.*)?$/)?.[1];
-  if (!functionRoot) throw new Error("JAIPilot MCP requires its canonical function path");
-  return `${url.origin}${functionRoot}/mcp`;
+  return `${url.origin}/functions/v1/jaipilot/mcp`;
 }
 
 function json(value: unknown, status = 200): Response {
