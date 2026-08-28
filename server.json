@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.JAIPilot/jaipilot",
-  "title": "JAIPilot Remote",
+  "title": "JAIPilot",
   "description": "Ship better Java with your coding agent.",
-  "version": "6.7.0",
+  "version": "6.8.0",
   "websiteUrl": "https://github.com/JAIPilot/jaipilot",
   "repository": {
     "url": "https://github.com/JAIPilot/jaipilot",
@@ -22,7 +22,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp"
+      "url": "https://api.jaipilot.com/functions/v1/jaipilot/mcp"
     }
   ]
 }

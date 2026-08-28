@@ -7,7 +7,12 @@
       "server.json",
       "plugins/jaipilot/.mcp.json",
       "plugins/jaipilot/.codex-plugin/plugin.json",
+      "mcp",
+      "scripts/generate-mcp-skill-sources.ts",
+      "supabase/functions/jaipilot",
+      "supabase/config.toml",
       "tests/jaipilot-mcp_test.ts",
+      "tests/jaipilot-skills-mcp_test.ts",
       "deno.json"
     ]
   },
@@ -16,10 +21,15 @@
       "tags": ["recommended"]
     },
     "include": [
-      "tests/jaipilot-mcp_test.ts"
+      "mcp/jaipilot-mcp.ts",
+      "scripts/generate-mcp-skill-sources.ts",
+      "supabase/functions/jaipilot/index.ts",
+      "tests/jaipilot-mcp_test.ts",
+      "tests/jaipilot-skills-mcp_test.ts"
     ]
   },
   "tasks": {
-    "check": "deno fmt --check && deno lint && deno check tests/jaipilot-mcp_test.ts && deno test --allow-read tests/jaipilot-mcp_test.ts && python3 scripts/validate-plugin.py"
+    "generate-mcp-skill-sources": "deno run --allow-read --allow-write scripts/generate-mcp-skill-sources.ts",
+    "check": "deno run --allow-read scripts/generate-mcp-skill-sources.ts --check && deno fmt --check && deno lint && deno check supabase/functions/jaipilot/index.ts tests/jaipilot-mcp_test.ts tests/jaipilot-skills-mcp_test.ts && deno test --allow-read tests/jaipilot-mcp_test.ts tests/jaipilot-skills-mcp_test.ts && python3 scripts/validate-plugin.py"
   }
 }

@@ -20,8 +20,7 @@ workflows, remote compute, and one rule: **show evidence, not confidence.**
 ### Codex
 
 ```bash
-codex plugin marketplace add JAIPilot/jaipilot
-codex plugin add jaipilot@jaipilot
+codex mcp add jaipilot --url https://api.jaipilot.com/functions/v1/jaipilot/mcp
 ```
 
 ### Claude Code
@@ -39,11 +38,16 @@ remove unnecessary code, improve only performance you can measure, and run the f
 Use JAIPilot Remote for substantial Java commands unless this work needs my laptop.
 ```
 
-The Java skills work locally as soon as the plugin is installed. When remote execution is useful,
-your agent asks before uploading the current tracked and unignored Git files. Approve the upload and
-sign in when prompted; the agent handles packaging, integrity checking, upload, execution, logs, and
-workspace deletion. You do not create an archive, configure a VM, provide an API key, or copy files
-manually. `.git`, ignored files, and remote edits are never transferred back automatically.
+Codex discovers the eight Java skills from that MCP server through standard `skills/list`,
+`skills/get`, and `resources/read` requests. It reads only the selected skill files and refreshes
+them when their SHA-256 digests change; there is no Codex plugin or local skill-copy installation.
+Claude Code retains the plugin path for clients that do not yet consume the Skills extension.
+
+When remote execution is useful, your agent asks before uploading the current tracked and unignored
+Git files. Approve the upload and sign in when prompted; the agent handles packaging, integrity
+checking, upload, execution, logs, and workspace deletion. You do not create an archive, configure a
+VM, provide an API key, or copy files manually. `.git`, ignored files, and remote edits are never
+transferred back automatically.
 
 If packaging or upload cannot be verified, JAIPilot does not create the workspace. Your agent must
 show the failing step instead of silently uploading a different source tree.
@@ -205,9 +209,15 @@ coverage, code reduction, or speed.
 
 ## MCP Registry
 
-Clients that consume the official MCP Registry can discover the hosted remote tools as
-`io.github.JAIPilot/jaipilot`. This installs remote execution only; install the Codex or Claude Code
-plugin above for the eight Java engineering skills as well.
+Clients that consume the official MCP Registry can discover `io.github.JAIPilot/jaipilot`. The one
+hosted endpoint serves the eight Java engineering skills directly and forwards only
+`tools/list`/`tools/call` to the existing bounded OAuth remote-execution service. Skill discovery
+and reads do not contact remote execution; tool calls retain its authorization and safety boundary.
+
+The catalog is paginated five skills and then three so direct clients can load all eight. OpenAI's
+current plugin-submission scanner accepts at most five uniquely named MCP skills; JAIPilot therefore
+uses the direct Codex MCP connection above instead of treating that static scanner as its
+distribution channel.
 
 ## Included skills
 

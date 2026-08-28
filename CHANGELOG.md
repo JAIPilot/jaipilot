@@ -1,5 +1,31 @@
 # Changelog
 
+## [6.8.0] - 2026-08-28
+
+### Added
+
+- Added the public, zero-dependency JAIPilot Streamable HTTP MCP implementation to this repository.
+- Added the standard `io.modelcontextprotocol/skills` capability with paginated `skills/list`, exact
+  `skills/get`, and digest-verified `resources/read` for all eight Java skills and their referenced
+  files.
+- Added a deterministic generated skill bundle and drift gate so the MCP always serves the reviewed
+  repository sources with exact `sha256:` resource digests.
+
+### Changed
+
+- Made one direct `codex mcp add` command the primary Codex installation path; Codex no longer needs
+  the JAIPilot plugin or a copied local skill directory.
+- Pointed the MCP Registry and compatibility manifests at the combined public endpoint. Static skill
+  reads stay local to that endpoint, while only remote `tools/list` and `tools/call` requests are
+  forwarded to the existing bounded OAuth service.
+- Preserved the Claude Code plugin and existing Codex plugin metadata as compatibility paths rather
+  than the primary Codex distribution channel.
+
+### Security
+
+- The public MCP forwards an OAuth bearer only for remote tool methods and never forwards cookies or
+  browser origins. Skill discovery and resource reads create no upload, workspace, or compute.
+
 ## [6.7.0] - 2026-08-28
 
 ### Added

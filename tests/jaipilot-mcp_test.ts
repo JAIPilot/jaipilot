@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 
 const ROOT = new URL("../", import.meta.url);
 const PLUGIN = new URL("plugins/jaipilot/", ROOT);
-const MCP_URL = "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp";
+const MCP_URL = "https://api.jaipilot.com/functions/v1/jaipilot/mcp";
 type McpManifest = {
   mcpServers: Record<string, { type: string; url: string }>;
 };
 
-Deno.test("Codex and Claude use the same hosted OAuth-capable MCP resource", async () => {
+Deno.test("Codex and Claude use the same hosted Skills and remote-tools MCP resource", async () => {
   const codex = await json<McpManifest>(".codex-plugin/plugin.json");
   const claude = await json<McpManifest>(".mcp.json");
   const expected = { type: "http", url: MCP_URL };

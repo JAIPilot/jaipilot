@@ -47,7 +47,7 @@ ALLOWED_PLUGIN_ROOTS = {
     "plugin.json",
     "skills",
 }
-MCP_API_URL = "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp"
+MCP_API_URL = "https://api.jaipilot.com/functions/v1/jaipilot/mcp"
 MCP_REGISTRY_SCHEMA = (
     "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json"
 )
@@ -212,8 +212,8 @@ def validate_mcp_registry(expected_version: str) -> None:
             "server.json must use the pinned MCP Registry schema")
     require(server.get("name") == MCP_REGISTRY_NAME,
             "server.json must use the JAIPilot GitHub namespace")
-    require(server.get("title") == "JAIPilot Remote",
-            "server.json must publish the JAIPilot Remote title")
+    require(server.get("title") == "JAIPilot",
+            "server.json must publish the JAIPilot title")
     description = server.get("description")
     require(description == TAGLINE,
             "server.json description must use the canonical tagline")

@@ -2,7 +2,7 @@
   "mcpServers": {
     "jaipilot-remote": {
       "type": "http",
-      "url": "https://api.jaipilot.com/functions/v1/jaipilot-cloud/mcp"
+      "url": "https://api.jaipilot.com/functions/v1/jaipilot/mcp"
     }
   }
 }
