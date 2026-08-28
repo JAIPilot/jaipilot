@@ -75,6 +75,35 @@ Deno.test("Java verification workflows prefer remote execution without a laptop 
   }
 });
 
+Deno.test("all JAIPilot workflows route substantial command work through safe parallelism", async () => {
+  const fast = await Deno.readTextFile(
+    new URL("skills/jaipilot-fast-execution/SKILL.md", PLUGIN),
+  );
+  assert.match(fast, /Every JAIPilot workflow should use this skill for substantial command work/);
+  assert.match(fast, /bounded native parallelism can reduce total wall time/);
+  assert.match(fast, /not permission to assume independence or\s+create contention/);
+
+  for (
+    const name of [
+      "jaipilot-clean-java",
+      "jaipilot-generate-tests",
+      "jaipilot-maintainer-intent",
+      "jaipilot-openrewrite",
+      "jaipilot-optimize-java",
+      "jaipilot-remote-java",
+      "jaipilot-review-diff",
+    ]
+  ) {
+    const skill = await Deno.readTextFile(new URL(`skills/${name}/SKILL.md`, PLUGIN));
+    assert.match(skill, /`jaipilot-fast-execution`/);
+    assert.match(
+      skill,
+      /safe\s+batching\s+or\s+bounded\s+native\s+parallelism can reduce wall time/,
+    );
+    assert.match(skill, /without\s+changing\s+the\s+required\s+proof/);
+  }
+});
+
 Deno.test("test generation processes and executes every safely independent scoped class in parallel", async () => {
   const tests = await Deno.readTextFile(
     new URL("skills/jaipilot-generate-tests/SKILL.md", PLUGIN),

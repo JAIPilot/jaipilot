@@ -88,9 +88,11 @@ execution details relevant to the selected route.
 
 Invoke `jaipilot-review-diff` on the complete Java and build diff. Run affected tests, resolved
 dependency comparison, configured API compatibility and analyzers, relevant runtime or packaging
-smoke tests, and the normal clean verification. Default substantial compilation, tests, analysis,
-and final proof to `jaipilot-remote-java` whenever the laptop provides no concrete advantage;
-upload the latest local candidate after recipe and manual edits.
+smoke tests, and the normal clean verification. Use `jaipilot-fast-execution` for substantial
+command work whenever safe batching or bounded native parallelism can reduce wall time without
+changing the required proof. Default substantial compilation, tests, analysis, and final proof to
+`jaipilot-remote-java` whenever the laptop provides no concrete advantage; upload the latest local
+candidate after recipe and manual edits.
 
 Report the route, migration contract, recipe and pinned coordinates, approval and configuration
 boundary, baseline, preview and applied inventories, rejected output, manual follow-ups, repeat

@@ -64,9 +64,11 @@ selection, and user interaction. JAIPilot Remote is not another coding agent.
 1. Prefer repository wrappers and documented commands. JDK 17, 21, and 25, Maven 3.9.16, and Gradle
    9.7.0 are ready; repository metadata chooses the default JDK.
 2. Reuse one workspace for related commands against the exact uploaded state so dependency and
-   wrapper caches remain useful. Start each bounded command with `process_start`, poll
-   `process_status`, and inspect `process_logs`. Durable IDs allow recovery after a host disconnect.
-   The final exit code is authoritative; a truncated log is incomplete evidence.
+   wrapper caches remain useful. Use `jaipilot-fast-execution` for substantial command work whenever
+   safe batching or bounded native parallelism can reduce wall time without changing the required
+   proof. Start each bounded command with `process_start`, poll `process_status`, and inspect
+   `process_logs`. Durable IDs allow recovery after a host disconnect. The final exit code is
+   authoritative; a truncated log is incomplete evidence.
 3. Keep focused iteration separate from final repository-native clean verification. Confirm that
    intended tests, analyzers, and modules actually ran.
 4. For performance claims, upload the exact starting state before editing, profile it on the 4 CPU,

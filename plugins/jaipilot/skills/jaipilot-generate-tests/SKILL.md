@@ -101,7 +101,9 @@ campaign.
    effort as passing.
 4. Run related tests and the normal final clean verification. Re-read the complete diff and confirm
    intended tests executed.
-5. Default focused and aggregate test execution, coverage, mutation analysis, and final clean
+5. Use `jaipilot-fast-execution` for substantial command work whenever safe batching or bounded
+   native parallelism can reduce wall time without changing the required proof.
+6. Default focused and aggregate test execution, coverage, mutation analysis, and final clean
    verification to the `jaipilot-remote-java` skill whenever the laptop provides no concrete
    advantage under that skill's routing rules. Remote proof covers only the uploaded tracked and
    unignored working tree; upload the latest state again after changing local tests or production

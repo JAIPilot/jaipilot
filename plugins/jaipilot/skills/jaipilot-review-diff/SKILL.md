@@ -57,7 +57,9 @@ and keep the host agent in control.
    Do not infer test quality from a green build or line coverage alone.
 5. Re-read the final diff after verification and check that generated output did not enter it.
 6. If a command cannot run, report the exact failure and leave that property unavailable.
-7. Default focused tests, analyzers, coverage, mutation testing, and final verification to the
+7. Use `jaipilot-fast-execution` for substantial command work whenever safe batching or bounded
+   native parallelism can reduce wall time without changing the required proof.
+8. Default focused tests, analyzers, coverage, mutation testing, and final verification to the
    `jaipilot-remote-java` skill whenever the laptop provides no concrete advantage under that
    skill's routing rules. Remote proof covers only the uploaded tracked and unignored working tree;
    upload the latest state again after any relevant local correction.

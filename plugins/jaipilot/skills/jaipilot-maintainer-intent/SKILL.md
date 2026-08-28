@@ -102,9 +102,10 @@ an existing bot branch, or a direct pull request to the repository's normal base
 smallest accepted solution shape, proof expected by prior reviews, and contribution mechanics.
 Then use the applicable JAIPilot implementation and review skills.
 
-For substantial Java compilation, tests, analysis, profiling, or benchmarks, default to
-`jaipilot-remote-java` when the laptop provides no concrete advantage and follow its explicit upload
-consent boundary.
+For substantial Java command work after `PROCEED`, use `jaipilot-fast-execution` whenever safe
+batching or bounded native parallelism can reduce wall time without changing the required proof.
+Default compilation, tests, analysis, profiling, and benchmarks to `jaipilot-remote-java` when the
+laptop provides no concrete advantage, and follow its explicit upload consent boundary.
 
 ## Report
 

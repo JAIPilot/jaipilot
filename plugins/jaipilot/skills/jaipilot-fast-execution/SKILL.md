@@ -10,6 +10,11 @@ task's exact behavior, coverage, measurement, and final-verification requirement
 weaken a gate, raise a timeout, change test semantics, or edit repository configuration just to make
 a run appear faster.
 
+Every JAIPilot workflow should use this skill for substantial command work whenever independent
+batching or bounded native parallelism can reduce total wall time without changing the required
+proof. Parallelism is a default optimization opportunity, not permission to assume independence or
+create contention.
+
 ## Size work to the real machine
 
 1. Read repository instructions, wrappers, build configuration, modules, CI commands, required

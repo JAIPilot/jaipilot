@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.9.1] - 2026-08-28
+
+### Changed
+
+- Routed substantial command work from every JAIPilot workflow through
+  `jaipilot-fast-execution` whenever safe batching or bounded native parallelism can reduce wall
+  time without changing the required evidence.
+- Kept concurrency resource-aware and isolated, with serial fallback instead of assuming that
+  builds, tests, repositories, or shared services are independent.
+
 ## [6.9.0] - 2026-08-28
 
 ### Changed

@@ -55,12 +55,13 @@ Prefer no production change to a plausible change with incomplete proof.
    `jaipilot-clean-java`. For a bounded OpenRewrite migration, invoke `jaipilot-openrewrite`;
    adding tooling still requires user approval.
 
-Use the `jaipilot-fast-execution` skill for substantial command work when safe batching or bounded
-native parallelism reduces wall time. Default compilation, tests, analysis, profiling, benchmarks,
-and final clean verification to the `jaipilot-remote-java` skill whenever the exact state can run
-and the laptop provides no concrete advantage under that skill's routing rules. After explicit
-upload consent, remote proof covers only the exact tracked and unignored working-tree archive that
-was uploaded; upload the latest state again before claiming proof after later local edits.
+Use `jaipilot-fast-execution` for substantial command work whenever safe batching or bounded native
+parallelism can reduce wall time without changing the required proof. Default compilation, tests,
+analysis, profiling, benchmarks, and final clean verification to the `jaipilot-remote-java` skill
+whenever the exact state can run and the laptop provides no concrete advantage under that skill's
+routing rules. After explicit upload consent, remote proof covers only the uploaded archive of the
+exact tracked and unignored working-tree; upload the latest state again before claiming proof after
+later local edits.
 
 ## Acceptance
 
