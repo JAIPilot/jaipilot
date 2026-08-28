@@ -31,92 +31,133 @@ codex mcp add jaipilot --url https://api.jaipilot.com/functions/v1/jaipilot/mcp
 
 ### Example prompts
 
-Open a Java repository and ask for the outcome you need.
+Open a Java repository and ask JAIPilot the same way you would ask a teammate.
 
-**Research maintainer intent before contributing**
-
-```text
-Before changing this Java repository, research the exact issue or pull request, its full discussion,
-related open and closed work, contribution rules, and the relevant local history. Determine whether
-I should proceed, join existing work, ask one focused question, wait, or take no action. Cite the
-evidence, identify the expected delivery target and proof, and do not edit or publish anything
-unless the evidence supports proceeding and I have authorized that next step.
-```
-
-**Make the current change production-ready**
+**Check whether an issue is worth picking up**
 
 ```text
-Make my current Java changes production-ready without changing their behavior. Add missing tests,
-remove unnecessary code, improve only performance you can measure, and run the full verification.
-Use JAIPilot Remote for substantial Java commands unless this work needs my laptop.
+Can you look into issue #184 and tell me whether I should work on it, or if someone is already
+handling the same problem?
 ```
 
-**Upgrade dependencies, build tooling, and the JDK safely**
+**JAIPilot flow:** `jaipilot-maintainer-intent` researches the issue, related work, contribution
+rules, and code history before recommending whether to proceed, join existing work, ask, wait, or
+stop.
+
+**Benefit:** You avoid duplicating another contributor's work or building a fix maintainers are
+unlikely to accept.
+
+**Get a branch ready to merge**
 
 ```text
-Modernize this Maven or Gradle project to the newest stable dependency, plugin, framework, wrapper,
-and JDK versions you can verify as compatible with its supported runtimes and consumers. Check
-authoritative release notes and migration guides, remove dependencies proven unused before
-upgrading them, and apply independently reversible upgrade batches. Compare resolved dependency
-graphs and run clean verification after each accepted batch. Do not use dynamic versions or weaken
-tests, warnings, or compatibility checks. Report rejected upgrades and the highest versions you
-actually verified.
+I've finished the changes on this branch. Can you make sure they're ready to merge?
 ```
 
-**Repair a Dependabot or Renovate update**
+**JAIPilot flow:** `jaipilot-optimize-java` coordinates bounded cleanup and improvement,
+`jaipilot-generate-tests` fills meaningful test gaps, and `jaipilot-review-diff` reviews the complete
+result. `jaipilot-fast-execution` and `jaipilot-remote-java` accelerate substantial verification
+when safe and useful.
+
+**Benefit:** You get a smaller, reviewed change with missing tests added and the repository's real
+checks run before handoff.
+
+**Upgrade a framework and its dependencies**
 
 ```text
-Investigate this dependency update before changing it. Read the repository history, related issues
-and pull requests, upstream release and migration notes, the current CI failure, and downstream
-compatibility constraints. Decide whether to fix, replace, split, defer, or close the update.
-Implement only the smallest justified migration, use a pinned OpenRewrite recipe only when a
-repeated type-aware rewrite is safer, and prove the result with focused and clean builds.
+Can you upgrade this Spring Boot service and its outdated dependencies while keeping Java 17
+support?
 ```
 
-**Add meaningful tests and coverage**
+**JAIPilot flow:** `jaipilot-clean-java` inventories and modernizes the requested dependency and
+build paths. `jaipilot-openrewrite` is selected only when a repeated type-aware migration justifies
+it, followed by `jaipilot-generate-tests`, `jaipilot-review-diff`, `jaipilot-fast-execution`, and
+`jaipilot-remote-java` as applicable.
+
+**Benefit:** Upgrades stay compatible, reversible, and verified instead of becoming a broad version
+bump with hidden runtime or transitive-dependency breakage.
+
+**Fix a failing dependency-bot update**
 
 ```text
-Strengthen tests for the changed Java classes. Cover the observable behavior, boundaries, errors,
-and regression risks that are currently missing, then report fresh per-class line and branch
-coverage. Do not add hollow assertions or weaken any build gate. Run the focused tests and the
-repository's clean verification.
+Dependabot's Jackson update is failing CI. Can you figure out why and fix it?
 ```
 
-**Clean and simplify a module**
+**JAIPilot flow:** `jaipilot-maintainer-intent` checks the bot PR, maintainer direction, related
+attempts, and the correct delivery path. The supported fix then uses `jaipilot-clean-java` or
+`jaipilot-openrewrite`, followed by `jaipilot-generate-tests` and `jaipilot-review-diff`.
+Substantial commands use `jaipilot-fast-execution` and `jaipilot-remote-java` when appropriate.
+
+**Benefit:** The agent fixes the actual compatibility problem on the right branch instead of merely
+forcing the bot's version change through CI.
+
+**Add tests for a service change**
 
 ```text
-Clean this Java module without changing its intended behavior or public compatibility. Remove only
-unused code and dependencies you can prove are safe to delete, consolidate only genuinely
-equivalent logic, reduce real complexity, and retain every uncertain candidate with the reason.
-Verify each reversible batch and report the before-and-after code shape.
+Please add unit tests for my changes to OrderService, especially the validation and error cases.
 ```
 
-**Review the current diff**
+**JAIPilot flow:** `jaipilot-generate-tests` maps the requested classes and useful cases, creates and
+executes safely independent test-class work in parallel, and reports fresh configured coverage or
+mutation evidence. `jaipilot-fast-execution` and `jaipilot-remote-java` accelerate the test and
+verification work when applicable.
+
+**Benefit:** You get behavior-focused tests across the complete requested scope, not hollow tests
+written only to inflate a coverage number.
+
+**Simplify a difficult module**
 
 ```text
-Review the complete current Java diff for behavioral regressions, unnecessary code, compatibility
-risk, architecture drift, and missing proof. Run the repository's relevant checks, rank concrete
-findings by severity, and distinguish verified problems from residual risk.
+This payments module has become hard to follow. Can you remove dead code and simplify it without
+changing its behavior?
 ```
 
-**Optimize a measured workload**
+**JAIPilot flow:** `jaipilot-clean-java` proves what can be removed or consolidated and keeps
+uncertain candidates. `jaipilot-generate-tests` covers concrete regression gaps, and
+`jaipilot-review-diff` checks the final patch. Verification routes through `jaipilot-fast-execution`
+and `jaipilot-remote-java` when useful.
+
+**Benefit:** The module becomes easier to maintain without speculative deletion, silent API
+breakage, or a cleanup that only looks smaller.
+
+**Review work before opening a pull request**
 
 ```text
-Profile this Java workload before changing it, identify the dominant bottleneck, and test one small
-optimization hypothesis at a time. Preserve correctness, compare at least seven equivalent runs,
-and report raw observations, median, p95, allocation, and resource tradeoffs. Reject changes that
-are within noise or move cost outside the measured boundary.
+Can you review my current diff before I open a pull request?
 ```
 
-**Run substantial Java verification efficiently**
+**JAIPilot flow:** `jaipilot-review-diff` reads the complete Java and build change, checks behavior,
+compatibility, unnecessary code, and missing proof, then runs the applicable repository checks via
+`jaipilot-fast-execution` and `jaipilot-remote-java` when appropriate.
+
+**Benefit:** You get ranked, evidence-backed findings across the whole change rather than a shallow
+review of the most obvious file.
+
+**Speed up a slow endpoint**
 
 ```text
-Run this repository's complete Maven or Gradle verification as efficiently as its build permits,
-without skipping work or weakening any gate. Inspect the available CPU and memory, use only safe
-repository-native parallelism, time the material commands, and fall back to the serial command if
-parallelism changes the result. Use JAIPilot Remote unless laptop-only resources are required, ask
-before the first source upload, and report the exact commands, concurrency, durations, and results.
+The /orders endpoint gets slow for large accounts. Can you find the bottleneck and improve it?
 ```
+
+**JAIPilot flow:** `jaipilot-optimize-java` bounds the change, `jaipilot-clean-java` profiles and
+tests measured hypotheses, `jaipilot-generate-tests` protects behavior, and
+`jaipilot-review-diff` checks the candidate. `jaipilot-fast-execution` and
+`jaipilot-remote-java` provide controlled execution and comparable measurements.
+
+**Benefit:** The retained optimization is tied to a real bottleneck and repeatable evidence, not a
+plausible-looking micro-optimization or one noisy timing.
+
+**Run a slow build faster**
+
+```text
+Our full Gradle build takes about 20 minutes. Can you run it faster and tell me where the time goes?
+```
+
+**JAIPilot flow:** `jaipilot-fast-execution` sizes safe batching and native build parallelism for
+the available resources. `jaipilot-remote-java` offloads the work when the repository does not need
+laptop-only services or state.
+
+**Benefit:** You reduce wall time without skipping tests, weakening gates, or creating misleading
+results through unsafe concurrency.
 
 Codex signs in through JAIPilot's OAuth consent and connects to one MCP URL. The server publishes
 all eight Java skills through `skills/list`, `skills/get`, digest-verified `resources/read`, and
