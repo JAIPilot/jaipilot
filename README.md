@@ -75,13 +75,16 @@ Can you upgrade this Spring Boot service and its outdated dependencies while kee
 support?
 ```
 
-> **Skills and flow:** `jaipilot-clean-java` inventories and modernizes the requested dependency and
+> **Skills and flow:** `jaipilot-maintainer-intent` first checks repository history, active or prior
+> upgrade work, maintainer direction, and established compatibility constraints. The supported
+> upgrade then uses `jaipilot-clean-java` to inventory and modernize the requested dependency and
 > build paths. `jaipilot-openrewrite` is selected only when a repeated type-aware migration justifies
 > it, followed by `jaipilot-generate-tests`, `jaipilot-review-diff`, `jaipilot-fast-execution`, and
 > `jaipilot-remote-java` as applicable.
 >
-> **Why it helps:** Upgrades stay compatible, reversible, and verified instead of becoming a broad
-> version bump with hidden runtime or transitive-dependency breakage.
+> **Why it helps:** The upgrade follows the repository's intended direction and avoids duplicating
+> or conflicting with existing work. Accepted changes remain compatible, reversible, and verified
+> instead of becoming a broad version bump with hidden runtime or transitive-dependency breakage.
 
 #### Fix a failing dependency-bot update
 
