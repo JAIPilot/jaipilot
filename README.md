@@ -14,6 +14,10 @@ remote Java machine whenever the task does not require laptop-only access or sta
 JAIPilot does not replace your coding agent or add another AI. It gives your agent focused Java
 workflows, remote compute, and one rule: **show evidence, not confidence.**
 
+> **Further reading:**
+> [Preventing agent drift: A guide to shipping serious code via vibe-coding](https://jaipilot.com/blog/preventing-agent-drift-serious-code-vibe-coding)
+> explains the engineering principles behind JAIPilot's bounded, evidence-first workflows.
+
 ## Install and run
 
 ### Codex
