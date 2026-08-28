@@ -59,6 +59,12 @@ Rank evidence in this order:
 Label inference as inference. Never convert silence, a stale bot pull request, or a passing build
 into a claim about maintainer preference.
 
+Stop when decisive higher-ranked evidence determines a terminal decision. After an explicit
+current-thread maintainer direction, perform only the exact duplicate check and contribution-channel
+check needed to report the next action; do not enumerate unrelated repository history. When no such
+direction exists, inspect only the nearest relevant examples needed to establish a consistent
+pattern, and state residual uncertainty instead of continuing an open-ended search.
+
 ## Choose exactly one decision
 
 - `PROCEED`: repository evidence supports the change, no exact or near duplicate owns the outcome,

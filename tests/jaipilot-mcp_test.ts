@@ -81,6 +81,7 @@ Deno.test("maintainer intent fails closed before upstream implementation", async
     /`PROCEED`[\s\S]+`JOIN_EXISTING`[\s\S]+`COMMENT`[\s\S]+`WAIT`[\s\S]+`NO_ACTION`/,
   );
   assert.match(history, /Any unresolved blocker prevents `PROCEED`/);
+  assert.match(history, /do not enumerate unrelated repository history/);
   assert.match(
     history,
     /does not authorize a comment, issue, branch, commit, push, or pull\s+request/,

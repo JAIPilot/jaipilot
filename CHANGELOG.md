@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.5.1] - 2026-08-28
+
+### Changed
+
+- Bounded maintainer-history research after decisive current-thread evidence so the skill checks
+  only duplicates and contribution mechanics instead of continuing an open-ended repository scan.
+
 ## [6.5.0] - 2026-08-28
 
 ### Added
