@@ -49,7 +49,7 @@ companion implementation.
 
 | ID | Companion | Source upgrade | Evidence | Verified state on 2026-08-28 |
 | --- | --- | --- | --- | --- |
-| U-001 | [Kestra #73](https://github.com/kestra-io/plugin-email/pull/73) | [#60](https://github.com/kestra-io/plugin-email/pull/60) | Candidate | Open |
+| U-001 | [Kestra #73](https://github.com/kestra-io/plugin-email/pull/73) | [#60](https://github.com/kestra-io/plugin-email/pull/60) | Accepted | Merged; source merged |
 | U-002 | [Species Lists #814](https://github.com/AtlasOfLivingAustralia/species-lists/pull/814) | [#761](https://github.com/AtlasOfLivingAustralia/species-lists/pull/761) | Candidate | Open |
 | U-003 | [PIT #1497](https://github.com/hcoles/pitest/pull/1497) | [#1460](https://github.com/hcoles/pitest/pull/1460) | Accepted | Merged |
 | U-004 | [Donkey Kong #51](https://github.com/mircoterenzi/donkey-kong/pull/51) | [#41](https://github.com/mircoterenzi/donkey-kong/pull/41) | Unadopted | Closed by repository actor |
@@ -83,19 +83,27 @@ companion implementation.
 ## U-001 — Simple Java Mail 9 removed recipient shortcuts
 
 **Source upgrade:** Kestra [#60](https://github.com/kestra-io/plugin-email/pull/60), Simple
-Java Mail 8.12.6 to 9.1.0, observed bot head `02f6b7d94b1d4395f7f5942d98676aa33f3050d0`.
+Java Mail 8.12.6 to 9.1.0. Its final observed head was
+`251fef8b52404c9e6c21987eb389d2c3f535c21d`, merged as
+`ffbb90673ce69f9b70f0074db4d88466bdcdfdd4`.
 
-**Companion:** [#73](https://github.com/kestra-io/plugin-email/pull/73), observed head
-`c23b0baa70e667ccf6ecb4e041a046d516e15355`, targeting the bot branch.
+**Companion:** [#73](https://github.com/kestra-io/plugin-email/pull/73), final head
+`d188c32486007699e163a519fa66bc40a49505cd`, merged as
+`243d914b6d2e9b1cc3720693f49dd0b96b21b10d` into the bot branch.
 
 **Failure and candidate:** Removed `to`, `cc`, and `bcc` builders required migration to
 `withRecipients`; MIME assertions also had to follow the library's equivalent filename
 serialization while retaining `Content-Disposition` proof.
 
-**Outcome:** Candidate; open without substantive maintainer review.
+**Outcome:** Accepted. A Kestra maintainer verified the removed 9.1 API directly, approved the
+`withRecipients` migration, confirmed recipient and MIME behavior, found no blocking guideline,
+security, or performance issue, and added the final named-error commit for missing `to`/`from`
+values. The companion merged at 2026-08-28 09:07 UTC, the source upgrade merged two minutes later,
+and post-merge CI passed, including all 13 reported Java tests.
 
 **Transfer:** For removed fluent APIs, preserve recipient type, parsing, and wire-level MIME
-semantics instead of mechanically renaming methods.
+semantics instead of mechanically renaming methods. Named validation errors may be part of the
+maintainer-accepted migration even when the original failure is compilation.
 
 ## U-002 — Spring Boot 4 removed transitive and package compatibility
 

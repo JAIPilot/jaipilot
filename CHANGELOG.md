@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.6.2] - 2026-08-28
+
+### Changed
+
+- Promoted dependency-upgrade record U-001 to accepted after a Kestra maintainer reviewed and
+  merged the companion, added the final named-validation-error commit, merged the underlying
+  Dependabot upgrade, and completed successful post-merge CI.
+
 ## [6.6.1] - 2026-08-28
 
 ### Fixed

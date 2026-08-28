@@ -148,9 +148,9 @@ Deno.test("the optional cross-repository record covers the dependency-upgrade ca
   assert.deepEqual(indexRows.map((row) => row[1]), expected);
   assert.equal(new Set(indexRows.map((row) => row[2])).size, 30);
   assert.equal(new Set(indexRows.map((row) => row[3])).size, 26);
-  assert.equal(indexRows.filter((row) => row[4] === "Accepted").length, 2);
+  assert.equal(indexRows.filter((row) => row[4] === "Accepted").length, 3);
   assert.equal(indexRows.filter((row) => row[4] === "Maintainer-directed").length, 6);
-  assert.equal(indexRows.filter((row) => row[4] === "Candidate").length, 13);
+  assert.equal(indexRows.filter((row) => row[4] === "Candidate").length, 12);
   assert.equal(indexRows.filter((row) => row[4] === "Unadopted").length, 9);
 
   const revisions = [...knowledge.matchAll(/`([0-9a-f]{40})`/g)];
