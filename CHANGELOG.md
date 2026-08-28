@@ -1,5 +1,17 @@
 # Changelog
 
+## [6.6.1] - 2026-08-28
+
+### Fixed
+
+- Scoped the optional cross-repository record exclusively to dependency and version upgrades.
+- Replaced the generic examples with all 30 public `skrcode` companion PRs from the
+  dependency-bot repair campaign, including exact source identities, failure classes, delivery
+  channels, evidence grades, maintainer direction, duplicates, superseded work, and unadopted
+  attempts.
+- Prevented open or self-closed candidates from being treated as accepted cross-repository
+  precedent when maintainer intent makes the final decision.
+
 ## [6.6.0] - 2026-08-28
 
 ### Added

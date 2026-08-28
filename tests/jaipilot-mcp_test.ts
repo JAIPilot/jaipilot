@@ -88,13 +88,14 @@ Deno.test("maintainer intent fails closed before upstream implementation", async
   );
   assert.match(
     history,
-    /If the user supplies or names a cross-repository knowledge file/,
+    /use it only for a dependency or version\s+upgrade/,
   );
-  assert.match(history, /Do not search for or load\s+such a file automatically/);
+  assert.match(history, /For unrelated maintenance, report it as out of scope and ignore it/);
   assert.match(
     history,
-    /only its\s+independently verified sources enter the ranking below/,
+    /`Accepted` records as precedent,[\s\S]+`Candidate` records only as diagnostic\s+hypotheses,[\s\S]+`Unadopted` records as warnings/,
   );
+  assert.match(history, /choose the delivery channel and one\s+final decision/);
 
   const optimize = await Deno.readTextFile(
     new URL("skills/jaipilot-optimize-java/SKILL.md", PLUGIN),
@@ -103,40 +104,33 @@ Deno.test("maintainer intent fails closed before upstream implementation", async
   assert.match(optimize, /Continue only when its decision\s+is `PROCEED`/);
 });
 
-Deno.test("the optional cross-repository record is transparent and evidence bounded", async () => {
+Deno.test("the optional cross-repository record covers the dependency-upgrade campaign", async () => {
   const knowledge = await Deno.readTextFile(
     new URL("CROSS_REPO_KNOWLEDGE.md", ROOT),
   );
 
   assert.match(knowledge, /optional input, not product state/i);
-  assert.match(
-    knowledge,
-    /Revalidate every relevant link, revision,\s+version, constraint, and outcome/,
-  );
-  assert.match(
-    knowledge,
-    /Transfer a hypothesis and its\s+proof requirements, never a patch blindly/,
-  );
-  assert.match(
-    knowledge,
-    /Do not add private repository information, customer source/,
-  );
+  assert.match(knowledge, /version-upgrade work only/i);
+  assert.match(knowledge, /30 companion attempts covering 26 source upgrades/);
+  assert.match(knowledge, /Performance, cleanup, refactoring[\s\S]+do not belong here/);
+  assert.match(knowledge, /Never add private repositories, customer source, credentials/);
 
-  const records = [...knowledge.matchAll(/^## (K-\d{3}) — /gm)].map((match) => match[1]);
-  assert.deepEqual(records, ["K-001", "K-002", "K-003", "K-004"]);
+  const expected = Array.from(
+    { length: 30 },
+    (_, index) => `U-${String(index + 1).padStart(3, "0")}`,
+  );
+  const records = [...knowledge.matchAll(/^## (U-\d{3}) — /gm)].map((match) => match[1]);
+  assert.deepEqual(records, expected);
   assert.equal(new Set(records).size, records.length);
 
-  for (const section of knowledge.split(/^## K-\d{3} — /m).slice(1)) {
+  for (const section of knowledge.split(/^## U-\d{3} — /m).slice(1)) {
     for (
       const field of [
-        "**Status:**",
-        "**Last verified:**",
-        "**Source identities:**",
-        "**Fingerprint:**",
-        "**Transferable knowledge:**",
-        "**Transfer checks:**",
-        "**Do not infer:**",
-        "**Outcome history:**",
+        "**Source upgrade:**",
+        "**Companion:**",
+        "**Failure and candidate:**",
+        "**Outcome:**",
+        "**Transfer:**",
       ]
     ) {
       assert.equal(
@@ -145,10 +139,22 @@ Deno.test("the optional cross-repository record is transparent and evidence boun
         `knowledge record is missing ${field}`,
       );
     }
+    assert.match(section, /`[0-9a-f]{40}`/);
   }
 
+  const indexRows = [...knowledge.matchAll(
+    /^\| (U-\d{3}) \| \[[^\]]+\]\((https:\/\/github\.com\/[^)]+\/pull\/\d+)\) \| \[#\d+\]\((https:\/\/github\.com\/[^)]+\/pull\/\d+)\) \| (Accepted|Maintainer-directed|Candidate|Unadopted) \|/gm,
+  )];
+  assert.deepEqual(indexRows.map((row) => row[1]), expected);
+  assert.equal(new Set(indexRows.map((row) => row[2])).size, 30);
+  assert.equal(new Set(indexRows.map((row) => row[3])).size, 26);
+  assert.equal(indexRows.filter((row) => row[4] === "Accepted").length, 2);
+  assert.equal(indexRows.filter((row) => row[4] === "Maintainer-directed").length, 6);
+  assert.equal(indexRows.filter((row) => row[4] === "Candidate").length, 13);
+  assert.equal(indexRows.filter((row) => row[4] === "Unadopted").length, 9);
+
   const revisions = [...knowledge.matchAll(/`([0-9a-f]{40})`/g)];
-  assert.equal(revisions.length >= 11, true);
+  assert.equal(revisions.length >= 50, true);
   assert.equal(/https?:\/\/(?!github\.com\/)/.test(knowledge), false);
 });
 
