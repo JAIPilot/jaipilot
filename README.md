@@ -31,133 +31,152 @@ codex mcp add jaipilot --url https://api.jaipilot.com/functions/v1/jaipilot/mcp
 
 ### Example prompts
 
-Open a Java repository and ask JAIPilot the same way you would ask a teammate.
+Open a Java repository and ask JAIPilot the same way you would ask a teammate. Each example shows
+the skills JAIPilot selects and why that workflow helps.
 
-**Check whether an issue is worth picking up**
+#### Check whether an issue is worth picking up
+
+**Prompt**
 
 ```text
 Can you look into issue #184 and tell me whether I should work on it, or if someone is already
 handling the same problem?
 ```
 
-**JAIPilot flow:** `jaipilot-maintainer-intent` researches the issue, related work, contribution
-rules, and code history before recommending whether to proceed, join existing work, ask, wait, or
-stop.
+> **Skills and flow:** `jaipilot-maintainer-intent` researches the issue, related work, contribution
+> rules, and code history before recommending whether to proceed, join existing work, ask, wait, or
+> stop.
+>
+> **Why it helps:** You avoid duplicating another contributor's work or building a fix maintainers
+> are unlikely to accept.
 
-**Benefit:** You avoid duplicating another contributor's work or building a fix maintainers are
-unlikely to accept.
+#### Get a branch ready to merge
 
-**Get a branch ready to merge**
+**Prompt**
 
 ```text
 I've finished the changes on this branch. Can you make sure they're ready to merge?
 ```
 
-**JAIPilot flow:** `jaipilot-optimize-java` coordinates bounded cleanup and improvement,
-`jaipilot-generate-tests` fills meaningful test gaps, and `jaipilot-review-diff` reviews the complete
-result. `jaipilot-fast-execution` and `jaipilot-remote-java` accelerate substantial verification
-when safe and useful.
+> **Skills and flow:** `jaipilot-optimize-java` coordinates bounded cleanup and improvement,
+> `jaipilot-generate-tests` fills meaningful test gaps, and `jaipilot-review-diff` reviews the
+> complete result. `jaipilot-fast-execution` and `jaipilot-remote-java` accelerate substantial
+> verification when safe and useful.
+>
+> **Why it helps:** You get a smaller, reviewed change with missing tests added and the repository's
+> real checks run before handoff.
 
-**Benefit:** You get a smaller, reviewed change with missing tests added and the repository's real
-checks run before handoff.
+#### Upgrade a framework and its dependencies
 
-**Upgrade a framework and its dependencies**
+**Prompt**
 
 ```text
 Can you upgrade this Spring Boot service and its outdated dependencies while keeping Java 17
 support?
 ```
 
-**JAIPilot flow:** `jaipilot-clean-java` inventories and modernizes the requested dependency and
-build paths. `jaipilot-openrewrite` is selected only when a repeated type-aware migration justifies
-it, followed by `jaipilot-generate-tests`, `jaipilot-review-diff`, `jaipilot-fast-execution`, and
-`jaipilot-remote-java` as applicable.
+> **Skills and flow:** `jaipilot-clean-java` inventories and modernizes the requested dependency and
+> build paths. `jaipilot-openrewrite` is selected only when a repeated type-aware migration justifies
+> it, followed by `jaipilot-generate-tests`, `jaipilot-review-diff`, `jaipilot-fast-execution`, and
+> `jaipilot-remote-java` as applicable.
+>
+> **Why it helps:** Upgrades stay compatible, reversible, and verified instead of becoming a broad
+> version bump with hidden runtime or transitive-dependency breakage.
 
-**Benefit:** Upgrades stay compatible, reversible, and verified instead of becoming a broad version
-bump with hidden runtime or transitive-dependency breakage.
+#### Fix a failing dependency-bot update
 
-**Fix a failing dependency-bot update**
+**Prompt**
 
 ```text
 Dependabot's Jackson update is failing CI. Can you figure out why and fix it?
 ```
 
-**JAIPilot flow:** `jaipilot-maintainer-intent` checks the bot PR, maintainer direction, related
-attempts, and the correct delivery path. The supported fix then uses `jaipilot-clean-java` or
-`jaipilot-openrewrite`, followed by `jaipilot-generate-tests` and `jaipilot-review-diff`.
-Substantial commands use `jaipilot-fast-execution` and `jaipilot-remote-java` when appropriate.
+> **Skills and flow:** `jaipilot-maintainer-intent` checks the bot PR, maintainer direction, related
+> attempts, and the correct delivery path. The supported fix then uses `jaipilot-clean-java` or
+> `jaipilot-openrewrite`, followed by `jaipilot-generate-tests` and `jaipilot-review-diff`.
+> Substantial commands use `jaipilot-fast-execution` and `jaipilot-remote-java` when appropriate.
+>
+> **Why it helps:** The agent fixes the actual compatibility problem on the right branch instead of
+> merely forcing the bot's version change through CI.
 
-**Benefit:** The agent fixes the actual compatibility problem on the right branch instead of merely
-forcing the bot's version change through CI.
+#### Add tests for a service change
 
-**Add tests for a service change**
+**Prompt**
 
 ```text
 Please add unit tests for my changes to OrderService, especially the validation and error cases.
 ```
 
-**JAIPilot flow:** `jaipilot-generate-tests` maps the requested classes and useful cases, creates and
-executes safely independent test-class work in parallel, and reports fresh configured coverage or
-mutation evidence. `jaipilot-fast-execution` and `jaipilot-remote-java` accelerate the test and
-verification work when applicable.
+> **Skills and flow:** `jaipilot-generate-tests` maps the requested classes and useful cases, creates
+> and executes safely independent test-class work in parallel, and reports fresh configured coverage
+> or mutation evidence. `jaipilot-fast-execution` and `jaipilot-remote-java` accelerate the test and
+> verification work when applicable.
+>
+> **Why it helps:** You get behavior-focused tests across the complete requested scope, not hollow
+> tests written only to inflate a coverage number.
 
-**Benefit:** You get behavior-focused tests across the complete requested scope, not hollow tests
-written only to inflate a coverage number.
+#### Simplify a difficult module
 
-**Simplify a difficult module**
+**Prompt**
 
 ```text
 This payments module has become hard to follow. Can you remove dead code and simplify it without
 changing its behavior?
 ```
 
-**JAIPilot flow:** `jaipilot-clean-java` proves what can be removed or consolidated and keeps
-uncertain candidates. `jaipilot-generate-tests` covers concrete regression gaps, and
-`jaipilot-review-diff` checks the final patch. Verification routes through `jaipilot-fast-execution`
-and `jaipilot-remote-java` when useful.
+> **Skills and flow:** `jaipilot-clean-java` proves what can be removed or consolidated and keeps
+> uncertain candidates. `jaipilot-generate-tests` covers concrete regression gaps, and
+> `jaipilot-review-diff` checks the final patch. Verification routes through
+> `jaipilot-fast-execution` and `jaipilot-remote-java` when useful.
+>
+> **Why it helps:** The module becomes easier to maintain without speculative deletion, silent API
+> breakage, or a cleanup that only looks smaller.
 
-**Benefit:** The module becomes easier to maintain without speculative deletion, silent API
-breakage, or a cleanup that only looks smaller.
+#### Review work before opening a pull request
 
-**Review work before opening a pull request**
+**Prompt**
 
 ```text
 Can you review my current diff before I open a pull request?
 ```
 
-**JAIPilot flow:** `jaipilot-review-diff` reads the complete Java and build change, checks behavior,
-compatibility, unnecessary code, and missing proof, then runs the applicable repository checks via
-`jaipilot-fast-execution` and `jaipilot-remote-java` when appropriate.
+> **Skills and flow:** `jaipilot-review-diff` reads the complete Java and build change, checks
+> behavior, compatibility, unnecessary code, and missing proof, then runs the applicable repository
+> checks via `jaipilot-fast-execution` and `jaipilot-remote-java` when appropriate.
+>
+> **Why it helps:** You get ranked, evidence-backed findings across the whole change rather than a
+> shallow review of the most obvious file.
 
-**Benefit:** You get ranked, evidence-backed findings across the whole change rather than a shallow
-review of the most obvious file.
+#### Speed up a slow endpoint
 
-**Speed up a slow endpoint**
+**Prompt**
 
 ```text
 The /orders endpoint gets slow for large accounts. Can you find the bottleneck and improve it?
 ```
 
-**JAIPilot flow:** `jaipilot-optimize-java` bounds the change, `jaipilot-clean-java` profiles and
-tests measured hypotheses, `jaipilot-generate-tests` protects behavior, and
-`jaipilot-review-diff` checks the candidate. `jaipilot-fast-execution` and
-`jaipilot-remote-java` provide controlled execution and comparable measurements.
+> **Skills and flow:** `jaipilot-optimize-java` bounds the change, `jaipilot-clean-java` profiles and
+> tests measured hypotheses, `jaipilot-generate-tests` protects behavior, and
+> `jaipilot-review-diff` checks the candidate. `jaipilot-fast-execution` and
+> `jaipilot-remote-java` provide controlled execution and comparable measurements.
+>
+> **Why it helps:** The retained optimization is tied to a real bottleneck and repeatable evidence,
+> not a plausible-looking micro-optimization or one noisy timing.
 
-**Benefit:** The retained optimization is tied to a real bottleneck and repeatable evidence, not a
-plausible-looking micro-optimization or one noisy timing.
+#### Run a slow build faster
 
-**Run a slow build faster**
+**Prompt**
 
 ```text
 Our full Gradle build takes about 20 minutes. Can you run it faster and tell me where the time goes?
 ```
 
-**JAIPilot flow:** `jaipilot-fast-execution` sizes safe batching and native build parallelism for
-the available resources. `jaipilot-remote-java` offloads the work when the repository does not need
-laptop-only services or state.
-
-**Benefit:** You reduce wall time without skipping tests, weakening gates, or creating misleading
-results through unsafe concurrency.
+> **Skills and flow:** `jaipilot-fast-execution` sizes safe batching and native build parallelism for
+> the available resources. `jaipilot-remote-java` offloads the work when the repository does not need
+> laptop-only services or state.
+>
+> **Why it helps:** You reduce wall time without skipping tests, weakening gates, or creating
+> misleading results through unsafe concurrency.
 
 Codex signs in through JAIPilot's OAuth consent and connects to one MCP URL. The server publishes
 all eight Java skills through `skills/list`, `skills/get`, digest-verified `resources/read`, and
