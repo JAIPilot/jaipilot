@@ -27,13 +27,13 @@ jobs:
           git fetch origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
-      - name: Validate skills and MCP plugin
+      - name: Validate JAIPilot distribution
         run: deno task check
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          name: JAIPilot Plugin
+          name: JAIPilot
           generate_release_notes: true
 
   publish-mcp:
@@ -74,6 +74,6 @@ jobs:
         if: steps.registry.outputs.published == 'false'
         run: ./mcp-publisher login github-oidc
 
-      - name: Publish JAIPilot Remote
+      - name: Publish JAIPilot
         if: steps.registry.outputs.published == 'false'
         run: ./mcp-publisher publish server.json

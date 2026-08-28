@@ -16,7 +16,7 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Validate skills and MCP plugin
+      - name: Validate JAIPilot distribution
         run: deno task check
 
       - name: Reject whitespace errors
