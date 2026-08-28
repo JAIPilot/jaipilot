@@ -74,7 +74,8 @@ export async function handleMcpHttpRequest(
   upstreamFetch: Fetcher = fetch,
 ): Promise<Response> {
   if (request.method === "GET") {
-    if (new URL(request.url).pathname.endsWith("/.well-known/oauth-protected-resource")) {
+    const pathname = new URL(request.url).pathname;
+    if (pathname.endsWith("/mcp") || pathname.endsWith("/.well-known/oauth-protected-resource")) {
       return json({
         resource: publicMcpUrl(request),
         authorization_servers: [AUTHORIZATION_SERVER],

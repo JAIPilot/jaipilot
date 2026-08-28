@@ -146,18 +146,20 @@ Deno.test("HTTP MCP initialization starts the Codex OAuth handshake", async () =
 });
 
 Deno.test("HTTP transport publishes OAuth metadata for the combined public resource", async () => {
-  const response = await handleMcpHttpRequest(
-    new Request("http://api.jaipilot.com/.well-known/oauth-protected-resource"),
-  );
-  assert.equal(response.status, 200);
-  const metadata = await response.json();
-  assert.deepEqual(metadata, {
-    resource: PUBLIC_MCP_URL,
-    authorization_servers: ["https://otxfylhjrlaesjagfhfi.supabase.co/auth/v1"],
-    scopes_supported: ["email"],
-    bearer_methods_supported: ["header"],
-    resource_documentation: "https://github.com/JAIPilot/jaipilot#remote-build-beta",
-  });
+  for (const path of ["/mcp", "/.well-known/oauth-protected-resource"]) {
+    const response = await handleMcpHttpRequest(
+      new Request(`http://api.jaipilot.com${path}`),
+    );
+    assert.equal(response.status, 200);
+    const metadata = await response.json();
+    assert.deepEqual(metadata, {
+      resource: PUBLIC_MCP_URL,
+      authorization_servers: ["https://otxfylhjrlaesjagfhfi.supabase.co/auth/v1"],
+      scopes_supported: ["email"],
+      bearer_methods_supported: ["header"],
+      resource_documentation: "https://github.com/JAIPilot/jaipilot#remote-build-beta",
+    });
+  }
 });
 
 Deno.test("HTTP tool methods preserve OAuth while forwarding no cookies or browser origin", async () => {
