@@ -65,6 +65,34 @@ Deno.test("Java verification workflows prefer remote execution without a laptop 
   }
 });
 
+Deno.test("maintainer intent fails closed before upstream implementation", async () => {
+  const history = await Deno.readTextFile(
+    new URL("skills/jaipilot-maintainer-intent/SKILL.md", PLUGIN),
+  );
+  assert.match(history, /read the complete conversation/i);
+  assert.match(history, /open and closed issues and pull requests/i);
+  assert.match(history, /git log`, `git blame`, and the introducing commit/);
+  assert.match(
+    history,
+    /direct default-branch pull request versus a patch onto an\s+existing bot branch/,
+  );
+  assert.match(
+    history,
+    /`PROCEED`[\s\S]+`JOIN_EXISTING`[\s\S]+`COMMENT`[\s\S]+`WAIT`[\s\S]+`NO_ACTION`/,
+  );
+  assert.match(history, /Any unresolved blocker prevents `PROCEED`/);
+  assert.match(
+    history,
+    /does not authorize a comment, issue, branch, commit, push, or pull\s+request/,
+  );
+
+  const optimize = await Deno.readTextFile(
+    new URL("skills/jaipilot-optimize-java/SKILL.md", PLUGIN),
+  );
+  assert.match(optimize, /invoke `jaipilot-maintainer-intent` before editing/);
+  assert.match(optimize, /Continue only when its decision\s+is `PROCEED`/);
+});
+
 Deno.test("performance workflow uses one exact-capacity workspace and rejects weak evidence", async () => {
   const remote = await Deno.readTextFile(
     new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),

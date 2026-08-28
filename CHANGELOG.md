@@ -1,5 +1,17 @@
 # Changelog
 
+## [6.5.0] - 2026-08-28
+
+### Added
+
+- Added `jaipilot-maintainer-intent`, a read-only repository-history preflight that chooses one of
+  `PROCEED`, `JOIN_EXISTING`, `COMMENT`, `WAIT`, or `NO_ACTION` before upstream Java maintenance.
+
+### Changed
+
+- Made the controlling optimization workflow require a `PROCEED` decision before editing an
+  unfamiliar upstream repository or failed dependency-bot change.
+
 ## [6.4.2] - 2026-08-26
 
 ### Changed

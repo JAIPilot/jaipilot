@@ -5,6 +5,7 @@
 JAIPilot helps your coding agent:
 
 - keep changes lean and reduce agent drift;
+- read maintainer history before proposing upstream work;
 - add meaningful tests and verify behavior;
 - remove proven waste and simplify complexity;
 - review risky Java changes;

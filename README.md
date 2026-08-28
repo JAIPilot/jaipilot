@@ -6,8 +6,8 @@
 
 **Ship better Java with your coding agent.**
 
-JAIPilot helps Codex and Claude Code clean, test, review, modernize, and optimize real Java
-repositories without drifting into unnecessary code or unproved changes.
+JAIPilot helps Codex and Claude Code research maintainer intent, clean, test, review, modernize, and
+optimize real Java repositories without drifting into unnecessary code or unproved changes.
 
 By default, your agent runs Java builds, tests, analysis, profiling, and benchmarks on a ready
 remote Java machine whenever the task does not require laptop-only access or state.
@@ -207,18 +207,19 @@ coverage, code reduction, or speed.
 
 Clients that consume the official MCP Registry can discover the hosted remote tools as
 `io.github.JAIPilot/jaipilot`. This installs remote execution only; install the Codex or Claude Code
-plugin above for the six Java engineering skills as well.
+plugin above for the seven Java engineering skills as well.
 
 ## Included skills
 
-| Skill                     | Outcome                                                 |
-| ------------------------- | ------------------------------------------------------- |
-| `jaipilot-optimize-java`  | Make one bounded Java change leaner, safer, and faster. |
-| `jaipilot-generate-tests` | Add meaningful tests and fresh coverage evidence.       |
-| `jaipilot-clean-java`     | Remove waste, enforce architecture, and simplify code.   |
-| `jaipilot-review-diff`    | Find regressions, unnecessary code, and missing proof.  |
-| `jaipilot-fast-execution` | Run substantial Java verification efficiently.          |
-| `jaipilot-remote-java`    | Default applicable Java execution to remote hardware.   |
+| Skill                        | Outcome                                                   |
+| ---------------------------- | --------------------------------------------------------- |
+| `jaipilot-maintainer-intent` | Read repository history and choose the right next action. |
+| `jaipilot-optimize-java`     | Make one bounded Java change leaner, safer, and faster.   |
+| `jaipilot-generate-tests`    | Add meaningful tests and fresh coverage evidence.         |
+| `jaipilot-clean-java`        | Remove waste, enforce architecture, and simplify code.     |
+| `jaipilot-review-diff`       | Find regressions, unnecessary code, and missing proof.    |
+| `jaipilot-fast-execution`    | Run substantial Java verification efficiently.            |
+| `jaipilot-remote-java`       | Default applicable Java execution to remote hardware.     |
 
 JAIPilot can work with repository-configured tools such as JaCoCo, PIT, ArchUnit, OpenRewrite,
 Checkstyle, PMD, SpotBugs, SonarQube, JMH, and JFR. It never weakens a quality gate merely to get a

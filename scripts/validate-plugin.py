@@ -20,6 +20,7 @@ SKILLS = (
     "jaipilot-clean-java",
     "jaipilot-fast-execution",
     "jaipilot-generate-tests",
+    "jaipilot-maintainer-intent",
     "jaipilot-optimize-java",
     "jaipilot-remote-java",
     "jaipilot-review-diff",

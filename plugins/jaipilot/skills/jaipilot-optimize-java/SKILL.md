@@ -21,6 +21,10 @@ Prefer no production change to a plausible change with incomplete proof.
    silently turn a changed-code request into a repository-wide rewrite.
 5. Define the downstream-consumer boundary, expected contract, and normal clean verification.
    Record known pre-existing failures instead of attributing them to the candidate.
+6. For an upstream pull request, dependency-bot failure, or change intended for an unfamiliar
+   repository, invoke `jaipilot-maintainer-intent` before editing. Continue only when its decision
+   is `PROCEED`; honor `JOIN_EXISTING`, `COMMENT`, `WAIT`, or `NO_ACTION` without manufacturing a
+   competing patch.
 
 ## Evaluate the passes in order
 

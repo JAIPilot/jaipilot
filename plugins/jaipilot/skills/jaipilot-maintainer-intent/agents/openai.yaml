@@ -1,0 +1,4 @@
+interface:
+  display_name: "Read Maintainer Intent"
+  short_description: "Check repository history before changing code"
+  default_prompt: "Use $jaipilot-maintainer-intent to research this repository's history and decide whether I should proceed, join existing work, comment, wait, or take no action."
