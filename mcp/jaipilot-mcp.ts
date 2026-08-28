@@ -250,7 +250,9 @@ async function forwardRemoteTools(
 
 function publicMcpUrl(request: Request): string {
   const url = new URL(request.url);
-  return `${url.origin}/functions/v1/jaipilot/mcp`;
+  const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  const origin = local ? url.origin : `https://${url.host}`;
+  return `${origin}/functions/v1/jaipilot/mcp`;
 }
 
 function json(value: unknown, status = 200): Response {

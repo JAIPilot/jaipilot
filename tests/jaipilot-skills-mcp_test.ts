@@ -133,7 +133,7 @@ Deno.test("HTTP skill reads stay local and do not contact remote execution", asy
 
 Deno.test("HTTP transport publishes OAuth metadata for the combined public resource", async () => {
   const response = await handleMcpHttpRequest(
-    new Request("https://api.jaipilot.com/.well-known/oauth-protected-resource"),
+    new Request("http://api.jaipilot.com/.well-known/oauth-protected-resource"),
   );
   assert.equal(response.status, 200);
   const metadata = await response.json();
