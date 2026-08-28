@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Promoted “Ship better Java with your coding agent.” into the main README heading as JAIPilot's
+  emphasized tagline.
 - Expanded the post-install README examples across JAIPilot's Java workflows, including maintainer
   research, meaningful test generation, cleanup, diff review, measured optimization, and efficient
   remote verification.

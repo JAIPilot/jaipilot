@@ -2,9 +2,7 @@
   <img src="plugins/jaipilot/assets/jaipilot-logo.svg" alt="JAIPilot" width="112">
 </p>
 
-# JAIPilot
-
-**Ship better Java with your coding agent.**
+# JAIPilot — **Ship better Java with your coding agent.**
 
 JAIPilot helps Codex and Claude Code research maintainer intent, clean, test, review, safely upgrade
 dependencies and JDKs, and optimize real Java repositories without drifting into unnecessary code
