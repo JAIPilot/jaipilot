@@ -19,7 +19,10 @@ repository-wide campaign.
    errors, ordering, identity, state transitions, transactions, serialization, security,
    concurrency, and framework lifecycle where relevant.
 4. For collection transformations, assess empty input, duplicates and multiplicity, null containers
-   and elements, encounter order, locale or normalization, mutable inputs, and missing values.
+   and elements, encounter order, locale or normalization, mutable inputs, and missing values. When
+   a candidate replaces a public accessor or derived view with its backing collection, include a
+   baseline case that makes the skipped copy, sort, validation, and exception timing observable.
+   Put a malformed later element after an earlier match to detect unsafe short-circuiting.
 5. Inspect JaCoCo or PIT declarations, executions, profiles, and lifecycle bindings. A report goal
    bound to `package` or `verify` is configured even when `test` emits no report. Only after this
    inspection may configured evidence be called unavailable; never use stale reports.

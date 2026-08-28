@@ -94,6 +94,21 @@ Deno.test("maintainer intent fails closed before upstream implementation", async
   assert.match(optimize, /Continue only when its decision\s+is `PROCEED`/);
 });
 
+Deno.test("collection-view bypasses require exception-timing characterization", async () => {
+  for (
+    const name of [
+      "jaipilot-generate-tests",
+      "jaipilot-optimize-java",
+      "jaipilot-review-diff",
+    ]
+  ) {
+    const skill = await Deno.readTextFile(new URL(`skills/${name}/SKILL.md`, PLUGIN));
+    assert.match(skill, /public accessor or\s+derived view/);
+    assert.match(skill, /copy, sort, validation, and exception timing/);
+    assert.match(skill, /malformed later element after an earlier match/);
+  }
+});
+
 Deno.test("performance workflow uses one exact-capacity workspace and rejects weak evidence", async () => {
   const remote = await Deno.readTextFile(
     new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),

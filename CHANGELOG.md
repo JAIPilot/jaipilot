@@ -1,5 +1,14 @@
 # Changelog
 
+## [6.5.2] - 2026-08-28
+
+### Changed
+
+- Require behavior baselines for public-accessor or derived-view bypasses to exercise skipped copy,
+  sort, validation, and exception timing, including a malformed later collection element after an
+  earlier match. This closes a short-circuit regression found by the live maintainer-intent Cloud
+  acceptance.
+
 ## [6.5.1] - 2026-08-28
 
 ### Changed

@@ -28,7 +28,10 @@ and keep the host agent in control.
    concurrency behavior, architecture drift, dead code, duplication, needless abstractions, and
    unrelated edits. For normalization, lookup, sorting, collection, or caching changes, explicitly
    compare nulls, empty values, duplicates and multiplicity, locale or Unicode, ordering,
-   exceptions, identity, mutability, and missing-value behavior.
+   exceptions, identity, mutability, and missing-value behavior. A bypass of a public accessor or
+   derived view must prove the skipped copy, sort, validation, and exception timing, including a
+   malformed later element after an earlier match; otherwise reject it even when ordinary tests and
+   benchmarks pass.
 3. Prefer deletion and reuse. Keep only lines required by the request or its proof.
 4. Treat repository-configured compiler checks, Checkstyle, PMD, SpotBugs, Error Prone, ArchUnit,
    SonarQube reports, and similar tools as evidence. Do not invent equivalent findings when a tool

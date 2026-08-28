@@ -20,7 +20,10 @@ Prefer no production change to a plausible change with incomplete proof.
 4. Use the user's explicit scope. Otherwise use the current Java/build diff when one exists; do not
    silently turn a changed-code request into a repository-wide rewrite.
 5. Define the downstream-consumer boundary, expected contract, and normal clean verification.
-   Record known pre-existing failures instead of attributing them to the candidate.
+   Record known pre-existing failures instead of attributing them to the candidate. If a candidate
+   bypasses a public accessor or derived view for a backing collection, require a baseline that
+   makes the accessor's copy, sort, validation, and exception timing observable, including a
+   malformed later element after an earlier match. Reject an unproved bypass.
 6. For an upstream pull request, dependency-bot failure, or change intended for an unfamiliar
    repository, invoke `jaipilot-maintainer-intent` before editing. Continue only when its decision
    is `PROCEED`; honor `JOIN_EXISTING`, `COMMENT`, `WAIT`, or `NO_ACTION` without manufacturing a
