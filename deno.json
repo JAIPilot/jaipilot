@@ -6,7 +6,6 @@
     "include": [
       "server.json",
       "plugins/jaipilot/.mcp.json",
-      "plugins/jaipilot/.codex-plugin/plugin.json",
       "mcp",
       "scripts/generate-mcp-skill-sources.ts",
       "supabase/functions/jaipilot",

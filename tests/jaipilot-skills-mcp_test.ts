@@ -22,9 +22,84 @@ Deno.test("JAIPilot advertises the standard MCP Skills extension", () => {
     }).capabilities.extensions,
     { "io.modelcontextprotocol/skills": {} },
   );
+  assert.deepEqual(
+    (response?.result as {
+      capabilities: { resources: Record<string, unknown> };
+    }).capabilities.resources,
+    { subscribe: false, listChanged: false },
+  );
   assert.equal(
     (response?.result as { serverInfo: { version: string } }).serverInfo.version,
     "6.8.0",
+  );
+});
+
+Deno.test("Standard MCP resources expose all skills without a Codex plugin", () => {
+  const first = result<{
+    resources: Array<{
+      uri: string;
+      name: string;
+      description: string;
+      mimeType: string;
+      _meta: Record<string, unknown>;
+    }>;
+    nextCursor: string;
+  }>(handleMcpRequest({
+    jsonrpc: "2.0",
+    id: "resources-1",
+    method: "resources/list",
+    params: {},
+  }));
+  assert.equal(first.resources.length, 5);
+  assert.equal(first.nextCursor, "jaipilot-resources:5");
+
+  const second = result<typeof first>(handleMcpRequest({
+    jsonrpc: "2.0",
+    id: "resources-2",
+    method: "resources/list",
+    params: { cursor: first.nextCursor },
+  }));
+  assert.equal(second.resources.length, 3);
+  assert.equal(second.nextCursor, undefined);
+
+  const resources = [...first.resources, ...second.resources];
+  assert.deepEqual(resources.map((resource) => resource.name), [
+    "jaipilot-clean-java",
+    "jaipilot-fast-execution",
+    "jaipilot-generate-tests",
+    "jaipilot-maintainer-intent",
+    "jaipilot-openrewrite",
+    "jaipilot-optimize-java",
+    "jaipilot-remote-java",
+    "jaipilot-review-diff",
+  ]);
+  for (const resource of resources) {
+    assert.equal(resource.mimeType, "mcp/skill");
+    assert.equal(resource.uri, `skill://jaipilot/${resource.name}`);
+    assert.deepEqual(resource._meta, {
+      skill_id: `jaipilot/${resource.name}`,
+      skill_name: resource.name,
+      source: "user",
+      allow_implicit_invocation: true,
+    });
+    const read = result<{ contents: Array<{ uri: string; text: string }> }>(handleMcpRequest({
+      jsonrpc: "2.0",
+      id: "resource-read",
+      method: "resources/read",
+      params: { uri: `${resource.uri}/SKILL.md` },
+    }));
+    assert.equal(read.contents[0].uri, `${resource.uri}/SKILL.md`);
+    assert.match(read.contents[0].text, new RegExp(`^---\\nname: ${resource.name}\\n`));
+  }
+
+  assert.deepEqual(
+    result(handleMcpRequest({
+      jsonrpc: "2.0",
+      id: "templates",
+      method: "resources/templates/list",
+      params: {},
+    })),
+    { resourceTemplates: [] },
   );
 });
 
@@ -103,6 +178,7 @@ Deno.test("Skills methods fail closed on invalid cursors and unlisted URIs", () 
   for (
     const request of [
       { method: "skills/list", params: { cursor: "5" } },
+      { method: "resources/list", params: { cursor: "5" } },
       { method: "skills/get", params: { uri: "skill://jaipilot/../SKILL.md" } },
       {
         method: "resources/read",
@@ -114,6 +190,77 @@ Deno.test("Skills methods fail closed on invalid cursors and unlisted URIs", () 
     const response = handleMcpRequest({ jsonrpc: "2.0", id: "invalid", ...request });
     assert.equal(response?.error?.code, -32602);
   }
+});
+
+Deno.test("HTTP skill_get fallback serves the current eight local skills", async () => {
+  let upstreamCalled = false;
+  const call = async (name?: string) => {
+    const response = await handleMcpHttpRequest(
+      request({
+        jsonrpc: "2.0",
+        id: "skill-tool",
+        method: "tools/call",
+        params: { name: "skill_get", arguments: name ? { name } : {} },
+      }, "Bearer public-skill-reader"),
+      () => {
+        upstreamCalled = true;
+        return Promise.reject(new Error("must not be called"));
+      },
+    );
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.result.isError, undefined);
+    return JSON.parse(body.result.content[0].text);
+  };
+
+  const catalog = await call();
+  assert.equal(catalog.version, "6.8.0");
+  assert.equal(catalog.skills.length, 8);
+  assert.equal(
+    catalog.skills.some((skill: { name: string }) => skill.name === "jaipilot-openrewrite"),
+    true,
+  );
+  assert.equal("content" in catalog.skills[0].files[0], false);
+
+  const selected = await call("jaipilot-openrewrite");
+  assert.equal(selected.skill.name, "jaipilot-openrewrite");
+  assert.match(selected.skill.files[0].content, /# Run clean Java migrations with OpenRewrite/);
+  assert.match(selected.skill.files[0].digest, /^sha256:[0-9a-f]{64}$/);
+  assert.equal(upstreamCalled, false);
+});
+
+Deno.test("HTTP tools list replaces the stale upstream skill catalog", async () => {
+  const response = await handleMcpHttpRequest(
+    request(
+      { jsonrpc: "2.0", id: "tools", method: "tools/list", params: {} },
+      "Bearer opaque-user-token",
+    ),
+    () =>
+      Promise.resolve(jsonResponse({
+        jsonrpc: "2.0",
+        id: "tools",
+        result: {
+          tools: [
+            {
+              name: "skill_get",
+              description: "stale seven-skill catalog",
+              inputSchema: { type: "object" },
+            },
+            { name: "workspace_prepare", inputSchema: { type: "object" } },
+          ],
+        },
+      })),
+  );
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  const tools = body.result.tools;
+  assert.deepEqual(tools.map((tool: { name: string }) => tool.name), [
+    "skill_get",
+    "workspace_prepare",
+  ]);
+  assert.match(tools[0].description, /eight versioned Java skills/);
+  assert.equal(tools[0].inputSchema.properties.name.enum.length, 8);
+  assert.equal(tools[0].inputSchema.properties.name.enum.includes("jaipilot-openrewrite"), true);
 });
 
 Deno.test("HTTP skill reads stay local and do not contact remote execution", async () => {
@@ -242,4 +389,10 @@ async function sha256(value: string): Promise<string> {
   return [...new Uint8Array(digest)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+}
+
+function jsonResponse(value: unknown): Response {
+  return new Response(JSON.stringify(value), {
+    headers: { "content-type": "application/json" },
+  });
 }

@@ -38,11 +38,13 @@ remove unnecessary code, improve only performance you can measure, and run the f
 Use JAIPilot Remote for substantial Java commands unless this work needs my laptop.
 ```
 
-Codex signs in through JAIPilot's OAuth consent, then discovers the eight Java skills from that MCP
-server through standard `skills/list`, `skills/get`, and `resources/read` requests. It reads only the
-selected skill files and refreshes them when their SHA-256 digests change; signing in creates no
-upload, workspace, or compute, and there is no Codex plugin or local skill-copy installation. Claude
-Code retains the plugin path for clients that do not yet consume the Skills extension.
+Codex signs in through JAIPilot's OAuth consent and connects to one MCP URL. The server publishes
+all eight Java skills through `skills/list`, `skills/get`, digest-verified `resources/read`, and
+standard `mcp/skill` resources. Codex builds that promote remote skills can load only the selected
+files and refresh them when their SHA-256 digests change. Other builds use the same server's
+read-only `skill_get` fallback, which returns those exact versioned files instead of an older cloud
+copy. Signing in creates no upload, workspace, or compute, and there is no Codex plugin or local
+skill-copy installation. Claude Code retains its plugin path.
 
 When remote execution is useful, your agent asks before uploading the current tracked and unignored
 Git files. Approve the upload; if authentication is not already active, sign in when prompted. The
@@ -215,10 +217,8 @@ hosted endpoint serves the eight Java engineering skills directly and forwards o
 `tools/list`/`tools/call` to the existing bounded OAuth remote-execution service. Skill discovery
 and reads do not contact remote execution; tool calls retain its authorization and safety boundary.
 
-The catalog is paginated five skills and then three so direct clients can load all eight. OpenAI's
-current plugin-submission scanner accepts at most five uniquely named MCP skills; JAIPilot therefore
-uses the direct Codex MCP connection above instead of treating that static scanner as its
-distribution channel.
+Both skill catalogs are paginated five skills and then three so direct clients can load all eight.
+JAIPilot uses the direct Codex MCP connection above rather than a Codex plugin marketplace.
 
 ## Included skills
 

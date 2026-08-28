@@ -8,6 +8,8 @@
 - Added the standard `io.modelcontextprotocol/skills` capability with paginated `skills/list`, exact
   `skills/get`, and digest-verified `resources/read` for all eight Java skills and their referenced
   files.
+- Added standard paginated `mcp/skill` resources plus a read-only `skill_get` compatibility tool
+  backed by the same generated sources for Codex builds that do not yet promote server skills.
 - Added a deterministic generated skill bundle and drift gate so the MCP always serves the reviewed
   repository sources with exact `sha256:` resource digests.
 
@@ -18,8 +20,8 @@
 - Pointed the MCP Registry and compatibility manifests at the combined public endpoint. Static skill
   reads stay local to that endpoint, while only remote `tools/list` and `tools/call` requests are
   forwarded to the existing bounded OAuth service.
-- Preserved the Claude Code plugin and existing Codex plugin metadata as compatibility paths rather
-  than the primary Codex distribution channel.
+- Removed the Codex plugin manifest and marketplace; Codex now installs only the hosted MCP URL.
+  Preserved the Claude Code plugin for Claude's current distribution path.
 
 ### Security
 

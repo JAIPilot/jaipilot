@@ -13,7 +13,6 @@ ROOT = Path(__file__).resolve().parent.parent
 PLUGIN = ROOT / "plugins" / "jaipilot"
 PLUGIN_FILES = (
     PLUGIN / "plugin.json",
-    PLUGIN / ".codex-plugin" / "plugin.json",
     PLUGIN / ".claude-plugin" / "plugin.json",
 )
 SKILLS = (
@@ -40,7 +39,6 @@ FORBIDDEN_PATHS = (
 )
 ALLOWED_PLUGIN_ROOTS = {
     ".claude-plugin",
-    ".codex-plugin",
     ".mcp.json",
     "README.md",
     "assets",
@@ -55,8 +53,6 @@ MCP_REGISTRY_NAME = "io.github.JAIPilot/jaipilot"
 REPOSITORY_URL = "https://github.com/JAIPilot/jaipilot"
 REPOSITORY_ID = "1181029327"
 TAGLINE = "Ship better Java with your coding agent."
-PRIVACY_URL = "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md"
-TERMS_URL = "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md"
 RETIRED_BEHAVIOR_LOCK = re.compile(
     r"behaviou?r[- ]lock|lock(?:ed|ing)? (?:observable )?behaviou?r|"
     r"behaviou?r (?:baseline|candidate)|characterization",
@@ -97,24 +93,8 @@ def validate_manifests(expected_version: str) -> None:
         require(description == TAGLINE,
                 f"{label}: description must use the canonical tagline")
 
-    codex = load(PLUGIN / ".codex-plugin" / "plugin.json")
-    require(codex.get("skills") == "./skills/", "Codex manifest must expose ./skills/")
-    codex_mcp = codex.get("mcpServers")
-    require(isinstance(codex_mcp, dict) and set(codex_mcp) == {"jaipilot-remote"},
-            "Codex manifest must inline only the bundled Codex MCP binding")
     require(load(PLUGIN / "plugin.json").get("mcpServers") == "./.mcp.json",
             "Compatibility manifest must expose the bundled .mcp.json")
-    interface = codex.get("interface")
-    require(isinstance(interface, dict), "Codex interface is required")
-    prompts = interface.get("defaultPrompt")
-    require(isinstance(prompts, list) and len(prompts) == 3,
-            "Codex interface must contain three starter prompts")
-    require(interface.get("privacyPolicyURL") == PRIVACY_URL,
-            "Codex interface must publish the canonical privacy policy URL")
-    require(interface.get("termsOfServiceURL") == TERMS_URL,
-            "Codex interface must publish the canonical terms URL")
-    require(interface.get("shortDescription") == TAGLINE,
-            "Codex interface must use the canonical tagline")
 
 
 def validate_skills() -> None:
@@ -188,13 +168,6 @@ def validate_mcp() -> None:
         claude["jaipilot-remote"],
         ".mcp.json",
     )
-    codex = load(PLUGIN / ".codex-plugin" / "plugin.json").get("mcpServers")
-    require(isinstance(codex, dict) and set(codex) == {"jaipilot-remote"},
-            "Codex manifest must contain only jaipilot-remote")
-    validate_mcp_server(
-        codex["jaipilot-remote"],
-        ".codex-plugin/plugin.json",
-    )
     distributed = "\n".join(
         read(path) for path in PLUGIN.rglob("*")
         if path.is_file() and path.suffix in {".json", ".md", ".yaml", ".yml"}
@@ -245,17 +218,6 @@ def validate_mcp_registry(expected_version: str) -> None:
 
 
 def validate_marketplaces(expected_version: str) -> None:
-    codex = load(ROOT / ".agents" / "plugins" / "marketplace.json")
-    entries = codex.get("plugins")
-    require(isinstance(entries, list) and len(entries) == 1,
-            "Codex marketplace must contain exactly one plugin")
-    entry = entries[0]
-    require(isinstance(entry, dict) and entry.get("name") == "jaipilot",
-            "Codex marketplace must publish jaipilot")
-    source = entry.get("source")
-    require(isinstance(source, dict) and source.get("path") == "./plugins/jaipilot",
-            "Codex marketplace source must be ./plugins/jaipilot")
-
     claude = load(ROOT / ".claude-plugin" / "marketplace.json")
     metadata = claude.get("metadata")
     require(isinstance(metadata, dict) and metadata.get("description") == TAGLINE,
