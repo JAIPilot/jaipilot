@@ -1,5 +1,14 @@
 # Changelog
 
+## [6.9.4] - 2026-08-29
+
+### Changed
+
+- Extended the public dependency-upgrade record with three new Renovate companions for Pipeline
+  Maven, LangChain4j, and Jenkins Configuration as Code.
+- Recorded each immutable source and companion head, failure diagnosis, smallest repair, validation
+  evidence, current review state, and reusable upgrade lesson.
+
 ## [6.9.3] - 2026-08-29
 
 ### Changed

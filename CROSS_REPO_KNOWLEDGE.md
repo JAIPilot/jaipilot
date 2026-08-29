@@ -1,8 +1,8 @@
 # Cross-repository dependency-upgrade knowledge
 
 This file is a public, human-readable system of record for version-upgrade work only. It catalogs
-every public pull request authored by `skrcode` during the 2026-08-27 and 2026-08-28 dependency-bot
-repair campaigns: 52 companion attempts covering 48 source upgrades (46 Dependabot and two
+every public pull request authored by `skrcode` during the dependency-bot repair campaigns that
+began on 2026-08-27: 55 companion attempts covering 51 source upgrades (46 Dependabot and five
 Renovate). Performance, cleanup, refactoring, and unrelated maintainer lessons do not belong here.
 
 This is optional input, not product state. A maintainer-intent run reads it only when the user
@@ -29,7 +29,7 @@ companion implementation.
 
 1. Start from the immutable failing bot head and reproduce the same focused command on the
    candidate. Recheck the bot head immediately before publication because bot branches move.
-2. Prefer the incumbent dependency-update experience. Forty-nine of the 52 companions targeted
+2. Prefer the incumbent dependency-update experience. Fifty-two of the 55 companions targeted
    the bot branch, but follow explicit repository direction when a source-only fix belongs on the
    default branch or a maintainer requests a different upgrade shape.
 3. Diagnose the failure class before editing: removed or relocated API, split artifact, incompatible
@@ -101,6 +101,9 @@ companion implementation.
 | U-050 | [Workflow Support #430](https://github.com/jenkinsci/workflow-support-plugin/pull/430) | [#429](https://github.com/jenkinsci/workflow-support-plugin/pull/429) | Candidate | Open; all reported checks green |
 | U-051 | [URLTrigger #195](https://github.com/jenkinsci/urltrigger-plugin/pull/195) | [#188](https://github.com/jenkinsci/urltrigger-plugin/pull/188) | Candidate | Open; all reported checks green |
 | U-052 | [OIC Auth #791](https://github.com/jenkinsci/oic-auth-plugin/pull/791) | [#786](https://github.com/jenkinsci/oic-auth-plugin/pull/786) | Candidate | Open; all reported checks green |
+| U-053 | [Pipeline Maven #1513](https://github.com/jenkinsci/pipeline-maven-plugin/pull/1513) | [#1489](https://github.com/jenkinsci/pipeline-maven-plugin/pull/1489) | Candidate | Open |
+| U-054 | [LangChain4j #6218](https://github.com/langchain4j/langchain4j/pull/6218) | [#6048](https://github.com/langchain4j/langchain4j/pull/6048) | Candidate | Open |
+| U-055 | [Configuration as Code #2896](https://github.com/jenkinsci/configuration-as-code-plugin/pull/2896) | [#2891](https://github.com/jenkinsci/configuration-as-code-plugin/pull/2891) | Maintainer-directed | Open; implements explicit Spotless request |
 
 ## U-001 — Simple Java Mail 9 removed recipient shortcuts
 
@@ -1036,6 +1039,73 @@ companion checks passed.
 
 **Transfer:** For a pure package relocation, keep the diff to the affected fixture plus required
 formatting and verify the same returned type and methods under both repository JDK lanes.
+
+## U-053 — JsonUnit 6 removed the standalone JsonPath module
+
+**Source upgrade:** Pipeline Maven
+[#1489](https://github.com/jenkinsci/pipeline-maven-plugin/pull/1489), JsonUnit AssertJ 5.1.2 to
+6.2.0, observed source head `c28b606374afb5f09067276005eb2f63ce157aef`.
+
+**Companion:** [#1513](https://github.com/jenkinsci/pipeline-maven-plugin/pull/1513), observed head
+`d1a59ed7d9f12b966633747fc219e3e5c4924481`, targeting the Renovate branch.
+
+**Failure and candidate:** JsonUnit 6 moved JsonPath support into `json-unit-core` and stopped
+publishing `json-unit-json-path`. The candidate removes that obsolete explicit UI-test dependency;
+`json-unit-assertj:6.2.0` supplies the replacement core artifact transitively.
+
+**Outcome:** Candidate; open without substantive maintainer review. JDK 21 verification passed the
+five-module install and test compilation, the UI module's test compilation and Enforcer rules, and
+resolved `json-unit-assertj:6.2.0 -> json-unit-core:6.2.0`.
+
+**Transfer:** When a major release folds an optional feature module into core, remove the vanished
+artifact only after proving the surviving consumer supplies the replacement transitively and the
+affected tests still compile.
+
+## U-054 — HttpClient 5.6 required a matching HttpCore line
+
+**Source upgrade:** LangChain4j
+[#6048](https://github.com/langchain4j/langchain4j/pull/6048), HttpClient 5.3 to the security-fixed
+5.6.3, observed source head `04ca3d399b69e6020bafa396322644d2dace40cb`.
+
+**Companion:** [#6218](https://github.com/langchain4j/langchain4j/pull/6218), observed head
+`4338235839f919a2a8d922073a2e65f7615e80d3`, targeting the Renovate branch.
+
+**Failure and candidate:** OpenSearch Java supplied HttpCore 5.2.4 while HttpClient 5.6.3 required
+5.4.3, so Maven dependency convergence failed. The candidate manages only `httpcore5` at 5.4.3
+and applies the formatter's one-line whitespace correction in the same POM.
+
+**Outcome:** Candidate; the source upgrade was member-approved at the observed head, while the
+companion is open without substantive review. JDK 21 verification passed all six affected reactor
+modules, Dependency Convergence, Require Upper Bound Dependencies, the Git-aware Spotless gate, and
+the resolved `httpclient5:5.6.3 -> httpcore5:5.4.3` graph.
+
+**Transfer:** When an upgraded client raises its core-library floor against an older transitive
+consumer, manage only the conflicting core artifact at the client's required version and prove both
+the resolved path and convergence rules.
+
+## U-055 — The WireMock replacement needed native POM sorting
+
+**Source upgrade:** Configuration as Code
+[#2891](https://github.com/jenkinsci/configuration-as-code-plugin/pull/2891), replacement of
+`com.github.tomakehurst:wiremock-jre8-standalone:2.35.2` with
+`org.wiremock:wiremock-standalone:3.0.1`, observed source head
+`64f69cba5f4406f0d1979c1dc2a82958d944a498`.
+
+**Companion:** [#2896](https://github.com/jenkinsci/configuration-as-code-plugin/pull/2896),
+observed head `762ff4478bf3f16f49c102389c21f5686c087a6c`, targeting the Renovate branch.
+
+**Failure and candidate:** The replacement itself passed tests, but Spotless required the new
+WireMock dependency to sort after `jsr305`. The companion contains only the repository formatter's
+dependency-block move.
+
+**Outcome:** Maintainer-directed. A contributor with repository history approved the exact source
+head and explicitly requested `mvn spotless:apply`; the companion is open pending review. The
+plugin's 206 tests and test harness's 194 tests passed with Enforcer, SpotBugs, Checkstyle, and
+Spotless, and a final focused Spotless check passed on JDK 21.
+
+**Transfer:** When a dependency-only bot PR passes tests but fails POM formatting, run the
+repository's native formatter and preserve its exact mechanical ordering without mixing in
+coordinate or source changes.
 
 ## Maintaining this record
 

@@ -198,12 +198,12 @@ Deno.test("the optional cross-repository record covers the dependency-upgrade ca
 
   assert.match(knowledge, /optional input, not product state/i);
   assert.match(knowledge, /version-upgrade work only/i);
-  assert.match(knowledge, /52 companion attempts covering 48 source upgrades/);
+  assert.match(knowledge, /55 companion attempts covering 51 source upgrades/);
   assert.match(knowledge, /Performance, cleanup, refactoring[\s\S]+do not belong here/);
   assert.match(knowledge, /Never add private repositories, customer source, credentials/);
 
   const expected = Array.from(
-    { length: 52 },
+    { length: 55 },
     (_, index) => `U-${String(index + 1).padStart(3, "0")}`,
   );
   const records = [...knowledge.matchAll(/^## (U-\d{3}) — /gm)].map((match) => match[1]);
@@ -233,11 +233,11 @@ Deno.test("the optional cross-repository record covers the dependency-upgrade ca
     /^\| (U-\d{3}) \| \[[^\]]+\]\((https:\/\/github\.com\/[^)]+\/pull\/\d+)\) \| \[#\d+\]\((https:\/\/github\.com\/[^)]+\/pull\/\d+)\) \| (Accepted|Maintainer-directed|Candidate|Unadopted) \|/gm,
   )];
   assert.deepEqual(indexRows.map((row) => row[1]), expected);
-  assert.equal(new Set(indexRows.map((row) => row[2])).size, 52);
-  assert.equal(new Set(indexRows.map((row) => row[3])).size, 48);
+  assert.equal(new Set(indexRows.map((row) => row[2])).size, 55);
+  assert.equal(new Set(indexRows.map((row) => row[3])).size, 51);
   assert.equal(indexRows.filter((row) => row[4] === "Accepted").length, 5);
-  assert.equal(indexRows.filter((row) => row[4] === "Maintainer-directed").length, 8);
-  assert.equal(indexRows.filter((row) => row[4] === "Candidate").length, 30);
+  assert.equal(indexRows.filter((row) => row[4] === "Maintainer-directed").length, 9);
+  assert.equal(indexRows.filter((row) => row[4] === "Candidate").length, 32);
   assert.equal(indexRows.filter((row) => row[4] === "Unadopted").length, 9);
   assert.match(
     knowledge,
