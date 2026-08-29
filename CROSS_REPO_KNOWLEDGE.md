@@ -88,7 +88,7 @@ companion implementation.
 | U-037 | [Legend Engine #5139](https://github.com/finos/legend-engine/pull/5139) | [#5079](https://github.com/finos/legend-engine/pull/5079) | Candidate | Open; CLA blocks adoption |
 | U-038 | [Testcontainers #11999](https://github.com/testcontainers/testcontainers-java/pull/11999) | [#11879](https://github.com/testcontainers/testcontainers-java/pull/11879) | Candidate | Open; post-fix runtime proof unavailable |
 | U-039 | [BookKeeper #4871](https://github.com/apache/bookkeeper/pull/4871) | [#4849](https://github.com/apache/bookkeeper/pull/4849) | Candidate | Open |
-| U-040 | [MCP Server #240](https://github.com/jenkinsci/mcp-server-plugin/pull/240) | [#236](https://github.com/jenkinsci/mcp-server-plugin/pull/236) | Candidate | Open |
+| U-040 | [MCP Server #240](https://github.com/jenkinsci/mcp-server-plugin/pull/240) | [#236](https://github.com/jenkinsci/mcp-server-plugin/pull/236) | Candidate | Open; all reported checks green |
 | U-041 | [Cucumber Reports #560](https://github.com/jenkinsci/cucumber-reports-plugin/pull/560) | [#559](https://github.com/jenkinsci/cucumber-reports-plugin/pull/559) | Candidate | Open |
 | U-042 | [Parquet Format #612](https://github.com/apache/parquet-format/pull/612) | [#597](https://github.com/apache/parquet-format/pull/597) | Candidate | Open |
 | U-043 | [Dependency-Track #459](https://github.com/jenkinsci/dependency-track-plugin/pull/459) | [#455](https://github.com/jenkinsci/dependency-track-plugin/pull/455) | Candidate | Open; all reported checks green |
@@ -810,9 +810,10 @@ Renovate update of Jenkins JUnit to 1424, observed source head
 **Failure and candidate:** Added Script Security 1412 only to test scope because the intentionally
 old compatibility BOM supplied 1402 and prevented JUnit from loading in the test harness.
 
-**Outcome:** Candidate; open without substantive maintainer review. Focused and full JDK 17
-verification passed 204 tests with SpotBugs, Spotless, HPI, and license generation, and confirmed
-the dependency did not enter the production HPI manifest.
+**Outcome:** Candidate; open without substantive maintainer review and all reported checks green,
+including Jenkins Linux and Windows lanes. Focused and full JDK 17 verification passed 204 tests
+with SpotBugs, Spotless, HPI, and license generation, and confirmed the dependency did not enter the
+production HPI manifest.
 
 **Transfer:** Preserve an intentional compatibility BOM by scoping a harness-only floor to tests
 and proving it is absent from the packaged plugin.

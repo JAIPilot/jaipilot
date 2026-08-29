@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.9.5] - 2026-08-29
+
+### Fixed
+
+- Corrected the Jenkins MCP Server JUnit 1424 record to include its green Linux and Windows Jenkins
+  lanes, keeping automated build evidence distinct from still-pending maintainer review.
+
 ## [6.9.4] - 2026-08-29
 
 ### Changed
