@@ -101,7 +101,7 @@ companion implementation.
 | U-050 | [Workflow Support #430](https://github.com/jenkinsci/workflow-support-plugin/pull/430) | [#429](https://github.com/jenkinsci/workflow-support-plugin/pull/429) | Candidate | Open; all reported checks green |
 | U-051 | [URLTrigger #195](https://github.com/jenkinsci/urltrigger-plugin/pull/195) | [#188](https://github.com/jenkinsci/urltrigger-plugin/pull/188) | Candidate | Open; all reported checks green |
 | U-052 | [OIC Auth #791](https://github.com/jenkinsci/oic-auth-plugin/pull/791) | [#786](https://github.com/jenkinsci/oic-auth-plugin/pull/786) | Candidate | Open; all reported checks green |
-| U-053 | [Pipeline Maven #1513](https://github.com/jenkinsci/pipeline-maven-plugin/pull/1513) | [#1489](https://github.com/jenkinsci/pipeline-maven-plugin/pull/1489) | Candidate | Open |
+| U-053 | [Pipeline Maven #1513](https://github.com/jenkinsci/pipeline-maven-plugin/pull/1513) | [#1489](https://github.com/jenkinsci/pipeline-maven-plugin/pull/1489) | Candidate | Approved; Jenkins green; one UI lane hit Maven Central 502 |
 | U-054 | [LangChain4j #6218](https://github.com/langchain4j/langchain4j/pull/6218) | [#6048](https://github.com/langchain4j/langchain4j/pull/6048) | Candidate | Open |
 | U-055 | [Configuration as Code #2896](https://github.com/jenkinsci/configuration-as-code-plugin/pull/2896) | [#2891](https://github.com/jenkinsci/configuration-as-code-plugin/pull/2891) | Maintainer-directed | Open; implements explicit Spotless request |
 
@@ -1054,9 +1054,13 @@ formatting and verify the same returned type and methods under both repository J
 publishing `json-unit-json-path`. The candidate removes that obsolete explicit UI-test dependency;
 `json-unit-assertj:6.2.0` supplies the replacement core artifact transitively.
 
-**Outcome:** Candidate; open without substantive maintainer review. JDK 21 verification passed the
-five-module install and test compilation, the UI module's test compilation and Enforcer rules, and
-resolved `json-unit-assertj:6.2.0 -> json-unit-core:6.2.0`.
+**Outcome:** Candidate; a repository contributor approved the exact companion head, which remains
+open. Jenkins passed the Linux 25 and Windows 21 builds, tests, analyzers, packaging, and security
+scan. Three of four UI lanes passed; the remaining Firefox Global Snippet Generator lane failed
+before test execution because Maven Central returned HTTP 502 for `jackson-core:2.22.2`. JDK 21
+verification also passed the five-module install and test compilation, the UI module's test
+compilation and Enforcer rules, and resolved
+`json-unit-assertj:6.2.0 -> json-unit-core:6.2.0`.
 
 **Transfer:** When a major release folds an optional feature module into core, remove the vanished
 artifact only after proving the surviving consumer supplies the replacement transitively and the

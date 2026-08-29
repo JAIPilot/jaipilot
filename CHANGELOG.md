@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.9.6] - 2026-08-29
+
+### Changed
+
+- Updated the Pipeline Maven JsonUnit 6 record with its exact-head approval, green Jenkins Linux
+  and Windows build, three passing UI lanes, and one Maven Central HTTP 502 infrastructure failure.
+
 ## [6.9.5] - 2026-08-29
 
 ### Fixed
