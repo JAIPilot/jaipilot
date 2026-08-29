@@ -1,9 +1,9 @@
 # Cross-repository dependency-upgrade knowledge
 
 This file is a public, human-readable system of record for version-upgrade work only. It catalogs
-every public pull request authored by `skrcode` during the 2026-08-27 dependency-bot repair
-campaign: 30 companion attempts covering 26 source upgrades (25 Dependabot and one Renovate).
-Performance, cleanup, refactoring, and unrelated maintainer lessons do not belong here.
+every public pull request authored by `skrcode` during the 2026-08-27 and 2026-08-28 dependency-bot
+repair campaigns: 52 companion attempts covering 48 source upgrades (46 Dependabot and two
+Renovate). Performance, cleanup, refactoring, and unrelated maintainer lessons do not belong here.
 
 This is optional input, not product state. A maintainer-intent run reads it only when the user
 explicitly supplies or names it for a dependency or version upgrade. Each record is a search lead,
@@ -29,7 +29,7 @@ companion implementation.
 
 1. Start from the immutable failing bot head and reproduce the same focused command on the
    candidate. Recheck the bot head immediately before publication because bot branches move.
-2. Prefer the incumbent dependency-update experience. Twenty-seven of the 30 companions targeted
+2. Prefer the incumbent dependency-update experience. Forty-nine of the 52 companions targeted
    the bot branch, but follow explicit repository direction when a source-only fix belongs on the
    default branch or a maintainer requests a different upgrade shape.
 3. Diagnose the failure class before editing: removed or relocated API, split artifact, incompatible
@@ -47,7 +47,7 @@ companion implementation.
 
 ## Campaign index
 
-| ID | Companion | Source upgrade | Evidence | Verified state on 2026-08-28 |
+| ID | Companion | Source upgrade | Evidence | Verified state on 2026-08-29 |
 | --- | --- | --- | --- | --- |
 | U-001 | [Kestra #73](https://github.com/kestra-io/plugin-email/pull/73) | [#60](https://github.com/kestra-io/plugin-email/pull/60) | Accepted | Merged; source merged |
 | U-002 | [Species Lists #814](https://github.com/AtlasOfLivingAustralia/species-lists/pull/814) | [#761](https://github.com/AtlasOfLivingAustralia/species-lists/pull/761) | Candidate | Open |
@@ -57,12 +57,12 @@ companion implementation.
 | U-006 | [Kestra #74](https://github.com/kestra-io/plugin-email/pull/74) | [#60](https://github.com/kestra-io/plugin-email/pull/60) | Unadopted | Self-closed duplicate; U-001 later merged |
 | U-007 | [MariaDB4j #1376](https://github.com/MariaDB4j/MariaDB4j/pull/1376) | [#1370](https://github.com/MariaDB4j/MariaDB4j/pull/1370) | Unadopted | Self-closed; U-017 remains open |
 | U-008 | [MeDev #43](https://github.com/MrSgemaSeny/MeDev/pull/43) | [#34](https://github.com/MrSgemaSeny/MeDev/pull/34) | Unadopted | Self-closed |
-| U-009 | [Camunda #61272](https://github.com/camunda/camunda/pull/61272) | [#60956](https://github.com/camunda/camunda/pull/60956) | Maintainer-directed | Merged into `main`; source remains open |
+| U-009 | [Camunda #61272](https://github.com/camunda/camunda/pull/61272) | [#60956](https://github.com/camunda/camunda/pull/60956) | Accepted | Merged into `main`; source merged |
 | U-010 | [Maven Indexer #764](https://github.com/apache/maven-indexer/pull/764) | [#762](https://github.com/apache/maven-indexer/pull/762) | Maintainer-directed | Open against `master` |
 | U-011 | [Camunda #61284](https://github.com/camunda/camunda/pull/61284) | [#60956](https://github.com/camunda/camunda/pull/60956) | Unadopted | Self-closed duplicate of U-009 |
 | U-012 | [Spring Security #19605](https://github.com/spring-projects/spring-security/pull/19605) | [#19551](https://github.com/spring-projects/spring-security/pull/19551) | Candidate | Open |
 | U-013 | [Commons Numbers #218](https://github.com/apache/commons-numbers/pull/218) | [#217](https://github.com/apache/commons-numbers/pull/217) | Maintainer-directed | Rejected and closed; source merged |
-| U-014 | [DWH Migration Tools #1168](https://github.com/google/dwh-migration-tools/pull/1168) | [#1148](https://github.com/google/dwh-migration-tools/pull/1148) | Candidate | Open |
+| U-014 | [DWH Migration Tools #1168](https://github.com/google/dwh-migration-tools/pull/1168) | [#1148](https://github.com/google/dwh-migration-tools/pull/1148) | Candidate | Open; CLA and OSV checks block adoption |
 | U-015 | [Jenkins Allure #474](https://github.com/jenkinsci/allure-plugin/pull/474) | [#459](https://github.com/jenkinsci/allure-plugin/pull/459) | Candidate | Open |
 | U-016 | [Micrometer Tracing #1534](https://github.com/micrometer-metrics/tracing/pull/1534) | [#1533](https://github.com/micrometer-metrics/tracing/pull/1533) | Maintainer-directed | Superseded and closed |
 | U-017 | [MariaDB4j #1377](https://github.com/MariaDB4j/MariaDB4j/pull/1377) | [#1370](https://github.com/MariaDB4j/MariaDB4j/pull/1370) | Candidate | Open |
@@ -79,6 +79,28 @@ companion implementation.
 | U-028 | [Qpid Broker-J #433](https://github.com/apache/qpid-broker-j/pull/433) | [#426](https://github.com/apache/qpid-broker-j/pull/426) | Candidate | Open |
 | U-029 | [Workflow CPS #1827](https://github.com/jenkinsci/workflow-cps-plugin/pull/1827) | [#1824](https://github.com/jenkinsci/workflow-cps-plugin/pull/1824) | Accepted | Merged and approved |
 | U-030 | [Application Insights #4842](https://github.com/microsoft/ApplicationInsights-Java/pull/4842) | [#4821](https://github.com/microsoft/ApplicationInsights-Java/pull/4821) | Unadopted | Self-closed |
+| U-031 | [CXF #3410](https://github.com/apache/cxf/pull/3410) | [#3409](https://github.com/apache/cxf/pull/3409) | Maintainer-directed | Open; maintainer integrated compatibility fix and requested the test |
+| U-032 | [Karaf Decanter #731](https://github.com/apache/karaf-decanter/pull/731) | [#729](https://github.com/apache/karaf-decanter/pull/729) | Candidate | Open |
+| U-033 | [C3R #1403](https://github.com/aws/c3r/pull/1403) | [#1398](https://github.com/aws/c3r/pull/1398) | Candidate | Open |
+| U-034 | [OFBiz #1806](https://github.com/apache/ofbiz-framework/pull/1806) | [#1803](https://github.com/apache/ofbiz-framework/pull/1803) | Candidate | Open |
+| U-035 | [Artifact Manager S3 #806](https://github.com/jenkinsci/artifact-manager-s3-plugin/pull/806) | [#805](https://github.com/jenkinsci/artifact-manager-s3-plugin/pull/805) | Maintainer-directed | Companion merged; source open with changes requested |
+| U-036 | [Auditor #368](https://github.com/GrapheneOS/Auditor/pull/368) | [#360](https://github.com/GrapheneOS/Auditor/pull/360) | Maintainer-directed | Closed; maintainer will regenerate in a release batch |
+| U-037 | [Legend Engine #5139](https://github.com/finos/legend-engine/pull/5139) | [#5079](https://github.com/finos/legend-engine/pull/5079) | Candidate | Open; CLA blocks adoption |
+| U-038 | [Testcontainers #11999](https://github.com/testcontainers/testcontainers-java/pull/11999) | [#11879](https://github.com/testcontainers/testcontainers-java/pull/11879) | Candidate | Open; post-fix runtime proof unavailable |
+| U-039 | [BookKeeper #4871](https://github.com/apache/bookkeeper/pull/4871) | [#4849](https://github.com/apache/bookkeeper/pull/4849) | Candidate | Open |
+| U-040 | [MCP Server #240](https://github.com/jenkinsci/mcp-server-plugin/pull/240) | [#236](https://github.com/jenkinsci/mcp-server-plugin/pull/236) | Candidate | Open |
+| U-041 | [Cucumber Reports #560](https://github.com/jenkinsci/cucumber-reports-plugin/pull/560) | [#559](https://github.com/jenkinsci/cucumber-reports-plugin/pull/559) | Candidate | Open |
+| U-042 | [Parquet Format #612](https://github.com/apache/parquet-format/pull/612) | [#597](https://github.com/apache/parquet-format/pull/597) | Candidate | Open |
+| U-043 | [Dependency-Track #459](https://github.com/jenkinsci/dependency-track-plugin/pull/459) | [#455](https://github.com/jenkinsci/dependency-track-plugin/pull/455) | Candidate | Open; all reported checks green |
+| U-044 | [Groovy Events Listener #242](https://github.com/jenkinsci/groovy-events-listener-plugin/pull/242) | [#238](https://github.com/jenkinsci/groovy-events-listener-plugin/pull/238) | Candidate | Open; all reported checks green |
+| U-045 | [Stapler #797](https://github.com/jenkinsci/stapler/pull/797) | [#552](https://github.com/jenkinsci/stapler/pull/552) | Candidate | Open; all reported checks green |
+| U-046 | [Display URL API #306](https://github.com/jenkinsci/display-url-api-plugin/pull/306) | [#305](https://github.com/jenkinsci/display-url-api-plugin/pull/305) | Candidate | Open; all reported checks green |
+| U-047 | [Job Config History #618](https://github.com/jenkinsci/job-config-history-plugin/pull/618) | [#611](https://github.com/jenkinsci/job-config-history-plugin/pull/611) | Accepted | Approved and merged; source merged |
+| U-048 | [Publish Over #93](https://github.com/jenkinsci/publish-over-plugin/pull/93) | [#87](https://github.com/jenkinsci/publish-over-plugin/pull/87) | Candidate | Open; all reported checks green |
+| U-049 | [EC2 #2032](https://github.com/jenkinsci/ec2-plugin/pull/2032) | [#2029](https://github.com/jenkinsci/ec2-plugin/pull/2029) | Candidate | Open; all reported checks green |
+| U-050 | [Workflow Support #430](https://github.com/jenkinsci/workflow-support-plugin/pull/430) | [#429](https://github.com/jenkinsci/workflow-support-plugin/pull/429) | Candidate | Open; all reported checks green |
+| U-051 | [URLTrigger #195](https://github.com/jenkinsci/urltrigger-plugin/pull/195) | [#188](https://github.com/jenkinsci/urltrigger-plugin/pull/188) | Candidate | Open; all reported checks green |
+| U-052 | [OIC Auth #791](https://github.com/jenkinsci/oic-auth-plugin/pull/791) | [#786](https://github.com/jenkinsci/oic-auth-plugin/pull/786) | Candidate | Open; all reported checks green |
 
 ## U-001 — Simple Java Mail 9 removed recipient shortcuts
 
@@ -225,7 +247,8 @@ exclusions is not a bounded precedent merely because one build passed.
 ## U-009 — NullAway exposed an independent source contract defect
 
 **Source upgrade:** Camunda [#60956](https://github.com/camunda/camunda/pull/60956), Renovate update
-of NullAway to 0.14.0, current observed source head `2e4349f75d898cfbdd5af7a2d16f22a5e3fb5875`.
+of NullAway to 0.14.0, final source head `2e4349f75d898cfbdd5af7a2d16f22a5e3fb5875`,
+merged as `06181a1fae6abe38643de7874cd9c546708c1c96`.
 
 **Companion:** [#61272](https://github.com/camunda/camunda/pull/61272), final head
 `d71bebee336701f613ab9cdbd029c9f5a398cb80`, merged as
@@ -234,12 +257,11 @@ of NullAway to 0.14.0, current observed source head `2e4349f75d898cfbdd5af7a2d16
 **Failure and candidate:** Aligned nullable generic upper bounds between `CompletableActorFuture`
 and `ActorFuture` without changing erased signatures.
 
-**Outcome:** Maintainer-directed and merged. A maintainer said the independent source fix should
-land on `main`, or be cherry-picked into the Renovate branch. After the PR was retargeted, the
-maintainer requested removal of a merge commit. The contributor force-pushed the clean one-commit
-head recorded above; its status checks passed, the maintainer approved it, added it to the merge
-queue, and it merged at 2026-08-28 14:00 UTC. The source Renovate upgrade remains open, so this is
-maintainer-directed evidence rather than campaign-level accepted evidence.
+**Outcome:** Accepted. A maintainer said the independent source fix should land on `main`, or be
+cherry-picked into the Renovate branch. After the PR was retargeted, the maintainer requested
+removal of a merge commit. The contributor force-pushed the clean one-commit head recorded above;
+its status checks passed, the maintainer approved it, and it merged at 2026-08-28 14:00 UTC. The
+maintainer then rebased the Renovate source after the companion and merged it at 14:50 UTC.
 
 **Transfer:** An analyzer upgrade can reveal a real latent contract mismatch whose correct delivery
 is the default branch, not the bot branch. Ask when branch mechanics would create a merge commit.
@@ -321,6 +343,10 @@ gRPC 1.76.1 to 1.82.0, bot head `70a38464f95579a7e2905bd11545a4144e7d2a33`.
 Gradle's selective `io.grpc:*` lock update and verified byte-identical regeneration.
 
 **Outcome:** Candidate; open without substantive maintainer review.
+
+The 2026-08-29 reconciliation also found an unsigned Google CLA gate and a failing OSV scan on the
+companion. Neither was bypassed or represented as passing, so adoption remains blocked even though
+the dependency-lock diagnosis is retained.
 
 **Transfer:** Locate every consuming lockfile, use the repository's selective lock command, and
 require a no-diff second generation. Do not hand-edit lock entries.
@@ -603,6 +629,414 @@ candidate kept the 2.30 agent but strictly replaced two Azure slices with 2.28.1
 high compatibility and maintenance risk. Treat this only as a diagnostic experiment unless the
 vendor or repository validates mixed-version packaging.
 
+## U-031 — Tika 4 required shared detection and parsing context
+
+**Source upgrade:** CXF [#3409](https://github.com/apache/cxf/pull/3409), Tika 3.3.2 to 4.0.0,
+current observed source head `6b997de126665b767572409e0ccad83fe7345b6f`.
+
+**Companion:** [#3410](https://github.com/apache/cxf/pull/3410), observed head
+`bc24185b4c5725ecb1350a3a3203c6decadd217e`, targeting the bot branch.
+
+**Failure and candidate:** Tika 4 added `ParseContext` to detector calls. The candidate initialized
+or reused one extraction context and passed it through detection, parser selection, and parsing,
+with a focused detector-context regression test.
+
+**Outcome:** Maintainer-directed and open. A maintainer explained that CXF minor releases must
+support both old and new dependency lines, integrated the compatibility implementation into the
+source upgrade, and requested that the useful regression test be rebased or merged onto that head.
+
+**Transfer:** A major dependency bump on a maintenance branch may require dual-version source
+compatibility. Keep a validated test when a maintainer supplies the production shape, but do not
+overwrite or duplicate the maintainer's implementation.
+
+## U-032 — OSHI 7 renamed resident memory and changed JNA variants
+
+**Source upgrade:** Karaf Decanter [#729](https://github.com/apache/karaf-decanter/pull/729), OSHI
+6.12.0 to 7.6.0, observed source head `8662cb69c6b48c1c647137bc5bd7e958520d730c`.
+
+**Companion:** [#731](https://github.com/apache/karaf-decanter/pull/731), observed head
+`8aaa919d9d91b4c9160fe13d003ccbae90d5f2d9`, targeting the bot branch.
+
+**Failure and candidate:** Replaced removed `getResidentSetSize` with `getResidentMemory` while
+preserving Decanter's event key, and aligned direct JNA dependencies with OSHI's JPMS artifacts to
+avoid duplicate bundle variants.
+
+**Outcome:** Candidate; open without substantive maintainer review. Focused reactor verification,
+RAT, bundle generation, tests, and the resolved JNA dependency tree passed locally and remotely.
+
+**Transfer:** Preserve the product's external metric name when only an upstream accessor changes.
+For OSGi/JPMS upgrades, verify artifact variants in the resolved graph as well as compilation.
+
+## U-033 — Gradle 9 removed APIs used by the incumbent Shadow plugin
+
+**Source upgrade:** C3R [#1398](https://github.com/aws/c3r/pull/1398), Gradle wrapper 8.0.1 to 9.7.1,
+observed source head `b1e7b02cb27728873a71664882bb056328061d31`.
+
+**Companion:** [#1403](https://github.com/aws/c3r/pull/1403), observed head
+`8dbcfbe58e943e628992a6acb7157763fa80a6bc`, targeting the bot branch.
+
+**Failure and candidate:** Moved the application modules to the GradleUp Shadow 8.3 compatibility
+line and pinned the previous Checkstyle engine so a wrapper upgrade did not become a broad style
+rewrite.
+
+**Outcome:** Candidate; open without substantive maintainer review. The full JDK 17 Gradle build,
+tests, JaCoCo verification, Checkstyle, SpotBugs, packaging, and shadow distributions passed.
+
+**Transfer:** A build-tool major may require plugin replacement while preserving the repository's
+existing analyzer semantics. Do not silently rewrite production style to satisfy a new default.
+
+## U-034 — Mustang 2.26 crossed Tika, PDFBox, and JAXB major boundaries
+
+**Source upgrade:** OFBiz [#1803](https://github.com/apache/ofbiz-framework/pull/1803), Mustang
+2.8.0 to 2.26.0, observed source head `68af858c5ae05e0470f328eeb4826a59933a0c83`.
+
+**Companion:** [#1806](https://github.com/apache/ofbiz-framework/pull/1806), observed head
+`ae8aaa888068448b2c51a04b15d1e2772b1490db`, targeting the bot branch.
+
+**Failure and candidate:** Aligned Tika and PDFBox, added `pdfbox-io`, migrated loading to the
+PDFBox 3 `Loader` API, and used Jakarta JAXB expected by Mustang 2.26, following a related accepted
+main-line migration.
+
+**Outcome:** Candidate; open without substantive maintainer review. Compilation, Checkstyle, and
+CodeNarc passed, but a complete repository verification was not claimed.
+
+**Transfer:** A single library bump can hide several ecosystem majors. Use repository precedent for
+the migration shape and keep incomplete verification explicit.
+
+## U-035 — Tika 4 added bundled CommonMark artifacts
+
+**Source upgrade:** Artifact Manager S3 [#805](https://github.com/jenkinsci/artifact-manager-s3-plugin/pull/805),
+Tika Core 3.3.2 to 4.0.0, current source head `21b2517d23178c4ca52d6eec0892490b4ac6deb9`.
+
+**Companion:** [#806](https://github.com/jenkinsci/artifact-manager-s3-plugin/pull/806), head
+`ee864fcb37312f71dfbb73e5c389d084b19c0fcb`, merged as
+`21b2517d23178c4ca52d6eec0892490b4ac6deb9` into the bot branch.
+
+**Failure and candidate:** Strict HPI bundled-artifact validation required explicit declarations
+for the three CommonMark artifacts introduced by Tika 4.
+
+**Outcome:** Maintainer-directed. The companion merged after a clean JDK 21 verification with 40
+tests, HPI validation, SpotBugs, and Enforcer. The source upgrade remains open with an empty
+changes-requested review, so the campaign is not accepted end to end.
+
+**Transfer:** When a plugin packages new transitives, update the exact bundled-artifact allowlist
+only after inspecting the resolved HPI. A merged companion does not become accepted evidence until
+the source upgrade also lands.
+
+## U-036 — GrapheneOS reserves verification metadata for release batches
+
+**Source upgrade:** Auditor [#360](https://github.com/GrapheneOS/Auditor/pull/360), KSP 2.3.6 to
+2.3.11, observed source head `12712ce7814151a1b44234d9cf0b29842e441734`.
+
+**Companion:** [#368](https://github.com/GrapheneOS/Auditor/pull/368), head
+`955be4bd3e1e80b505d1703544f33702225bbba5`, targeting the bot branch.
+
+**Failure and candidate:** Added SHA-512 verification entries for the six newly resolved KSP JAR
+and module artifacts without removing or weakening existing trust.
+
+**Outcome:** Maintainer-directed and closed. The maintainer said verification metadata is generated
+through the project's standard process and most dependency updates are intentionally batched before
+releases rather than handled continuously.
+
+**Transfer:** Generated trust metadata is repository policy, not merely bytes. Stop when maintainers
+reserve regeneration and dependency cadence for their release process.
+
+## U-037 — HttpClient 5.6.3 conflicted with ClickHouse's HttpCore line
+
+**Source upgrade:** Legend Engine [#5079](https://github.com/finos/legend-engine/pull/5079),
+HttpClient 5.4.4 to 5.6.3, observed source head `814ecd7d68e41ffdc36a4a77e501bf61828f59ee`.
+
+**Companion:** [#5139](https://github.com/finos/legend-engine/pull/5139), observed head
+`abca47d71ba6ff17241bdee7676e8dd302d8ee22`, targeting the bot branch.
+
+**Failure and candidate:** Managed `httpcore5` and `httpcore5-h2` at 5.4.3 so HttpClient and every
+ClickHouse 5.3.4 request converge on the newer compatible core.
+
+**Outcome:** Candidate; open without substantive maintainer review. Focused effective-POM and
+dependency-tree evidence passed, but internal pre-reactor snapshots prevented a full build and an
+unsigned CLA blocks adoption.
+
+**Transfer:** Prove every convergence path, but do not mistake a resolved graph for a full reactor
+pass. A legal contribution gate remains unavailable evidence and must never be accepted silently.
+
+## U-038 — pgJDBC capped CockroachDB's SCRAM iteration count
+
+**Source upgrade:** Testcontainers [#11879](https://github.com/testcontainers/testcontainers-java/pull/11879),
+pgJDBC 42.7.10 to 42.7.12, observed source head `cc8bd7365b1c54a0f1e8e18085abcba57ebfecdf`.
+
+**Companion:** [#11999](https://github.com/testcontainers/testcontainers-java/pull/11999), observed
+head `cba0498e5e9421a5d605dcd46de88fe737c44b63`, targeting the bot branch.
+
+**Failure and candidate:** CockroachDB requested 119,680 SCRAM iterations above pgJDBC's new 100,000
+default cap. The candidate set that exact bounded value in both container APIs and asserted the
+generated URL while preserving caller overrides.
+
+**Outcome:** Candidate; open without substantive maintainer review. Compilation and Checkstyle
+passed, but Docker was unavailable, so the required post-fix CockroachDB runtime proof is missing.
+
+**Transfer:** Raise a new security bound only to the observed server requirement and preserve user
+override. Compilation cannot substitute for the unavailable integration behavior.
+
+## U-039 — Jetty patch versions changed BookKeeper's license manifests
+
+**Source upgrade:** BookKeeper [#4849](https://github.com/apache/bookkeeper/pull/4849), Jetty Server
+12.1.7 to 12.1.10, observed source head `8e580c3b3aac480c94d19102a0f80eed3de9d426`.
+
+**Companion:** [#4871](https://github.com/apache/bookkeeper/pull/4871), observed head
+`7ebb4e505a333cc10879d93a6e6c9f27db12e192`, targeting the bot branch.
+
+**Failure and candidate:** Updated nine Jetty JAR entries and their source link across the four
+checked-in binary LICENSE/NOTICE manifests.
+
+**Outcome:** Candidate; open without substantive maintainer review. All 90 reactor modules,
+distribution assembly, and the repository license checker passed on the documented pure-Rust
+native profile.
+
+**Transfer:** Patch upgrades can invalidate checked-in binary manifests without changing legal
+text. Verify every produced distribution with the repository's own license checker.
+
+## U-040 — JUnit 1424 exceeded the compatibility BOM's Script Security
+
+**Source upgrade:** MCP Server [#236](https://github.com/jenkinsci/mcp-server-plugin/pull/236),
+Renovate update of Jenkins JUnit to 1424, observed source head
+`0e447f67322072aa08b3a0e7b66ae02541e910ee`.
+
+**Companion:** [#240](https://github.com/jenkinsci/mcp-server-plugin/pull/240), observed head
+`8f658770aea26bb3d2f383761c92269ed5a2f3a3`, targeting the Renovate branch.
+
+**Failure and candidate:** Added Script Security 1412 only to test scope because the intentionally
+old compatibility BOM supplied 1402 and prevented JUnit from loading in the test harness.
+
+**Outcome:** Candidate; open without substantive maintainer review. Focused and full JDK 17
+verification passed 204 tests with SpotBugs, Spotless, HPI, and license generation, and confirmed
+the dependency did not enter the production HPI manifest.
+
+**Transfer:** Preserve an intentional compatibility BOM by scoping a harness-only floor to tests
+and proving it is absent from the packaged plugin.
+
+## U-041 — SpotBugs exposed checksum corruption on partial reads
+
+**Source upgrade:** Cucumber Reports [#559](https://github.com/jenkinsci/cucumber-reports-plugin/pull/559),
+Jenkins plugin parent 6.2189 to 6.2221, observed source head
+`f1dc486be856492ef99d4aad2b2e5e9279ef62a7`.
+
+**Companion:** [#560](https://github.com/jenkinsci/cucumber-reports-plugin/pull/560), observed head
+`d59d3e0fac1cfbde72e61ff09601997968ae5d30`, targeting the bot branch.
+
+**Failure and candidate:** The newer analyzer found that checksum code ignored the byte count from
+`read` and hashed stale buffer contents after a partial final read. The candidate hashed only the
+returned bytes and added a 1,025-byte regression case.
+
+**Outcome:** Candidate; open without substantive maintainer review. Focused and full JDK 25
+verification, 11 tests, HPI packaging, Enforcer, and SpotBugs passed.
+
+**Transfer:** Treat new analyzer findings as possible product defects, not upgrade noise. Exercise a
+buffer size that forces a partial final read before accepting the fix.
+
+## U-042 — Thrift compiler installation lagged the Maven dependency
+
+**Source upgrade:** Parquet Format [#597](https://github.com/apache/parquet-format/pull/597),
+libthrift 0.23.0 to 0.24.0, observed source head `3a4b3b49c55ac6a90236c6a536d1d3c4358c5407`.
+
+**Companion:** [#612](https://github.com/apache/parquet-format/pull/612), observed head
+`667176e64fcc18755302f9b41ccf1c870986677a`, targeting the bot branch.
+
+**Failure and candidate:** Updated the workflow download and source directory from compiler 0.23.0
+to 0.24.0 so the installed generator matches Maven's required version.
+
+**Outcome:** Candidate; open without substantive maintainer review. Clean verification and
+Javadocs passed across JDK 8, 11, 17, and 21 with RAT and generated-source compilation.
+
+**Transfer:** Generated-source tool versions are part of a dependency upgrade. Search the workflow
+and native tool installation paths, not only Maven or Gradle declarations.
+
+## U-043 — A parent upgrade exposed repeated nullable access
+
+**Source upgrade:** Dependency-Track Plugin [#455](https://github.com/jenkinsci/dependency-track-plugin/pull/455),
+Jenkins plugin parent 6.2189 to 6.2221, observed source head
+`dff2fce0eae84d565ecf9befe0c3208ec3b38ad8`.
+
+**Companion:** [#459](https://github.com/jenkinsci/dependency-track-plugin/pull/459), observed head
+`c8c9adbd07f410a37b21e130a1ad384d6bf69752`, targeting the bot branch.
+
+**Failure and candidate:** Addressed the upgraded SpotBugs null-safety findings by snapshotting
+nullable record values before check-and-use and rejecting a successful BOM upload without the token
+required for a VEX upload, while preserving project-ID and name/version request behavior.
+
+**Outcome:** Candidate; open without substantive maintainer review. JDK 21 and 25 verification each
+passed 311 tests, SpotBugs with zero findings, JaCoCo, and all reported companion checks.
+
+**Transfer:** Snapshot nullable values across check-and-use boundaries, and distinguish a transport
+success from a response that contains the token required by the next operation.
+
+## U-044 — Groovy 2.4 could not emit Java 21 bytecode
+
+**Source upgrade:** Groovy Events Listener [#238](https://github.com/jenkinsci/groovy-events-listener-plugin/pull/238),
+Jenkins plugin parent 6.2138 to 6.2221, observed source head
+`db1eebbfbc3d97f40d8a225beaeefa50885fc8bd`.
+
+**Companion:** [#242](https://github.com/jenkinsci/groovy-events-listener-plugin/pull/242), observed
+head `cb1cdc328ff8ba8a4ec4178325189956504b7c44`, targeting the bot branch.
+
+**Failure and candidate:** Configured GMavenPlus to emit Java 8 bytecode, the highest level supported
+by the runtime Groovy 2.4 compiler, while retaining the parent-selected Java 21 target for Java
+sources.
+
+**Outcome:** Candidate; open without substantive maintainer review. JDK 21 verification passed 59
+tests, SpotBugs, the CodeQL autobuild-equivalent package, class-file inspection, and all reported
+companion checks.
+
+**Transfer:** Mixed Java/Groovy builds can require distinct bytecode targets. Lower only the compiler
+that cannot emit the new class version and verify the resulting class files directly.
+
+## U-045 — Elementary 3 wrote generated resources to disk
+
+**Source upgrade:** Stapler [#552](https://github.com/jenkinsci/stapler/pull/552), Elementary 2.0.1
+to 3.0.0, observed source head `b84eabc482f7ad68b9f85680f5bc37943c8f4cee`.
+
+**Companion:** [#797](https://github.com/jenkinsci/stapler/pull/797), observed head
+`2b33da3af9734fc301d84736ea42a88dfd728823`, targeting the bot branch.
+
+**Failure and candidate:** Configured the affected processor tests with Elementary 3's class-output
+directory and read generated resources from disk instead of the removed in-memory results view.
+
+**Outcome:** Candidate; open without substantive maintainer review. All five modules, the 15
+affected processor tests, Checkstyle, SpotBugs, Spotless, and all reported companion checks passed on
+JDK 25.
+
+**Transfer:** Annotation-processor test libraries may change the storage contract without changing
+generation itself. Adapt the harness output boundary and preserve processor and diagnostic assertions.
+
+## U-046 — RestAssured 6 was unnecessary for redirect assertions
+
+**Source upgrade:** Display URL API [#305](https://github.com/jenkinsci/display-url-api-plugin/pull/305),
+RestAssured 5.5.5 to 6.0.1, observed source head `b54531edf69bff6fbf00fe56d865c86012627d0d`.
+
+**Companion:** [#306](https://github.com/jenkinsci/display-url-api-plugin/pull/306), observed head
+`9cc6ab755f9158df1283728505d7763d365a86b7`, targeting the bot branch.
+
+**Failure and candidate:** RestAssured 6 brought a newer Groovy runtime while Jenkins core supplied
+another, causing an `IndyInterface` linkage failure on JDK 25. The redirect tests only required a
+status and header, so the candidate used the existing HtmlUnit harness and removed RestAssured.
+
+**Outcome:** Candidate; open without substantive maintainer review. JDK 25 verification passed 25
+tests, SpotBugs, Enforcer, and all reported companion checks.
+
+**Transfer:** Before aligning a conflicting test dependency's runtime, ask whether the repository
+already has a smaller native fixture that proves the same HTTP contract.
+
+## U-047 — New SpotBugs accessibility checks met public plugin APIs
+
+**Source upgrade:** Job Config History [#611](https://github.com/jenkinsci/job-config-history-plugin/pull/611),
+Jenkins plugin parent 5.28 to 6.2221. Its final bot head was
+`e32f5282119ac2a464c374d52a87649b668575cf`, merged as
+`1f335722db567d7f51964a2e42405fa81b58e405`.
+
+**Companion:** [#618](https://github.com/jenkinsci/job-config-history-plugin/pull/618), head
+`b0005998f4a45b0fe6d78d18bfb999de68c9001b`, approved and merged as
+`e32f5282119ac2a464c374d52a87649b668575cf` into the bot branch.
+
+**Failure and candidate:** The new `IAOM_DO_NOT_INCREASE_METHOD_ACCESSIBILITY` finding covered seven
+intentional public overrides used by Jelly or established Java consumers. The candidate added a
+detector-specific suppression with a local justification at each boundary.
+
+**Outcome:** Accepted. A maintainer confirmed the new SpotBugs origin, approved and merged the
+companion, then merged the underlying source upgrade. Local proof covered 219 unit tests, 99
+integration tests, and zero remaining SpotBugs findings.
+
+**Transfer:** Suppression is legitimate only when a narrower visibility would break a named public
+or framework contract. Use the exact detector and justify every intentional boundary separately.
+
+## U-048 — EasyMock 5.0 class proxies failed on JDK 25
+
+**Source upgrade:** Publish Over [#87](https://github.com/jenkinsci/publish-over-plugin/pull/87),
+EasyMock 3.2 to 5.0.0, observed source head `a6dd487725a2d8e1b2e8a1e9b17f233a5daf0e8f`.
+
+**Companion:** [#93](https://github.com/jenkinsci/publish-over-plugin/pull/93), observed head
+`00ac8cd4178808c539881e51645b056f6c2453dc`, targeting the bot branch.
+
+**Failure and candidate:** Advanced the dependency to EasyMock 5.7.0, whose current proxy
+implementation avoids the package/lookup failure in 5.0.0, without changing production code.
+
+**Outcome:** Candidate; open without substantive maintainer review. JDK 25 verification passed 142
+tests, SpotBugs, Enforcer, and all reported companion checks.
+
+**Transfer:** Dependabot's requested version may be an obsolete intermediate release. Test the
+current compatible patch line before introducing source workarounds for an already-fixed runtime bug.
+
+## U-049 — The upgraded harness submitted configuration before JavaScript settled
+
+**Source upgrade:** EC2 Plugin [#2029](https://github.com/jenkinsci/ec2-plugin/pull/2029), Jenkins
+plugin parent 5.24 to 6.2221, observed source head `7335a9ce115bc01ea2eccddc618f04997b559f3f`.
+
+**Companion:** [#2032](https://github.com/jenkinsci/ec2-plugin/pull/2032), observed head
+`e8d953e8de40ef47d578bf2fe89535a20c05c5b0`, targeting the bot branch.
+
+**Failure and candidate:** Waited for background JavaScript before submitting the cloud configuration
+form so the asynchronous instance-type selector retained the chosen value. The diff also disclosed
+the upgraded parent's required formatting changes.
+
+**Outcome:** Candidate; open without substantive maintainer review. JDK 25 verification passed 335
+tests with one skip, SpotBugs, Spotless, and all reported companion checks.
+
+**Transfer:** Synchronize with the harness's real asynchronous completion signal rather than adding
+a timing sleep, and disclose mechanical formatter churn separately from the behavior fix.
+
+## U-050 — Build completion preceded final CPS persistence
+
+**Source upgrade:** Workflow Support [#429](https://github.com/jenkinsci/workflow-support-plugin/pull/429),
+Jenkins plugin parent 6.2211 to 6.2221, observed source head
+`d57ea82a75fb0d6f594531f2777c83f7a7965c60`.
+
+**Companion:** [#430](https://github.com/jenkinsci/workflow-support-plugin/pull/430), observed head
+`b6b5bcf47eea32c12146119d4d01a7530173915b`, targeting the bot branch.
+
+**Failure and candidate:** Captured the CPS flow execution and waited for its suspension barrier
+after an aborted build, preventing the test harness from deleting the build directory while the
+final `build.xml` write was still active.
+
+**Outcome:** Candidate; open without substantive maintainer review. The focused hard-kill test
+passed three consecutive runs; the full JDK 25 suite, SpotBugs, Linux 21/25, and the automatically
+retried Windows 17 CI lane all passed.
+
+**Transfer:** Use a lifecycle quiescence barrier for asynchronous persistence races, not a sleep.
+Separate an agent-removal infrastructure retry from a repository failure when the replacement passes.
+
+## U-051 — Commons Net 3.13 raised Commons IO's lower bound
+
+**Source upgrade:** URLTrigger [#188](https://github.com/jenkinsci/urltrigger-plugin/pull/188),
+Commons Net 3.11.1 to 3.13.0, observed source head `cc2978652a13e814148e37a758375a4f727ed342`.
+
+**Companion:** [#195](https://github.com/jenkinsci/urltrigger-plugin/pull/195), observed head
+`3374518d0a012f0347b2d4af605393c074dd1622`, targeting the bot branch.
+
+**Failure and candidate:** Added a narrow dependency-management override for Commons IO 2.21.0
+after the Jenkins BOM, which otherwise forced 2.18.0 and failed Enforcer's upper-bound rule.
+
+**Outcome:** Candidate; open without substantive maintainer review. JDK 25 verification passed 95
+tests with six skips, Enforcer, SpotBugs, and all reported companion checks.
+
+**Transfer:** When a BOM violates an upgraded dependency's documented transitive floor, override
+only the conflicting artifact and prove both the resolved graph and Enforcer result.
+
+## U-052 — The plugin parent moved HtmlUnit's Cookie class
+
+**Source upgrade:** OIC Auth [#786](https://github.com/jenkinsci/oic-auth-plugin/pull/786), Jenkins
+plugin parent 6.2138 to 6.2221, observed source head `acae6f1004cff6538d58a8afa7eb4632f2e65d71`.
+
+**Companion:** [#791](https://github.com/jenkinsci/oic-auth-plugin/pull/791), observed head
+`d2db47bdd1db25b496178c62fb78c8a875793b21`, targeting the bot branch.
+
+**Failure and candidate:** Changed the test import from `org.htmlunit.util.Cookie` to
+`org.htmlunit.http.Cookie` and applied the one parent-required formatting adjustment.
+
+**Outcome:** Candidate; open without substantive maintainer review. The exact JDK 21 coverage
+workflow, full JDK 25 suite with 166 tests and two skips, analyzers, packaging, and all reported
+companion checks passed.
+
+**Transfer:** For a pure package relocation, keep the diff to the affected fixture plus required
+formatting and verify the same returned type and methods under both repository JDK lanes.
+
 ## Maintaining this record
 
 Add a stable `U-###` record for every new `skrcode` dependency-bot companion PR, including
@@ -611,3 +1045,9 @@ upgrade coordinates, failure signature, candidate shape, target branch, closure 
 direction, and current evidence grade. Update state and heads when revalidating, but keep dated
 rejections and supersession history. Never add private repositories, customer source, credentials,
 remote logs, or unrelated Java work.
+
+Before selecting more upgrade work and before every campaign handoff, compare this index with all
+public `skrcode` pull requests created since the campaign began. Explicitly exclude unrelated work,
+then reconcile every indexed companion and source for head changes, CI, comments, reviews,
+maintainer direction, merges, supersession, and closure. Update the record immediately; a green
+companion, a merged companion, and an end-to-end accepted source upgrade are distinct states.

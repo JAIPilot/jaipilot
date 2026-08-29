@@ -1,5 +1,16 @@
 # Changelog
 
+## [6.9.2] - 2026-08-29
+
+### Changed
+
+- Reconciled the public dependency-upgrade record with all 52 companion attempts across 48 source
+  upgrades, including exact observed heads, current CI or review outcomes, and maintainer direction.
+- Recorded 22 previously missing attempts, promoted the Camunda and Job Config History upgrades to
+  end-to-end accepted evidence, and captured the current CLA, security-scan, and supersession states.
+- Required a full public `skrcode` PR-to-index reconciliation before new upgrade selection and every
+  campaign handoff, while keeping green, merged-companion, and accepted-source states distinct.
+
 ## [6.9.1] - 2026-08-28
 
 ### Changed

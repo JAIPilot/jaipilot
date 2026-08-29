@@ -194,12 +194,12 @@ Deno.test("the optional cross-repository record covers the dependency-upgrade ca
 
   assert.match(knowledge, /optional input, not product state/i);
   assert.match(knowledge, /version-upgrade work only/i);
-  assert.match(knowledge, /30 companion attempts covering 26 source upgrades/);
+  assert.match(knowledge, /52 companion attempts covering 48 source upgrades/);
   assert.match(knowledge, /Performance, cleanup, refactoring[\s\S]+do not belong here/);
   assert.match(knowledge, /Never add private repositories, customer source, credentials/);
 
   const expected = Array.from(
-    { length: 30 },
+    { length: 52 },
     (_, index) => `U-${String(index + 1).padStart(3, "0")}`,
   );
   const records = [...knowledge.matchAll(/^## (U-\d{3}) — /gm)].map((match) => match[1]);
@@ -229,12 +229,20 @@ Deno.test("the optional cross-repository record covers the dependency-upgrade ca
     /^\| (U-\d{3}) \| \[[^\]]+\]\((https:\/\/github\.com\/[^)]+\/pull\/\d+)\) \| \[#\d+\]\((https:\/\/github\.com\/[^)]+\/pull\/\d+)\) \| (Accepted|Maintainer-directed|Candidate|Unadopted) \|/gm,
   )];
   assert.deepEqual(indexRows.map((row) => row[1]), expected);
-  assert.equal(new Set(indexRows.map((row) => row[2])).size, 30);
-  assert.equal(new Set(indexRows.map((row) => row[3])).size, 26);
-  assert.equal(indexRows.filter((row) => row[4] === "Accepted").length, 3);
-  assert.equal(indexRows.filter((row) => row[4] === "Maintainer-directed").length, 6);
-  assert.equal(indexRows.filter((row) => row[4] === "Candidate").length, 12);
+  assert.equal(new Set(indexRows.map((row) => row[2])).size, 52);
+  assert.equal(new Set(indexRows.map((row) => row[3])).size, 48);
+  assert.equal(indexRows.filter((row) => row[4] === "Accepted").length, 5);
+  assert.equal(indexRows.filter((row) => row[4] === "Maintainer-directed").length, 8);
+  assert.equal(indexRows.filter((row) => row[4] === "Candidate").length, 30);
   assert.equal(indexRows.filter((row) => row[4] === "Unadopted").length, 9);
+  assert.match(
+    knowledge,
+    /before every campaign handoff, compare this index with all\s+public `skrcode` pull requests/i,
+  );
+  assert.match(
+    knowledge,
+    /a green\s+companion, a merged companion, and an end-to-end accepted source upgrade are distinct states/i,
+  );
 
   const revisions = [...knowledge.matchAll(/`([0-9a-f]{40})`/g)];
   assert.equal(revisions.length >= 50, true);
