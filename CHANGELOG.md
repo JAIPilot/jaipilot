@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.9.3] - 2026-08-29
+
+### Changed
+
+- Required `jaipilot-maintainer-intent` to locate and completely read applicable contribution
+  guidance, pull-request templates, repository instructions, and AI-assisted contribution or
+  disclosure policies before recommending or publishing Java maintenance work.
+- Required absent or inaccessible repository guidance to be reported explicitly instead of
+  inferring rules that the project has not documented.
+
 ## [6.9.2] - 2026-08-29
 
 ### Changed

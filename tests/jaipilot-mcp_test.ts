@@ -152,6 +152,10 @@ Deno.test("maintainer intent fails closed before upstream implementation", async
   const history = await Deno.readTextFile(
     new URL("skills/jaipilot-maintainer-intent/SKILL.md", PLUGIN),
   );
+  assert.match(history, /`CONTRIBUTING\.md`/);
+  assert.match(history, /applicable pull-request templates/);
+  assert.match(history, /AI-assisted contribution\s+or disclosure policy/);
+  assert.match(history, /If a document is absent or inaccessible, report\s+that fact/);
   assert.match(history, /read the complete conversation/i);
   assert.match(history, /open and closed issues and pull requests/i);
   assert.match(history, /git log`, `git blame`, and the introducing commit/);

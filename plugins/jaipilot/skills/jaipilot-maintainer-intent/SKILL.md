@@ -15,8 +15,12 @@ or overwrite files while researching.
 
 ## Establish the exact source
 
-1. Read repository instructions, contribution guidance, security policy, and any AI-assistance or
-   disclosure policy before acting.
+1. Locate and read the complete repository guidance that applies before acting: `CONTRIBUTING.md`
+   and linked contributor docs, applicable pull-request templates, repository instruction files,
+   security, governance, developer, testing, and release guidance, and any AI-assisted contribution
+   or disclosure policy. Check the root, `.github/`, `docs/`, and affected subtrees for scoped
+   guidance; read the selected files completely. If a document is absent or inaccessible, report
+   that fact instead of inventing a rule.
 2. Record the repository, immutable revision, source issue or pull request, author, current state,
    target branch, head branch, and the user's intended delivery target. Distinguish a dependency
    bot branch from the default branch and from a human feature branch.
