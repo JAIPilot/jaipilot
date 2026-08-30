@@ -33,6 +33,11 @@ codex mcp add jaipilot --url https://api.jaipilot.com/functions/v1/jaipilot/mcp
 /plugin install jaipilot@jaipilot
 ```
 
+### GitHub Marketplace
+
+Install the [JAIPilot GitHub App](https://github.com/marketplace/jaipilot) to repair failed
+Dependabot and Renovate pull requests for Maven and Gradle repositories.
+
 ### Example prompts
 
 Open a Java repository and ask JAIPilot the same way you would ask a teammate. Each example shows
