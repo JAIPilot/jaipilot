@@ -13,7 +13,7 @@ JAIPilot helps your coding agent:
 - apply clean, bounded OpenRewrite migrations;
 - optimize measured bottlenecks;
 - run applicable Maven and Gradle work on ready remote hardware by default; and
-- profile and compare a bounded optimization on one large remote workspace.
+- profile and compare a bounded optimization with the same large remote build profile.
 
 Your coding agent remains the only planner and editor. JAIPilot supplies focused Java workflows,
 compute, and repository-native evidence.
@@ -30,7 +30,7 @@ candidate kept locally. This is deterministic query-count evidence, not an inven
 
 On Apache Calcite's existing graph-removal JMH benchmark, JAIPilot found repeated full-edge-set
 scans and produced a two-file +28/-5 candidate. Median times improved by **92.4%, 87.8%, and 87.5%**
-for the 10%, 50%, and 90% removal workloads on the same large remote workspace. Matching behavior
+for the 10%, 50%, and 90% removal workloads in the same large remote environment. Matching behavior
 tests passed before and after the production edit, and a fresh clean check completed **16,644 tests
 with zero failures**. See the repository README for the complete median, p95, and methodology.
 

@@ -61,8 +61,9 @@ and keep the host agent in control.
    native parallelism can reduce wall time without changing the required proof.
 8. Default focused tests, analyzers, coverage, mutation testing, and final verification to the
    `jaipilot-remote-java` skill whenever the laptop provides no concrete advantage under that
-   skill's routing rules. Remote proof covers only the uploaded tracked and unignored working tree;
-   upload the latest state again after any relevant local correction.
+   skill's routing rules. Remote proof covers only the uploaded exact committed revision. After a
+   relevant local correction, keep verification local until an authorized commit exists, then
+   upload that new commit before claiming remote proof.
 
 ## Report
 

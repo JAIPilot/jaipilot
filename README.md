@@ -198,13 +198,14 @@ read-only `skill_get` fallback, which returns those exact versioned files instea
 copy. Signing in creates no upload, workspace, or compute, and there is no Codex plugin or local
 skill-copy installation. Claude Code retains its plugin path.
 
-When remote execution is useful, your agent asks before uploading the current tracked and unignored
-Git files. Approve the upload; if authentication is not already active, sign in when prompted. The
-agent handles packaging, integrity checking, upload, execution, logs, and workspace deletion. You do
-not create an archive, configure a VM, provide an API key, or copy files manually. `.git`, ignored
-files, and remote edits are never transferred back automatically.
+When remote execution is useful, your agent asks before uploading one exact committed Git revision.
+Approve the upload; if authentication is not already active, sign in when prompted. The agent uses
+`git archive` for that commit and handles integrity checking, private upload, execution, logs, and
+cleanup. You do not configure a VM, provide an AWS key, or copy files manually. Staged, unstaged,
+untracked, ignored, and `.git` content never enters the build, and remote files never return
+automatically.
 
-If packaging or upload cannot be verified, JAIPilot does not create the workspace. Your agent must
+If packaging or upload cannot be verified, JAIPilot does not start the build. Your agent must
 show the failing step instead of silently uploading a different source tree.
 
 | **12.2–80.3% faster** | **61.3–62.5% faster** | **87.5–92.4% faster** | **8 → 2** SQL statements |
@@ -358,7 +359,8 @@ Additional acceptance runs used repository-native verification:
 | Optimize OpenTelemetry attribute lookup                                                             | Five 128-attribute lookup workloads improved by **12.2–80.3%** at median and **13.8–79.8%** at p95; clean API compatibility and verification passed.                                           |
 | Optimize Micrometer single-value merges                                                             | Replacement merges improved by **61.3–62.5%** at median and allocated **23.5% less**; sub-threshold insertion latency was not marketed as a speed win.                                        |
 | [Cover previously untested behavior](https://github.com/skrcode/spring-framework-petclinic/pull/34) | **7** focused tests added with **no production or dependency change**; target coverage moved from **0% to 100%** for lines and branches; **82/82** tests passed independently on Java 17 and 21. |
-| Run the current change remotely                                                                     | An uncommitted file reached the workspace; `./mvnw clean test` passed **75/75** tests in **44.6 seconds**; job recovery, cancellation, and workspace deletion were verified.                     |
+| Run Maven remotely                                                                                  | Spring Petclinic's exact committed SHA passed **75/75** tests; the build emitted matching source/archive identities and deleted its private source afterward.                               |
+| Retry a heavy Gradle build                                                                          | Calcite's 2 CPU/4 GiB attempt reported its real out-of-memory failure; a fresh 4 CPU/8 GiB retry passed **93/93** focused tests, and cancellation plus JFR summary output were verified.      |
 | Remove a JDBC N+1 query                                                                              | Vet listing SQL statements fell from **8 to 2** on the six-vet fixture; **15/15** focused and **79/79** clean-build tests passed, with identical local/remote diff digests.                 |
 
 These are reproducible acceptance results, not claims that every repository will see the same
@@ -393,10 +395,16 @@ green result.
 
 ## Remote build beta
 
-The beta permits one active remote workspace. Remote work is disposable and never commits, pushes,
-or publishes code. JAIPilot defaults applicable Java execution to remote hardware; it stays local
-when a corporate VPN, private artifact service, internal database, unavailable secret,
-machine-specific state, or another laptop-only resource is required.
+The beta permits one active normal AWS CodeBuild attempt. Each attempt starts from a private exact
+commit archive, has no persistent cache or workspace, and terminates when its command exits, is
+cancelled, or reaches its hard timeout. The default profile is 2 CPU/4 GiB; 4 CPU/8 GiB is available
+for memory-heavy builds and profiling. Builds have public outbound internet access and never commit,
+push, or receive GitHub write credentials.
+
+JAIPilot stays local when a corporate VPN, VPC-only dependency, private artifact service, internal
+database, unavailable secret, raw profiler artifact, machine-specific state, or other laptop-only
+resource is required. CodeBuild startup is variable and can take several minutes on a cold compute
+class, so this is batch-style remote execution rather than an interactive shell.
 
 See [Security](SECURITY.md), [Privacy](PRIVACY.md), [Support](SUPPORT.md), [Terms](TERMS.md), and
 the [Changelog](CHANGELOG.md).

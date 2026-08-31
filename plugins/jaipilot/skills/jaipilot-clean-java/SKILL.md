@@ -65,8 +65,9 @@ in isolated batches. Evaluating a mode does not require editing in it.
    native parallelism can reduce wall time without changing the required proof.
 8. Default compilation, tests, analyzers, profilers, benchmarks, and final clean proof to the
    `jaipilot-remote-java` skill whenever the laptop provides no concrete advantage under that
-   skill's routing rules. Remote proof covers only the uploaded tracked and unignored working tree;
-   upload the latest state again after relevant local edits.
+   skill's routing rules. Remote proof covers only the uploaded exact committed revision. After
+   relevant local edits, keep verification local until an authorized commit exists, then upload
+   that new commit before claiming remote proof.
 
 ## Shared acceptance rules
 

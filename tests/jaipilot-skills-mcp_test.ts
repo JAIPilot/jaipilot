@@ -30,7 +30,7 @@ Deno.test("JAIPilot advertises the standard MCP Skills extension", () => {
   );
   assert.equal(
     (response?.result as { serverInfo: { version: string } }).serverInfo.version,
-    "6.9.6",
+    "7.0.0",
   );
 });
 
@@ -214,7 +214,7 @@ Deno.test("HTTP skill_get fallback serves the current eight local skills", async
   };
 
   const catalog = await call();
-  assert.equal(catalog.version, "6.9.6");
+  assert.equal(catalog.version, "7.0.0");
   assert.equal(catalog.skills.length, 8);
   assert.equal(
     catalog.skills.some((skill: { name: string }) => skill.name === "jaipilot-openrewrite"),
@@ -246,7 +246,7 @@ Deno.test("HTTP tools list replaces the stale upstream skill catalog", async () 
               description: "stale seven-skill catalog",
               inputSchema: { type: "object" },
             },
-            { name: "workspace_prepare", inputSchema: { type: "object" } },
+            { name: "build_prepare", inputSchema: { type: "object" } },
           ],
         },
       })),
@@ -256,7 +256,7 @@ Deno.test("HTTP tools list replaces the stale upstream skill catalog", async () 
   const tools = body.result.tools;
   assert.deepEqual(tools.map((tool: { name: string }) => tool.name), [
     "skill_get",
-    "workspace_prepare",
+    "build_prepare",
   ]);
   assert.match(tools[0].description, /eight versioned Java skills/);
   assert.equal(tools[0].inputSchema.properties.name.enum.length, 8);

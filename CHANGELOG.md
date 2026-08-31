@@ -1,5 +1,35 @@
 # Changelog
 
+## [7.0.0] - 2026-08-31
+
+### Added
+
+- Added bounded normal AWS CodeBuild execution for exact committed Maven and Gradle sources, with
+  private checksum-verified S3 upload, durable status, bounded CloudWatch logs, cancellation, hard
+  timeouts, Corretto 17/21/25, and 2 CPU/4 GiB or 4 CPU/8 GiB profiles.
+- Added explicit guidance for fresh-build retries, wrapper and tool downloads, textual JFR/JMH or
+  profiler evidence, public-network boundaries, variable cold-start latency, and exact source
+  cleanup.
+
+### Changed
+
+- Replaced the eight-tool workspace/process lifecycle with six tools: `skill_get`, `build_prepare`,
+  `build_start`, `build_status`, `build_logs`, and `build_cancel`.
+- Restricted remote proof to `git archive` output for an explicitly approved exact commit. Dirty,
+  staged, untracked, ignored, credential, and `.git` content is never uploaded.
+- Made each attempt an independent disposable build with no persistent remote workspace or cache;
+  the host agent remains responsible for local edits, commits, command choice, retries, and Git.
+
+### Removed
+
+- Removed the retired Daytona runtime, snapshot images, process wrapper, local operator adapter,
+  and any promise that uncommitted working-tree files or remote edits synchronize with the host.
+
+### Security
+
+- Builds receive neither GitHub write credentials nor AWS control-plane credentials. Private source
+  is deleted on terminal reads or cancellation, with a one-day S3 lifecycle backstop.
+
 ## [6.9.6] - 2026-08-29
 
 ### Changed

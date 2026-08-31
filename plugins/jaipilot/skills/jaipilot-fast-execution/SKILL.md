@@ -73,7 +73,7 @@ the real failure. Never retry blindly or kill unrelated processes.
 Default substantial compilation, test, analysis, profiling, benchmark, and toolchain execution to
 the `jaipilot-remote-java` skill whenever the laptop provides no concrete advantage. Keep it local
 only for private network or artifact access, unavailable secrets or services, machine-specific
-state, a command too small to justify workspace setup, or remote unavailability.
+state, a command too small to justify build setup, or remote unavailability.
 
 ## Report
 

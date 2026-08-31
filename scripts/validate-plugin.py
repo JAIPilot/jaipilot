@@ -272,7 +272,7 @@ def main() -> None:
     validate_tagline()
     count, size = validate_lean_payload()
     print(
-        f"Validated JAIPilot {expected_version}: {len(SKILLS)} skills, 8 remote tools, "
+        f"Validated JAIPilot {expected_version}: {len(SKILLS)} skills, 6 remote tools, "
         f"{count} files, {size} bytes."
     )
 

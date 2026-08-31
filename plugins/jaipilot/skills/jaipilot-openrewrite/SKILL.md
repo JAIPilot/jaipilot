@@ -73,8 +73,8 @@ execution details relevant to the selected route.
 ## Apply one coherent candidate
 
 1. Run the exact reviewed recipe and options in an isolated local worktree or reversible copy when
-   possible. Recipe writes must remain inspectable local candidate edits; never treat unreturned
-   remote workspace changes as the patch.
+   possible. Recipe writes must remain inspectable local candidate edits; never treat files created
+   inside a disposable remote build as the patch.
 2. Compare the actual file inventory and diff with the preview. Investigate every difference and
    separate the smallest necessary manual compatibility fixes from generated edits.
 3. Run focused compilation and tests after each coherent batch. Do not weaken tests, warnings,

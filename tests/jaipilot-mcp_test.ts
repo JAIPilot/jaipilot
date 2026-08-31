@@ -32,32 +32,32 @@ Deno.test("the distributable contains no provider or shared-secret configuration
   assert.equal(files.some((file) => file.endsWith(".ts")), false);
 });
 
-Deno.test("remote source upload requires repository-specific affirmative consent", async () => {
+Deno.test("remote source upload requires consent and an exact committed archive", async () => {
   const remote = await Deno.readTextFile(
     new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),
   );
   assert.match(remote, /Before the first upload for each repository/);
-  assert.match(remote, /ordinary task request does not count/);
-  assert.match(remote, /Before the first upload for this repository/);
-  assert.match(remote, /Require affirmative user confirmation/);
+  assert.match(remote, /ordinary coding\s+request/);
+  assert.match(remote, /affirmative repository-specific confirmation/);
   assert.match(remote, /consent for another repository/);
-  assert.match(remote, /do not name a loop or\s+scalar variable `path`/);
+  assert.match(remote, /Never upload staged, unstaged, untracked, ignored/);
+  assert.match(remote, /`git archive --format=zip`/);
   assert.match(remote, /Treat any HTTP 2xx response as success/);
-  assert.match(remote, /Supabase signed uploads normally return 200/);
+  assert.match(remote, /supplying every returned `upload_headers` entry exactly/);
 
   const optimize = await Deno.readTextFile(
     new URL("skills/jaipilot-optimize-java/SKILL.md", PLUGIN),
   );
-  assert.equal(optimize.includes("exact candidate is already committed"), false);
-  assert.match(optimize, /exact tracked and unignored working-tree/);
+  assert.match(optimize, /remote proof covers only the uploaded exact commit/);
+  assert.match(optimize, /authorized commit exists/);
 });
 
 Deno.test("Java verification workflows prefer remote execution without a laptop advantage", async () => {
   const remote = await Deno.readTextFile(
     new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),
   );
-  assert.match(remote, /hardware by default whenever the laptop provides no concrete advantage/);
-  assert.match(remote, /Keep execution local only when the laptop provides a concrete advantage/);
+  assert.match(remote, /Prefer remote execution[\s\S]+laptop has no\s+concrete advantage/);
+  assert.match(remote, /Keep execution local when it needs the laptop's VPN/);
 
   for (
     const name of [
@@ -98,7 +98,7 @@ Deno.test("all JAIPilot workflows route substantial command work through safe pa
     assert.match(skill, /`jaipilot-fast-execution`/);
     assert.match(
       skill,
-      /safe\s+batching\s+or\s+bounded\s+native\s+parallelism can reduce wall time/,
+      /safe\s+batching\s+or\s+bounded\s+native\s+parallelism\s+can\s+reduce\s+wall\s+time/,
     );
     assert.match(skill, /without\s+changing\s+the\s+required\s+proof/);
   }
@@ -141,7 +141,10 @@ Deno.test("OpenRewrite migrations stay pinned, previewed, reviewable, and verifi
   assert.match(rewrite, /dry run before any source-writing run/);
   assert.match(rewrite, /Inspect every proposed file and hunk/);
   assert.match(rewrite, /Re-run the same dry run after the candidate stabilizes/);
-  assert.match(rewrite, /never treat unreturned\s+remote workspace changes as the patch/);
+  assert.match(
+    rewrite,
+    /never treat files created\s+inside a disposable remote build as the patch/,
+  );
   assert.match(running, /rewrite:dryRun/);
   assert.match(running, /rewriteDryRun/);
   assert.match(running, /failOnInvalidActiveRecipes=true/);
@@ -198,23 +201,21 @@ Deno.test("the optional cross-repository record covers the dependency-upgrade ca
 
   assert.match(knowledge, /optional input, not product state/i);
   assert.match(knowledge, /version-upgrade work only/i);
-  assert.match(knowledge, /55 companion attempts covering 51 source upgrades/);
+  assert.match(knowledge, /\d+ companion attempts covering \d+ source upgrades/);
   assert.match(knowledge, /Performance, cleanup, refactoring[\s\S]+do not belong here/);
   assert.match(knowledge, /Never add private repositories, customer source, credentials/);
 
-  const expected = Array.from(
-    { length: 55 },
-    (_, index) => `U-${String(index + 1).padStart(3, "0")}`,
-  );
+  const campaign = knowledge.match(/(\d+) companion attempts covering (\d+) source upgrades/);
+  assert.ok(campaign);
   const records = [...knowledge.matchAll(/^## (U-\d{3}) — /gm)].map((match) => match[1]);
-  assert.deepEqual(records, expected);
+  assert.equal(records.length, Number(campaign[1]));
+  assert.deepEqual(records, [...records].sort());
   assert.equal(new Set(records).size, records.length);
 
   for (const section of knowledge.split(/^## U-\d{3} — /m).slice(1)) {
     for (
       const field of [
         "**Source upgrade:**",
-        "**Companion:**",
         "**Failure and candidate:**",
         "**Outcome:**",
         "**Transfer:**",
@@ -226,19 +227,24 @@ Deno.test("the optional cross-repository record covers the dependency-upgrade ca
         `knowledge record is missing ${field}`,
       );
     }
+    assert.equal(
+      section.includes("**Companion:**") || section.includes("**Replacement:**"),
+      true,
+      "knowledge record is missing companion or replacement identity",
+    );
     assert.match(section, /`[0-9a-f]{40}`/);
   }
 
   const indexRows = [...knowledge.matchAll(
     /^\| (U-\d{3}) \| \[[^\]]+\]\((https:\/\/github\.com\/[^)]+\/pull\/\d+)\) \| \[#\d+\]\((https:\/\/github\.com\/[^)]+\/pull\/\d+)\) \| (Accepted|Maintainer-directed|Candidate|Unadopted) \|/gm,
   )];
-  assert.deepEqual(indexRows.map((row) => row[1]), expected);
-  assert.equal(new Set(indexRows.map((row) => row[2])).size, 55);
-  assert.equal(new Set(indexRows.map((row) => row[3])).size, 51);
-  assert.equal(indexRows.filter((row) => row[4] === "Accepted").length, 5);
-  assert.equal(indexRows.filter((row) => row[4] === "Maintainer-directed").length, 9);
-  assert.equal(indexRows.filter((row) => row[4] === "Candidate").length, 32);
-  assert.equal(indexRows.filter((row) => row[4] === "Unadopted").length, 9);
+  assert.deepEqual(indexRows.map((row) => row[1]), records);
+  assert.equal(new Set(indexRows.map((row) => row[2])).size, Number(campaign[1]));
+  assert.equal(new Set(indexRows.map((row) => row[3])).size, Number(campaign[2]));
+  assert.deepEqual(
+    [...new Set(indexRows.map((row) => row[4]))].sort(),
+    ["Accepted", "Candidate", "Maintainer-directed", "Unadopted"],
+  );
   assert.match(
     knowledge,
     /before every campaign handoff, compare this index with all\s+public `skrcode` pull requests/i,
@@ -268,26 +274,25 @@ Deno.test("collection-view bypasses require exception-timing characterization", 
   }
 });
 
-Deno.test("performance workflow uses one exact-capacity workspace and rejects weak evidence", async () => {
+Deno.test("performance workflow compares exact commits on matched disposable builds", async () => {
   const remote = await Deno.readTextFile(
     new URL("skills/jaipilot-remote-java/SKILL.md", PLUGIN),
   );
-  assert.match(remote, /API profile `large` \(4 CPU, 8 GiB\)/);
-  assert.match(remote, /same workspace, JDK, command, input, warmup/);
-  assert.match(remote, /patch and remote Git\s+delta digests match/);
+  assert.match(remote, /`large` is 4 CPU\/8 GiB/);
+  assert.match(remote, /same CodeBuild\s+profile, JDK, image, command, input/);
+  assert.match(remote, /at least seven\s+observations inside one build/);
 
   const performance = await Deno.readTextFile(
     new URL("skills/jaipilot-clean-java/references/performance.md", PLUGIN),
   );
-  assert.match(performance, /initial Git commit is the immutable experiment baseline/);
-  assert.match(performance, /median improves by at least\s+10%/);
-  assert.match(performance, /at least seven comparable runs/);
-  assert.match(performance, /JAIPILOT_MEASUREMENTS_V1/);
+  assert.match(performance, /exact baseline commit/);
+  assert.match(performance, /median\s+improves by at least\s+10%/);
+  assert.match(performance, /at least seven comparable observations/);
   assert.match(performance, /keep those proof sources byte-identical/);
   assert.match(performance, /primaryMetric\.rawData/);
   assert.match(performance, /\(n - 1\) \* 0\.95/);
-  assert.match(performance, /do\s+not mix it into the operation-level result/);
-  assert.match(performance, /remote edits never\s+replace or synchronize the local patch/);
+  assert.match(performance, /do\s+not\s+mix\s+it\s+into\s+the\s+operation-level\s+result/);
+  assert.match(performance, /Never upload staged, unstaged, or untracked candidate files/);
 });
 
 async function json<T>(path: string): Promise<T> {

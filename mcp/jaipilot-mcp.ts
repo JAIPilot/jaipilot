@@ -91,7 +91,7 @@ export function handleMcpRequest(request: JsonRpcRequest): JsonRpcResponse | und
         },
         serverInfo: { name: "JAIPilot", version: MCP_SKILL_BUNDLE.version },
         instructions:
-          "JAIPilot supplies eight versioned Java engineering skills and bounded remote execution while the host agent remains the only planner and editor. Discover skills through the Skills extension or mcp/skill resources. If the client does not yet promote server skills, use the read-only skill_get tool to load only the exact skill needed. Remote tool calls use the existing OAuth service, upload source only after explicit repository-specific consent, and must destroy every workspace after use.",
+          "JAIPilot supplies eight versioned Java engineering skills and bounded remote execution while the host agent remains the only planner and editor. Discover skills through the Skills extension or mcp/skill resources. If the client does not yet promote server skills, use the read-only skill_get tool to load only the exact skill needed. Remote tool calls use the existing OAuth service, upload only an explicitly approved exact committed archive, and run as independent builds that terminate automatically.",
       });
     case "ping":
       return rpcResult(id, {});
