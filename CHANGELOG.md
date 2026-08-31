@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.0.1] - 2026-08-31
+
+### Changed
+
+- Documented direct JAIPilot setup for any remote HTTP MCP client with OAuth, including the raw
+  endpoint, the common `mcpServers` configuration shape, and the read-only `skill_get` fallback for
+  clients without MCP Skills support.
+
 ## [7.0.0] - 2026-08-31
 
 ### Added

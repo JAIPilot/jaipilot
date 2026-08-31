@@ -33,6 +33,33 @@ codex mcp add jaipilot --url https://api.jaipilot.com/functions/v1/jaipilot/mcp
 /plugin install jaipilot@jaipilot
 ```
 
+### Any MCP client
+
+If your client supports remote HTTP MCP servers and OAuth, connect directly to JAIPilot without
+installing a plugin or running a local process:
+
+```text
+https://api.jaipilot.com/functions/v1/jaipilot/mcp
+```
+
+Clients that use the common `mcpServers` configuration shape can add:
+
+```json
+{
+  "mcpServers": {
+    "jaipilot": {
+      "type": "http",
+      "url": "https://api.jaipilot.com/functions/v1/jaipilot/mcp"
+    }
+  }
+}
+```
+
+Complete the OAuth sign-in when the client first connects. Clients with MCP Skills support can
+discover the JAIPilot skills directly; tool-only clients can load the same versioned instructions
+through the read-only `skill_get` tool. Remote execution remains opt-in and requires approval before
+an exact committed repository revision is uploaded.
+
 ### GitHub Marketplace
 
 Install the [JAIPilot GitHub App](https://github.com/marketplace/jaipilot) to repair failed

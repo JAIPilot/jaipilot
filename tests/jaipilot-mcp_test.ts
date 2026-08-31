@@ -21,6 +21,10 @@ Deno.test("Codex uses direct MCP while Claude retains the hosted plugin binding"
   );
   const readme = await Deno.readTextFile(new URL("README.md", ROOT));
   assert.match(readme, new RegExp(`codex mcp add jaipilot --url ${MCP_URL}`));
+  assert.match(
+    readme,
+    /### Any MCP client[\s\S]+"mcpServers"[\s\S]+"type": "http"[\s\S]+`skill_get`/,
+  );
   assert.match(readme, /there is no Codex plugin or local\s+skill-copy/);
 });
 
