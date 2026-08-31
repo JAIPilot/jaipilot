@@ -130,7 +130,7 @@ export async function handleMcpHttpRequest(
       return json({
         resource: publicMcpUrl(request),
         authorization_servers: [AUTHORIZATION_SERVER],
-        scopes_supported: ["email"],
+        scopes_supported: ["openid", "email"],
         bearer_methods_supported: ["header"],
         resource_documentation: "https://github.com/JAIPilot/jaipilot#remote-build-beta",
       });
@@ -452,7 +452,7 @@ function oauthChallenge(request: Request): string {
     /\/mcp$/,
     "/.well-known/oauth-protected-resource",
   );
-  return `Bearer resource_metadata="${metadata}", scope="email"`;
+  return `Bearer resource_metadata="${metadata}", scope="openid email"`;
 }
 
 function publicMcpUrl(request: Request): string {

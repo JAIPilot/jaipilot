@@ -7,14 +7,23 @@ type McpManifest = {
   mcpServers: Record<string, { type: string; url: string }>;
 };
 
-Deno.test("Codex uses direct MCP while Claude retains the hosted plugin binding", async () => {
+Deno.test("Codex and Claude packages expose the same hosted MCP binding", async () => {
   const claude = await json<McpManifest>(".mcp.json");
+  const codex = await json<{
+    skills: string;
+    mcpServers: string;
+    interface: {
+      shortDescription: string;
+      defaultPrompt: string[];
+    };
+  }>(".codex-plugin/plugin.json");
   const expected = { type: "http", url: MCP_URL };
   assert.deepEqual(claude.mcpServers, { "jaipilot-remote": expected });
-  await assert.rejects(
-    Deno.stat(new URL(".codex-plugin/plugin.json", PLUGIN)),
-    Deno.errors.NotFound,
-  );
+  assert.equal(codex.skills, "./skills/");
+  assert.equal(codex.mcpServers, "./.mcp.json");
+  assert.equal(codex.interface.shortDescription.length <= 30, true);
+  assert.equal(codex.interface.defaultPrompt.length, 3);
+  assert.equal(codex.interface.defaultPrompt.every((prompt) => prompt.length <= 128), true);
   await assert.rejects(
     Deno.stat(new URL(".agents/plugins/marketplace.json", ROOT)),
     Deno.errors.NotFound,
@@ -25,7 +34,7 @@ Deno.test("Codex uses direct MCP while Claude retains the hosted plugin binding"
     readme,
     /### Any MCP client[\s\S]+"mcpServers"[\s\S]+"type": "http"[\s\S]+`skill_get`/,
   );
-  assert.match(readme, /there is no Codex plugin or local\s+skill-copy/);
+  assert.match(readme, /official OpenAI plugin directory/);
 });
 
 Deno.test("the distributable contains no provider or shared-secret configuration", async () => {

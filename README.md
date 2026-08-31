@@ -22,6 +22,10 @@ workflows, remote compute, and one rule: **show evidence, not confidence.**
 
 ### Codex
 
+JAIPilot is packaged for the official OpenAI plugin directory. Once the listing is approved, install
+it there to get all eight local skills and the optional OAuth remote MCP together. The same public
+MCP remains available as a direct connection:
+
 ```bash
 codex mcp add jaipilot --url https://api.jaipilot.com/functions/v1/jaipilot/mcp
 ```
@@ -217,13 +221,12 @@ Our full Gradle build takes about 20 minutes. Can you run it faster and tell me 
 > **Why it helps:** You reduce wall time without skipping tests, weakening gates, or creating
 > misleading results through unsafe concurrency.
 
-Codex signs in through JAIPilot's OAuth consent and connects to one MCP URL. The server publishes
-all eight Java skills through `skills/list`, `skills/get`, digest-verified `resources/read`, and
-standard `mcp/skill` resources. Codex builds that promote remote skills can load only the selected
-files and refresh them when their SHA-256 digests change. Other builds use the same server's
-read-only `skill_get` fallback, which returns those exact versioned files instead of an older cloud
-copy. Signing in creates no upload, workspace, or compute, and there is no Codex plugin or local
-skill-copy installation. Claude Code retains its plugin path.
+The Codex plugin installs all eight skills locally and configures the optional hosted MCP. A direct
+MCP connection can instead discover the same versioned skills through `skills/list`, `skills/get`,
+digest-verified `resources/read`, and standard `mcp/skill` resources. Clients that do not yet
+promote server skills can use the read-only `skill_get` fallback. Signing in creates no upload or
+compute; remote execution starts only after the separate exact-repository upload consent described
+below. Claude Code retains its plugin path.
 
 When remote execution is useful, your agent asks before uploading one exact committed Git revision.
 Approve the upload; if authentication is not already active, sign in when prompted. The agent uses
@@ -371,8 +374,8 @@ invented latency claim.
   ready unless private networks, local services, secrets, hardware, or state require the laptop.
 - **Remote performance lab** — profile and compare a bounded optimization on one 4 CPU/8 GiB
   workspace, with matching patch identity, raw observations, median, p95, and correctness evidence.
-- **Works on your current change** — staged, unstaged, and untracked files can be tested without
-  committing or pushing first.
+- **Keeps dirty work private** — remote execution accepts only an explicitly approved exact commit;
+  staged, unstaged, untracked, ignored, and `.git` content stays on the laptop.
 - **Your agent stays in control** — Codex or Claude Code chooses every edit and command and reports
   exactly what JAIPilot achieved.
 
@@ -401,7 +404,8 @@ hosted endpoint serves the eight Java engineering skills directly and forwards o
 and reads do not contact remote execution; tool calls retain its authorization and safety boundary.
 
 Both skill catalogs are paginated five skills and then three so direct clients can load all eight.
-JAIPilot uses the direct Codex MCP connection above rather than a Codex plugin marketplace.
+The direct MCP connection remains available alongside the combined Codex plugin submitted to the
+official OpenAI plugin directory.
 
 ## Included skills
 

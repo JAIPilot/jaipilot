@@ -1,6 +1,6 @@
 # Terms of use
 
-Effective: August 25, 2026
+Effective: August 31, 2026
 
 JAIPilot is open-source software distributed under the [MIT License](LICENSE). These terms describe
 the plugin's operating boundary; they do not replace the license.
@@ -15,12 +15,13 @@ The host agent, source repository, build system, dependencies, analyzers, Supaba
 execution provider, and other external services are governed by their own terms. Repository build
 scripts and dependencies are executable code and should be evaluated before use.
 
-Local skill use does not require JAIPilot Cloud. Explicit use of JAIPilot Remote authorizes the
-selected tracked and unignored working-tree files and requested commands to be processed in a
-temporary remote workspace under the boundaries in [Privacy](PRIVACY.md) and
-[Security](SECURITY.md). The user remains responsible for data suitability, provider terms, command
-selection, and prompt or dependency behavior. Remote execution is a public beta and is not offered
-as regulated-data, private-network, data-residency, or production benchmark infrastructure.
+Local skill use does not require JAIPilot Cloud. Explicit repository-specific use of JAIPilot
+Remote authorizes one archive produced from the declared exact Git commit and the requested command
+to be processed in a fresh disposable build under the boundaries in [Privacy](PRIVACY.md) and
+[Security](SECURITY.md). Dirty working-tree files are not authorized or uploaded. The user remains
+responsible for data suitability, provider terms, command selection, and prompt or dependency
+behavior. Remote execution is a public beta and is not offered as regulated-data, private-network,
+data-residency, or production benchmark infrastructure.
 
 To the extent permitted by applicable law, JAIPilot is provided without warranty and subject to the
 limitations in the MIT License. Questions may be raised through [JAIPilot Support](SUPPORT.md).

@@ -1,6 +1,6 @@
 # Privacy policy
 
-Effective: August 25, 2026
+Effective: August 31, 2026
 
 JAIPilot bundles static Java engineering skills and an optional hosted remote-execution MCP. Using
 the skills locally does not send repository contents to JAIPilot. The plugin has no advertising,
@@ -10,22 +10,30 @@ The coding host and repository tools remain separate systems. The host may read 
 commands under its own privacy policy and the user's configuration. Maven, Gradle, Git, analyzers,
 plugins, and dependencies may access local or network resources according to their configuration.
 
-When the user or host agent explicitly invokes JAIPilot Remote:
+When the user connects JAIPilot Remote:
 
-- the user signs in through jaipilot.com and grants the coding host an OAuth connection;
-- the host may explicitly upload tracked and unignored staged, unstaged, and untracked repository
-  files through a short-lived private upload URL;
-- JAIPilot verifies ownership, archive size, and SHA-256 before extracting the source into a
-  temporary private workspace;
-- command inputs, bounded output logs, account/workspace metadata, and operational metadata pass
-  through JAIPilot Cloud and its managed infrastructure providers;
-- the uploaded archive is deleted after workspace preparation or failure;
-- the workspace and its same-workspace caches are deleted on explicit cleanup or hard TTL; and
+- the user signs in through JAIPilot's OAuth provider; JAIPilot processes the account email and a
+  stable authentication user ID to enforce ownership, access, concurrency, and usage limits;
+- signing in or reading a skill does not upload source or start compute;
+- after repository-specific consent, the host may upload only a ZIP produced by `git archive` from
+  one declared exact commit through a short-lived private S3 URL; staged, unstaged, untracked,
+  ignored, and `.git` content is excluded;
+- JAIPilot verifies account ownership, declared commit identity, archive byte length, and SHA-256
+  before a build may start;
+- the selected command, relative working directory, Java version, hardware profile, bounded output
+  logs, source/build IDs, provider status, timestamps, exit code, and operational quota metadata
+  pass through JAIPilot Cloud and its managed infrastructure providers;
+- each attempt runs in a fresh AWS CodeBuild container with no persistent workspace or build cache;
+- private source is deleted on terminal status or log reads and cancellation, with an S3 lifecycle
+  rule as a one-day cleanup backstop; and
 - JAIPilot does not place customer source in this public repository or a product analytics store.
 
 The remote sandbox has outbound network access, so repository build code and dependencies may send
 data elsewhere. Provider logs, backups, security controls, and retention are governed by Supabase,
-JAIPilot's managed execution provider, and any contacted dependency service.
+Amazon Web Services, and any contacted dependency service. Bounded build logs can contain data that
+the selected repository command prints; users and agents should avoid printing secrets or personal
+data. Because the archive contains the selected commit, do not upload a commit containing
+credentials, personal data, or sensitive source.
 
 Remote execution is a bounded public beta. It is not a claim of private-VPC, regulated-data,
 data-residency, or Zero Data Retention support. Do not use it for sensitive or proprietary source
