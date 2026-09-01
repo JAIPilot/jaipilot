@@ -77,8 +77,14 @@ state, a command too small to justify build setup, or remote unavailability.
 
 ## Report
 
-Capture comparable command timing when it is already useful. Before the final response, read and
-apply [impact-reporting.md](references/impact-reporting.md).
+Announce a completed result only as
+`**JAIPilot · Execution** — <outcome>; <proof>.` in progress or as the final outcome lead. Then
+render this exact flat section; do not nest bullets:
+**JAIPilot impact**
+- **Execution:** <outcome>
+- **Evidence:** <strongest proof>
+Apply [impact-reporting.md](references/impact-reporting.md) for measures, nesting, and limitations;
+capture comparable timing when useful, then provide supporting detail.
 
 Return the execution boundary, resource evidence, `N`, batching and native-parallelism choices,
 exact commands, material durations, outcomes, serial fallbacks, cache assumptions, and any proof

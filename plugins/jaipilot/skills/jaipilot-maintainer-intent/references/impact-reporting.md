@@ -2,23 +2,34 @@
 
 Make a valuable decision visible even when the correct result is no code or pull request.
 
-## During the run
+## Milestone update
 
-When the preflight reaches its decision and the host supports progress commentary, give at most one
-sentence naming the decision and decisive repository evidence. If this skill is nested, pass the
-decision, avoided mistake or justified path, proof, and limitations to the coordinating JAIPilot
-skill instead of rendering another card.
+After the preflight reaches its final decision and the host supports progress commentary, emit at
+most one line in exactly this shape:
+
+`**JAIPilot · Maintainer intent** — <completed decision>; <strongest fresh proof>.`
+
+This is the only format for announcing a completed milestone. Replace unbranded completion prose
+such as `Preflight complete` or `Decision reached` with this line. Keep the bold label, middle dot,
+em dash, and evidence order unchanged. Use completed evidence, not intent or routing. When
+completion coincides with the final response, use this line as its outcome lead immediately before
+the impact card. If this skill is nested, pass the decision, avoided mistake or justified path,
+proof, and limitations to the coordinating JAIPilot skill instead of rendering another card.
 
 ## Final impact card
 
 Immediately after the final response's one-sentence outcome lead, render this standalone card or
 contribute its row to the coordinator's consolidated card:
 
-> **JAIPilot impact**
-> - **Maintainer intent:** decision and concrete contribution mistake avoided or path justified
-> - **Proof:** decisive maintainer, duplicate, policy, or history evidence
+The card is not a closing appendix. Put no scope, table, or supporting detail between the lead and
+card, and preserve the exact flat heading and bullet structure below rather than restyling it. Do not
+nest bullets.
 
-Use at most three evidence rows. Prefer the exact decision, duplicates or competing changes found,
+**JAIPilot impact**
+- **Maintainer intent:** decision and concrete contribution mistake avoided or path justified
+- **Evidence:** decisive maintainer, duplicate, policy, or history evidence
+
+Use exactly these two flat rows. Prefer the exact decision, duplicates or competing changes found,
 required delivery target, and maintainer constraint uncovered. A supported `NO_ACTION`,
 `JOIN_EXISTING`, or `WAIT` should identify the duplicate work, wrong branch, premature implementation,
 or policy conflict the evidence prevented. `PROCEED` should identify the uncertainty resolved and

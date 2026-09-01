@@ -94,8 +94,14 @@ changing the required proof. Default substantial compilation, tests, analysis, a
 `jaipilot-remote-java` whenever the laptop provides no concrete advantage; upload the latest local
 candidate after recipe and manual edits.
 
-Before the final response, read and apply
-[impact-reporting.md](references/impact-reporting.md).
+Announce a completed result only as
+`**JAIPilot · Migration** — <outcome>; <proof>.` in progress or as the final outcome lead. Then
+render this exact flat section; do not nest bullets:
+**JAIPilot impact**
+- **Migration:** <outcome>
+- **Evidence:** <strongest proof>
+Apply [impact-reporting.md](references/impact-reporting.md) for measures, nesting, and limitations,
+then provide supporting detail.
 
 Report the route, migration contract, recipe and pinned coordinates, approval and configuration
 boundary, baseline, preview and applied inventories, rejected output, manual follow-ups, repeat

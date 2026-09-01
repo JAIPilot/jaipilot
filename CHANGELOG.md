@@ -1,5 +1,16 @@
 # Changelog
 
+## [7.2.1] - 2026-09-01
+
+### Changed
+
+- Standardized every in-run completion milestone on the light-branded
+  `**JAIPilot · <capability>** — <completed outcome>; <strongest fresh proof>.` grammar.
+- Kept milestone updates completion-only; when completion coincides with the final response, the
+  same line now becomes its outcome lead immediately before the impact section.
+- Promoted the milestone grammar and the same two-row, flat impact skeleton into every skill
+  entrypoint so hosts preserve one consistent cross-client shape ahead of supporting detail.
+
 ## [7.2.0] - 2026-09-01
 
 ### Added

@@ -76,8 +76,14 @@ already satisfied, not applicable, rejected, or unavailable. Accept the combined
 
 ## Report
 
-Collect same-scope baselines and impact records from each component skill. Before the final response,
-read and apply [impact-reporting.md](references/impact-reporting.md).
+Announce a completed result only as
+`**JAIPilot · Optimization** — <outcome>; <proof>.` in progress or as the final outcome lead. Then
+render this exact flat section; do not nest bullets:
+**JAIPilot impact**
+- **Optimization:** <outcome>
+- **Evidence:** <strongest proof>
+Apply [impact-reporting.md](references/impact-reporting.md) for component rows, measures, and
+limitations, then provide supporting detail.
 
 Return the scope and comparison base, initial worktree state, pass outcomes, edits retained and
 rejected, exact commands and outcomes, test and performance measurements, configured quality

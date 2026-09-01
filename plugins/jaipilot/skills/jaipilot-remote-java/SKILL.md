@@ -91,8 +91,14 @@ speedup.
   unavailable unless the service deployment is deliberately attached to an appropriate VPC.
 - Remote edits, files, and caches do not return to the checkout. Apply product edits locally.
 
-Before the final response, read and apply
-[impact-reporting.md](references/impact-reporting.md).
+Announce a completed result only as
+`**JAIPilot · Remote verification** — <outcome>; <proof>.` in progress or as the final outcome lead.
+Then render this exact flat section; do not nest bullets:
+**JAIPilot impact**
+- **Remote verification:** <outcome>
+- **Evidence:** <strongest proof>
+Apply [impact-reporting.md](references/impact-reporting.md) for measures, nesting, and limitations,
+then provide supporting detail.
 
 Report the exact source SHA and archive digest, command, cwd, JDK, profile, provider status, exit
 code, test/analyzer/profile outcome, material timing, log truncation, retry or cancellation, source

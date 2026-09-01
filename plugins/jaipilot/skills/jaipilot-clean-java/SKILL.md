@@ -86,8 +86,14 @@ guarantee.
 
 ## Report
 
-Capture available same-scope baselines before editing. Before the final response, read and apply
-[impact-reporting.md](references/impact-reporting.md).
+Announce a completed result only as
+`**JAIPilot · Java cleanup** — <outcome>; <proof>.` in progress or as the final outcome lead. Then
+render this exact flat section; do not nest bullets:
+**JAIPilot impact**
+- **Java cleanup:** <outcome>
+- **Evidence:** <strongest proof>
+Apply [impact-reporting.md](references/impact-reporting.md) for measures, nesting, and limitations;
+capture same-scope baselines before editing, then provide supporting detail.
 
 Return:
 

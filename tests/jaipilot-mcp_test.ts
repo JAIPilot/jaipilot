@@ -36,7 +36,11 @@ Deno.test("Codex and Claude packages expose the same hosted MCP binding", async 
   );
   assert.match(
     readme,
-    /### See what JAIPilot changed[\s\S]+> \*\*JAIPilot impact\*\*[\s\S]+`not measured`/,
+    /### See what JAIPilot changed[\s\S]+^\*\*JAIPilot impact\*\*$[\s\S]+`not measured`/m,
+  );
+  assert.match(
+    readme,
+    /\*\*JAIPilot · <capability>\*\* — <completed outcome>; <strongest fresh proof>\./,
   );
   assert.match(readme, /official OpenAI plugin directory/);
 });
@@ -122,36 +126,104 @@ Deno.test("all JAIPilot workflows route substantial command work through safe pa
 });
 
 Deno.test("every skill surfaces one evidence-backed JAIPilot impact handoff", async () => {
-  const names = [
-    "jaipilot-clean-java",
-    "jaipilot-fast-execution",
-    "jaipilot-generate-tests",
-    "jaipilot-maintainer-intent",
-    "jaipilot-openrewrite",
-    "jaipilot-optimize-java",
-    "jaipilot-remote-java",
-    "jaipilot-review-diff",
-  ];
+  const milestones = new Map([
+    [
+      "jaipilot-clean-java",
+      "`**JAIPilot · Java cleanup** — <completed outcome>; <strongest fresh proof>.`",
+    ],
+    [
+      "jaipilot-fast-execution",
+      "`**JAIPilot · Execution** — <completed outcome>; <strongest fresh proof>.`",
+    ],
+    [
+      "jaipilot-generate-tests",
+      "`**JAIPilot · Test generation** — <completed outcome>; <strongest fresh proof>.`",
+    ],
+    [
+      "jaipilot-maintainer-intent",
+      "`**JAIPilot · Maintainer intent** — <completed decision>; <strongest fresh proof>.`",
+    ],
+    [
+      "jaipilot-openrewrite",
+      "`**JAIPilot · Migration** — <completed outcome>; <strongest fresh proof>.`",
+    ],
+    [
+      "jaipilot-optimize-java",
+      "`**JAIPilot · Optimization** — <completed outcome>; <strongest fresh proof>.`",
+    ],
+    [
+      "jaipilot-remote-java",
+      "`**JAIPilot · Remote verification** — <completed outcome>; <strongest fresh proof>.`",
+    ],
+    [
+      "jaipilot-review-diff",
+      "`**JAIPilot · Diff review** — <completed outcome>; <strongest fresh proof>.`",
+    ],
+  ]);
 
-  for (const name of names) {
+  for (const [name, milestone] of milestones) {
     const root = new URL(`skills/${name}/`, PLUGIN);
     const skill = await Deno.readTextFile(new URL("SKILL.md", root));
     const impact = await Deno.readTextFile(new URL("references/impact-reporting.md", root));
     assert.match(skill, /\[impact-reporting\.md\]\(references\/impact-reporting\.md\)/);
+    const skillMilestone = milestone.replace("<completed outcome>", "<outcome>")
+      .replace("<completed decision>", "<decision>")
+      .replace("<strongest fresh proof>", "<proof>");
+    assert.equal(skill.includes(skillMilestone), true);
+    assert.match(skill, /Announce a completed (?:result|decision) only as/);
+    assert.match(
+      skill,
+      /in\s+progress or as the final outcome lead\.\s+Then\s+render this exact flat section; do not nest bullets:/,
+    );
+    assert.equal([...skill.matchAll(/^\*\*JAIPilot impact\*\*$/gm)].length, 1);
+    const label = milestone.match(/JAIPilot · ([^*]+)\*\*/)?.[1];
+    assert.ok(label);
+    assert.match(skill, new RegExp(`^- \\*\\*${label}:\\*\\*`, "m"));
+    assert.equal([...skill.matchAll(/^- \*\*Evidence:\*\*/gm)].length, 1);
+    assert.match(
+      skill,
+      new RegExp(
+        `\\*\\*JAIPilot impact\\*\\*\\n- \\*\\*${label}:\\*\\* <(?:outcome|decision)>\\n- \\*\\*Evidence:\\*\\* <strongest proof>`,
+      ),
+    );
     assert.equal(
-      [...impact.matchAll(/^> \*\*JAIPilot impact\*\*$/gm)].length,
+      [...impact.matchAll(/^\*\*JAIPilot impact\*\*$/gm)].length,
       1,
       `${name} must define exactly one final impact card`,
     );
     assert.match(impact, /Immediately after the final response's one-sentence outcome lead/);
     assert.match(impact, /coordinat(?:ing|or)/);
     assert.match(impact, /Do not upload or\s+persist\s+impact telemetry/);
+    assert.equal(
+      [...impact.matchAll(/^`\*\*JAIPilot · .+\*\* — .+; .+\.`$/gm)].length,
+      1,
+      `${name} must define exactly one consistently branded milestone grammar`,
+    );
+    assert.equal(impact.includes(milestone), true);
+    assert.match(impact, /Use completed evidence, not\s+intent or routing/);
+    assert.match(
+      impact,
+      /When\s+completion\s+coincides with the final response, use this line as its outcome lead immediately\s+before\s+the\s+impact\s+card/,
+    );
+    assert.match(impact, /This is the only format for announcing a completed milestone/);
+    assert.match(impact, /The card is not a closing appendix/);
+    assert.match(impact, /preserve the exact flat heading and bullet structure/);
+    assert.match(impact, /Do not\s+nest bullets/);
+    assert.match(impact, /Use exactly these two flat rows/);
+    assert.equal([...impact.matchAll(/^- \*\*Evidence:\*\*/gm)].length, 1);
+    assert.match(
+      impact,
+      new RegExp(
+        `\\*\\*JAIPilot impact\\*\\*\\n- \\*\\*${label}:\\*\\*[^\\n]+\\n- \\*\\*Evidence:\\*\\*[^\\n]+`,
+      ),
+    );
   }
 
   const tests = await Deno.readTextFile(
     new URL("skills/jaipilot-generate-tests/references/impact-reporting.md", PLUGIN),
   );
   assert.match(tests, /percentage points/);
+  assert.match(tests, /never abbreviate them\s+as `pp`/);
   assert.match(tests, /`coverage delta not measured`/);
 
   for (const name of ["jaipilot-fast-execution", "jaipilot-remote-java"]) {

@@ -67,8 +67,14 @@ and keep the host agent in control.
 
 ## Report
 
-Before the final response, read and apply
-[impact-reporting.md](references/impact-reporting.md).
+Announce a completed result only as
+`**JAIPilot · Diff review** — <outcome>; <proof>.` in progress or as the final outcome lead. Then
+render this exact flat section; do not nest bullets:
+**JAIPilot impact**
+- **Diff review:** <outcome>
+- **Evidence:** <strongest proof>
+Apply [impact-reporting.md](references/impact-reporting.md) for measures, nesting, and limitations,
+then provide supporting detail.
 
 Return:
 

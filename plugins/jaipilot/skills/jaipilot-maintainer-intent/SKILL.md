@@ -106,15 +106,15 @@ an existing bot branch, or a direct pull request to the repository's normal base
 smallest accepted solution shape, proof expected by prior reviews, and contribution mechanics.
 Then use the applicable JAIPilot implementation and review skills.
 
-For substantial Java command work after `PROCEED`, use `jaipilot-fast-execution` whenever safe
-batching or bounded native parallelism can reduce wall time without changing the required proof.
-Default compilation, tests, analysis, profiling, and benchmarks to `jaipilot-remote-java` when the
-laptop provides no concrete advantage, and follow its explicit upload consent boundary.
+After `PROCEED`, use `jaipilot-fast-execution` when safe batching or bounded native parallelism can
+reduce wall time without changing the required proof. Default substantial Java commands to
+`jaipilot-remote-java` when the laptop has no concrete advantage; follow its upload consent boundary.
 
 ## Report
 
-Before the final response, read and apply [impact-reporting.md](references/impact-reporting.md).
-Return the exact source identity; evidence links or commit IDs; relevant prior decisions; conflicts
-and duplicates; contribution and disclosure rules; decision; confidence; delivery target; allowed
-next action; and unresolved limitations. For `JOIN_EXISTING`, `COMMENT`, `WAIT`, or `NO_ACTION`,
-report that no implementation or publication was performed.
+Announce a completed decision only as `**JAIPilot · Maintainer intent** — <decision>; <proof>.` in progress or as the final outcome lead.
+Then render this exact flat section; do not nest bullets:
+**JAIPilot impact**
+- **Maintainer intent:** <decision>
+- **Evidence:** <strongest proof>
+Apply [impact-reporting.md](references/impact-reporting.md), then report evidence, conflicts, rules, decision confidence/target/action, limitations, and any publication.

@@ -71,18 +71,28 @@ Dependabot and Renovate pull requests for Maven and Gradle repositories.
 
 ### See what JAIPilot changed
 
-JAIPilot does not hide its value behind skill routing or build logs. A meaningful skill milestone
-gets one concise progress update, and the completed agent run places one consolidated impact card
-immediately after its outcome. Nested skills contribute to the same card instead of printing a
-stack of banners.
+JAIPilot does not hide its value behind skill routing or build logs. Every meaningful skill
+milestone uses the same restrained, one-line grammar:
 
-For example, the measured Petclinic run later in this README ends with evidence in this shape:
+`**JAIPilot · <capability>** — <completed outcome>; <strongest fresh proof>.`
 
-> **JAIPilot impact**
-> - **Test generation:** 75 → 85 tests (**+10**); changed-method line and branch coverage
->   0% → 100% (**+100 percentage points**)
-> - **Java cleanup:** one unused method and seven net production lines removed
-> - **Verification:** `./mvnw -q clean verify` — 85/85 tests passed
+For example: **JAIPilot · Test generation** — 7/7 focused tests passed; fresh line and branch
+coverage reached 100%.
+
+The update appears only after completed work, never for intent or routing. When completion coincides
+with the final response, the same line becomes its outcome lead and is immediately followed by one
+consolidated impact section. Nested skills contribute to that section instead of printing a stack
+of banners.
+
+For example, a measured Petclinic test-generation run ends with evidence in this shape:
+
+**JAIPilot · Test generation** — 10 useful tests added; changed-method line and branch coverage
+reached 100%.
+
+**JAIPilot impact**
+- **Test generation:** 75 → 85 tests (**+10**); changed-method line and branch coverage
+  0% → 100% (**+100 percentage points**)
+- **Evidence:** `./mvnw -q clean verify` — 85/85 tests passed
 
 Impact uses fresh, same-scope before/after evidence already useful to the task. When a comparison is
 not available, JAIPilot says `not measured`; when the value is a maintainer decision or rejected

@@ -111,10 +111,10 @@ campaign.
 
 ## Report
 
-Capture the focused test and configured coverage baseline before editing. Before the final response,
-read and apply [impact-reporting.md](references/impact-reporting.md).
-
-Return scope, initial test result, tests added, exact focused and final commands, executed tests,
-fresh coverage or mutation evidence, worker count and isolation, per-class results when applicable,
-exclusions, unavailable evidence, and remaining limitations. Never report unconfigured, stale, or
-missing evidence as a pass.
+Announce a completed result only as
+`**JAIPilot · Test generation** — <outcome>; <proof>.` in progress or as the final outcome lead. Then
+render this exact flat section; do not nest bullets:
+**JAIPilot impact**
+- **Test generation:** <outcome>
+- **Evidence:** <strongest proof>
+Apply [impact-reporting.md](references/impact-reporting.md), then report scope, measures, commands/results, test/coverage/mutation evidence, workers, nesting, limitations, and exclusions.
