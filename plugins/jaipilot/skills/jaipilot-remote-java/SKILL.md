@@ -91,6 +91,9 @@ speedup.
   unavailable unless the service deployment is deliberately attached to an appropriate VPC.
 - Remote edits, files, and caches do not return to the checkout. Apply product edits locally.
 
+Before the final response, read and apply
+[impact-reporting.md](references/impact-reporting.md).
+
 Report the exact source SHA and archive digest, command, cwd, JDK, profile, provider status, exit
 code, test/analyzer/profile outcome, material timing, log truncation, retry or cancellation, source
 cleanup result, and any unavailable dependency. Describe only the concrete benefit observed.

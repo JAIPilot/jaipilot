@@ -77,6 +77,9 @@ state, a command too small to justify build setup, or remote unavailability.
 
 ## Report
 
+Capture comparable command timing when it is already useful. Before the final response, read and
+apply [impact-reporting.md](references/impact-reporting.md).
+
 Return the execution boundary, resource evidence, `N`, batching and native-parallelism choices,
 exact commands, material durations, outcomes, serial fallbacks, cache assumptions, and any proof
 that remained unavailable. Treat workflow acceleration and product performance as separate claims.

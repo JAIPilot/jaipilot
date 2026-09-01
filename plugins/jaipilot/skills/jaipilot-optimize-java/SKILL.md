@@ -76,6 +76,9 @@ already satisfied, not applicable, rejected, or unavailable. Accept the combined
 
 ## Report
 
+Collect same-scope baselines and impact records from each component skill. Before the final response,
+read and apply [impact-reporting.md](references/impact-reporting.md).
+
 Return the scope and comparison base, initial worktree state, pass outcomes, edits retained and
 rejected, exact commands and outcomes, test and performance measurements, configured quality
 evidence, unavailable boundaries, remaining risk, and reversal path. Do not describe a green build

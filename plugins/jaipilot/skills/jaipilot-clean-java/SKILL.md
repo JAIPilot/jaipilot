@@ -86,6 +86,9 @@ guarantee.
 
 ## Report
 
+Capture available same-scope baselines before editing. Before the final response, read and apply
+[impact-reporting.md](references/impact-reporting.md).
+
 Return:
 
 - modes, boundary, initial worktree state, baseline, and unavailable evidence;

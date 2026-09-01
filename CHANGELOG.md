@@ -1,5 +1,21 @@
 # Changelog
 
+## [7.2.0] - 2026-09-01
+
+### Added
+
+- Added visible impact reporting to all eight JAIPilot skills: concise evidence-backed stage
+  completion updates and one prominent consolidated `JAIPilot impact` card in the final agent
+  response.
+- Added skill-specific impact measures for test generation, Java cleanup, maintainer intent,
+  OpenRewrite migrations, diff review, optimized execution, and exact-SHA remote verification.
+
+### Changed
+
+- Required same-scope before/after measurements, explicit `not measured` or `not applicable`
+  boundaries, nested-skill aggregation, and zero impact telemetry instead of synthetic quality,
+  speed, risk, or “without JAIPilot” claims.
+
 ## [7.0.1] - 2026-08-31
 
 ### Changed

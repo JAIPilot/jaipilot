@@ -65,6 +65,26 @@ an exact committed repository revision is uploaded.
 Install the [JAIPilot GitHub App](https://github.com/marketplace/jaipilot) to repair failed
 Dependabot and Renovate pull requests for Maven and Gradle repositories.
 
+### See what JAIPilot changed
+
+JAIPilot does not hide its value behind skill routing or build logs. A meaningful skill milestone
+gets one concise progress update, and the completed agent run places one consolidated impact card
+immediately after its outcome. Nested skills contribute to the same card instead of printing a
+stack of banners.
+
+For example, the measured Petclinic run later in this README ends with evidence in this shape:
+
+> **JAIPilot impact**
+> - **Test generation:** 75 → 85 tests (**+10**); changed-method line and branch coverage
+>   0% → 100% (**+100 percentage points**)
+> - **Java cleanup:** one unused method and seven net production lines removed
+> - **Verification:** `./mvnw -q clean verify` — 85/85 tests passed
+
+Impact uses fresh, same-scope before/after evidence already useful to the task. When a comparison is
+not available, JAIPilot says `not measured`; when the value is a maintainer decision or rejected
+unsafe change, it describes that outcome without inventing hours saved, risk percentages, or a
+counterfactual “without JAIPilot” score.
+
 ### Example prompts
 
 Open a Java repository and ask JAIPilot the same way you would ask a teammate. Each example shows

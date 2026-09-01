@@ -30,7 +30,7 @@ Deno.test("JAIPilot advertises the standard MCP Skills extension", () => {
   );
   assert.equal(
     (response?.result as { serverInfo: { version: string } }).serverInfo.version,
-    "7.0.1",
+    "7.2.0",
   );
 });
 
@@ -214,7 +214,7 @@ Deno.test("HTTP skill_get fallback serves the current eight local skills", async
   };
 
   const catalog = await call();
-  assert.equal(catalog.version, "7.0.1");
+  assert.equal(catalog.version, "7.2.0");
   assert.equal(catalog.skills.length, 8);
   assert.equal(
     catalog.skills.some((skill: { name: string }) => skill.name === "jaipilot-openrewrite"),

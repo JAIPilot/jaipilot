@@ -94,6 +94,9 @@ changing the required proof. Default substantial compilation, tests, analysis, a
 `jaipilot-remote-java` whenever the laptop provides no concrete advantage; upload the latest local
 candidate after recipe and manual edits.
 
+Before the final response, read and apply
+[impact-reporting.md](references/impact-reporting.md).
+
 Report the route, migration contract, recipe and pinned coordinates, approval and configuration
 boundary, baseline, preview and applied inventories, rejected output, manual follow-ups, repeat
 dry-run result, exact verification commands and outcomes, final diff, unavailable evidence,

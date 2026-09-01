@@ -67,6 +67,9 @@ and keep the host agent in control.
 
 ## Report
 
+Before the final response, read and apply
+[impact-reporting.md](references/impact-reporting.md).
+
 Return:
 
 - revision, comparison base, modules, and files reviewed;

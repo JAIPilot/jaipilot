@@ -25,6 +25,10 @@ Deno.test("Codex uses direct MCP while Claude retains the hosted plugin binding"
     readme,
     /### Any MCP client[\s\S]+"mcpServers"[\s\S]+"type": "http"[\s\S]+`skill_get`/,
   );
+  assert.match(
+    readme,
+    /### See what JAIPilot changed[\s\S]+> \*\*JAIPilot impact\*\*[\s\S]+`not measured`/,
+  );
   assert.match(readme, /there is no Codex plugin or local\s+skill-copy/);
 });
 
@@ -106,6 +110,54 @@ Deno.test("all JAIPilot workflows route substantial command work through safe pa
     );
     assert.match(skill, /without\s+changing\s+the\s+required\s+proof/);
   }
+});
+
+Deno.test("every skill surfaces one evidence-backed JAIPilot impact handoff", async () => {
+  const names = [
+    "jaipilot-clean-java",
+    "jaipilot-fast-execution",
+    "jaipilot-generate-tests",
+    "jaipilot-maintainer-intent",
+    "jaipilot-openrewrite",
+    "jaipilot-optimize-java",
+    "jaipilot-remote-java",
+    "jaipilot-review-diff",
+  ];
+
+  for (const name of names) {
+    const root = new URL(`skills/${name}/`, PLUGIN);
+    const skill = await Deno.readTextFile(new URL("SKILL.md", root));
+    const impact = await Deno.readTextFile(new URL("references/impact-reporting.md", root));
+    assert.match(skill, /\[impact-reporting\.md\]\(references\/impact-reporting\.md\)/);
+    assert.equal(
+      [...impact.matchAll(/^> \*\*JAIPilot impact\*\*$/gm)].length,
+      1,
+      `${name} must define exactly one final impact card`,
+    );
+    assert.match(impact, /Immediately after the final response's one-sentence outcome lead/);
+    assert.match(impact, /coordinat(?:ing|or)/);
+    assert.match(impact, /Do not upload or\s+persist\s+impact telemetry/);
+  }
+
+  const tests = await Deno.readTextFile(
+    new URL("skills/jaipilot-generate-tests/references/impact-reporting.md", PLUGIN),
+  );
+  assert.match(tests, /percentage points/);
+  assert.match(tests, /`coverage delta not measured`/);
+
+  for (const name of ["jaipilot-fast-execution", "jaipilot-remote-java"]) {
+    const impact = await Deno.readTextFile(
+      new URL(`skills/${name}/references/impact-reporting.md`, PLUGIN),
+    );
+    assert.match(impact, /matched baseline/);
+    assert.match(impact, /`speedup not measured`/);
+  }
+
+  const optimize = await Deno.readTextFile(
+    new URL("skills/jaipilot-optimize-java/references/impact-reporting.md", PLUGIN),
+  );
+  assert.match(optimize, /merely loading a skill does not earn attribution/);
+  assert.match(optimize, /same revisions, prompt, model, tools, budget, and acceptance tests/);
 });
 
 Deno.test("test generation processes and executes every safely independent scoped class in parallel", async () => {

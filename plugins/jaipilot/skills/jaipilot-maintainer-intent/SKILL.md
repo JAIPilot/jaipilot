@@ -113,6 +113,7 @@ laptop provides no concrete advantage, and follow its explicit upload consent bo
 
 ## Report
 
+Before the final response, read and apply [impact-reporting.md](references/impact-reporting.md).
 Return the exact source identity; evidence links or commit IDs; relevant prior decisions; conflicts
 and duplicates; contribution and disclosure rules; decision; confidence; delivery target; allowed
 next action; and unresolved limitations. For `JOIN_EXISTING`, `COMMENT`, `WAIT`, or `NO_ACTION`,
