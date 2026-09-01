@@ -34,7 +34,7 @@ Deno.test("JAIPilot advertises the standard MCP Skills extension", () => {
   );
 });
 
-Deno.test("Standard MCP resources expose all skills without a Codex plugin", () => {
+Deno.test("Standard MCP resources expose all skills to direct clients", () => {
   const first = result<{
     resources: Array<{
       uri: string;
@@ -288,7 +288,7 @@ Deno.test("HTTP MCP initialization starts the Codex OAuth handshake", async () =
   assert.equal(response.status, 401);
   assert.equal(
     response.headers.get("www-authenticate"),
-    'Bearer resource_metadata="https://api.jaipilot.com/functions/v1/jaipilot/.well-known/oauth-protected-resource", scope="email"',
+    'Bearer resource_metadata="https://api.jaipilot.com/functions/v1/jaipilot/.well-known/oauth-protected-resource", scope="openid email"',
   );
 });
 
@@ -302,7 +302,7 @@ Deno.test("HTTP transport publishes OAuth metadata for the combined public resou
     assert.deepEqual(metadata, {
       resource: PUBLIC_MCP_URL,
       authorization_servers: ["https://otxfylhjrlaesjagfhfi.supabase.co/auth/v1"],
-      scopes_supported: ["email"],
+      scopes_supported: ["openid", "email"],
       bearer_methods_supported: ["header"],
       resource_documentation: "https://github.com/JAIPilot/jaipilot#remote-build-beta",
     });
@@ -347,7 +347,7 @@ Deno.test("HTTP tool methods preserve OAuth while forwarding no cookies or brows
   assert.equal(response.status, 401);
   assert.equal(
     response.headers.get("www-authenticate"),
-    'Bearer resource_metadata="https://api.jaipilot.com/functions/v1/jaipilot/.well-known/oauth-protected-resource", scope="email"',
+    'Bearer resource_metadata="https://api.jaipilot.com/functions/v1/jaipilot/.well-known/oauth-protected-resource", scope="openid email"',
   );
 });
 

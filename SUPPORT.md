@@ -10,10 +10,10 @@
 Include the JAIPilot version, Codex or Claude Code version, skill name, exact request, Java project
 shape, build tool, commands the agent ran, sanitized output, and expected behavior.
 
-For remote-execution problems, also include whether OAuth completed, the source archive size (not
-its contents), workspace ID, process exit code, whether logs were truncated, and whether workspace
-destruction succeeded. Never include access tokens, signed upload URLs, private repository contents,
-or unsanitized logs.
+For remote-execution problems, also include whether OAuth completed, the exact source SHA, source
+archive size (not its contents), upload or build ID, provider status, command exit code, whether logs
+were truncated, and whether private-source cleanup completed. Never include access tokens, signed
+upload URLs, private repository contents, or unsanitized logs.
 
 JAIPilot can improve its skills, hosted MCP, and metadata. It does not own the host agent, project
 build, third-party analyzers, repository configuration, or external provider availability. A minimal

@@ -1,0 +1,51 @@
+{
+  "name": "jaipilot",
+  "version": "7.2.0",
+  "description": "Ship better Java with your coding agent.",
+  "author": {
+    "name": "JAIPilot",
+    "url": "https://github.com/JAIPilot"
+  },
+  "homepage": "https://github.com/JAIPilot/jaipilot#readme",
+  "repository": "https://github.com/JAIPilot/jaipilot",
+  "license": "MIT",
+  "keywords": [
+    "java",
+    "junit",
+    "testing",
+    "code-review",
+    "openrewrite",
+    "refactoring",
+    "performance",
+    "code-quality",
+    "remote-execution"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "JAIPilot",
+    "shortDescription": "Evidence-first Java workflows",
+    "longDescription": "JAIPilot gives your coding agent eight focused Java engineering workflows for maintainer intent, tests, cleanup, review, safe modernization, OpenRewrite, measured optimization, and faster verification. The optional OAuth MCP runs approved exact-commit Maven and Gradle work on bounded disposable hardware while your coding agent remains the only planner and editor.",
+    "developerName": "JAIPilot",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Research maintainer intent",
+      "Generate and review Java tests",
+      "Clean and modernize Java code",
+      "Run bounded remote Java builds"
+    ],
+    "websiteURL": "https://github.com/JAIPilot/jaipilot",
+    "supportURL": "https://github.com/JAIPilot/jaipilot/blob/main/SUPPORT.md",
+    "privacyPolicyURL": "https://github.com/JAIPilot/jaipilot/blob/main/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/JAIPilot/jaipilot/blob/main/TERMS.md",
+    "defaultPrompt": [
+      "Make my current Java changes production-ready and run the project's real verification.",
+      "Add meaningful unit tests for my Java changes, including edge and error cases.",
+      "Review this Java diff for regressions, unnecessary code, and missing proof."
+    ],
+    "brandColor": "#1F6FEB",
+    "composerIcon": "./assets/jaipilot-logo.svg",
+    "logo": "./assets/jaipilot-logo.svg",
+    "logoDark": "./assets/jaipilot-logo-dark.svg"
+  }
+}

@@ -16,6 +16,24 @@
   boundaries, nested-skill aggregation, and zero impact telemetry instead of synthetic quality,
   speed, risk, or “without JAIPilot” claims.
 
+## [7.1.0] - 2026-08-31
+
+### Added
+
+- Added the canonical Codex plugin manifest for a combined eight-skill and OAuth MCP submission to
+  the official OpenAI plugin directory, including bounded listing metadata and starter prompts.
+
+### Changed
+
+- Advertised the OAuth `openid` and `email` scopes required for workspace domain restrictions.
+- Updated installation, privacy, terms, security, and support text to describe the exact-commit
+  CodeBuild boundary introduced in 7.0.0.
+
+### Security
+
+- Made the public data disclosure explicit about OAuth identity, operational build metadata,
+  bounded logs, private S3 source retention, and the one-day lifecycle cleanup backstop.
+
 ## [7.0.1] - 2026-08-31
 
 ### Changed
@@ -39,8 +57,8 @@
 
 - Replaced the eight-tool workspace/process lifecycle with six tools: `skill_get`, `build_prepare`,
   `build_start`, `build_status`, `build_logs`, and `build_cancel`.
-- Restricted remote proof to `git archive` output for an explicitly approved exact commit. Dirty,
-  staged, untracked, ignored, credential, and `.git` content is never uploaded.
+- Restricted remote proof to `git archive` output for an explicitly approved exact commit. Staged,
+  unstaged, untracked, ignored, and `.git` content is never uploaded.
 - Made each attempt an independent disposable build with no persistent remote workspace or cache;
   the host agent remains responsible for local edits, commits, command choice, retries, and Git.
 

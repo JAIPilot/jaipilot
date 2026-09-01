@@ -14,6 +14,7 @@ PLUGIN = ROOT / "plugins" / "jaipilot"
 PLUGIN_FILES = (
     PLUGIN / "plugin.json",
     PLUGIN / ".claude-plugin" / "plugin.json",
+    PLUGIN / ".codex-plugin" / "plugin.json",
 )
 SKILLS = (
     "jaipilot-clean-java",
@@ -39,6 +40,7 @@ FORBIDDEN_PATHS = (
 )
 ALLOWED_PLUGIN_ROOTS = {
     ".claude-plugin",
+    ".codex-plugin",
     ".mcp.json",
     "README.md",
     "assets",
@@ -95,6 +97,28 @@ def validate_manifests(expected_version: str) -> None:
 
     require(load(PLUGIN / "plugin.json").get("mcpServers") == "./.mcp.json",
             "Compatibility manifest must expose the bundled .mcp.json")
+
+    codex = load(PLUGIN / ".codex-plugin" / "plugin.json")
+    require(codex.get("skills") == "./skills/",
+            "Codex manifest must expose the eight local skills")
+    require(codex.get("mcpServers") == "./.mcp.json",
+            "Codex manifest must expose the bundled .mcp.json")
+    interface = codex.get("interface")
+    require(isinstance(interface, dict), "Codex manifest must include interface metadata")
+    require(interface.get("displayName") == "JAIPilot",
+            "Codex display name must be JAIPilot")
+    require(interface.get("supportURL") == (
+                "https://github.com/JAIPilot/jaipilot/blob/main/SUPPORT.md"),
+            "Codex manifest must publish the public support URL")
+    short_description = interface.get("shortDescription")
+    require(isinstance(short_description, str) and len(short_description) <= 30,
+            "Codex short description must satisfy the directory's 30-character limit")
+    prompts = interface.get("defaultPrompt")
+    require(isinstance(prompts, list) and 1 <= len(prompts) <= 3,
+            "Codex manifest must publish one to three starter prompts")
+    require(all(isinstance(prompt, str) and "\n" not in prompt and len(prompt) <= 128
+                for prompt in prompts),
+            "Codex starter prompts must be single-line strings at most 128 characters")
 
 
 def validate_skills() -> None:
