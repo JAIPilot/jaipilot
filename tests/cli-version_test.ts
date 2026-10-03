@@ -1,0 +1,6 @@
+import assert from "node:assert/strict";
+import { VERSION } from "../cli/version.ts";
+
+Deno.test("release version matches the CLI", async () => {
+  assert.equal((await Deno.readTextFile(new URL("../VERSION", import.meta.url))).trim(), VERSION);
+});

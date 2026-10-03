@@ -1,0 +1,20 @@
+target/
+.DS_Store
+.idea/
+*.iml
+.classpath
+.classpath.txt
+.project
+.settings/
+github-app/node_modules/
+node_modules/
+github-app/.env
+.dependency-fix/
+.codex/
+github-app/
+supabase/
+dist/
+
+# Local agent instructions.
+AGENTS.override.md
+/AGENTS.md

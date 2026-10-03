@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Verify release identity
+        run: |
+          test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - run: deno task check
+      - uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          name: JAIPilot CLI ${{ github.ref_name }}
+          body: |
+            JAIPilot is a fast, high coverage testing agent for Java. Generate tests, repair failures, stabilize flaky tests, and improve coverage using your existing JAIPilot account.
+
+            Install on macOS or Linux:
+
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot/main/install.sh | sh
+            ```
+
+            The installer selects your platform, verifies the SHA-256 checksum, and installs into `~/.local/bin`. Existing installations can use `jaipilot update`. Before workflows, the CLI automatically updates to newer stable releases; set `JAIPILOT_NO_UPDATE=1` to opt out.
+
+            On Windows, download `jaipilot-x86_64-pc-windows-msvc.exe` and place it on your PATH as `jaipilot.exe`.
+
+            ```bash
+            jaipilot auth login
+            jaipilot run improve_coverage --class com.acme.OrderService
+            ```
+
+            Choose an entire repository, paths, classes, or line selections. JAIPilot targets 90% selected-scope line coverage and verifies tests locally with your project's build.
+
+            [Usage and installation](https://github.com/JAIPilot/jaipilot#readme) · [Get help](https://github.com/JAIPilot/jaipilot/discussions)
+
+  binaries:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
+          - x86_64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@v7
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Compile CLI
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          mkdir -p dist
+          case "$TARGET" in *windows*) EXT=.exe ;; *) EXT= ;; esac
+          deno compile -A --target "$TARGET" --output "dist/jaipilot-$TARGET$EXT" cli/main.ts
+          (cd dist && sha256sum "jaipilot-$TARGET$EXT" > "jaipilot-$TARGET$EXT.sha256")
+      - uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          files: dist/jaipilot-*
+          fail_on_unmatched_files: true
+
+  publish:
+    needs: binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest

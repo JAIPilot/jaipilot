@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Validate JAIPilot distribution
+        run: deno task check
+
+      - name: Reject whitespace errors
+        run: git show --check --format= HEAD
+
+      - name: Validate installer syntax
+        if: runner.os != 'Windows'
+        run: sh -n install.sh
+
+  build:
+    needs: validate
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all platform checks
+        run: test '${{ needs.validate.result }}' = success
