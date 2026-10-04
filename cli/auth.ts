@@ -62,7 +62,8 @@ async function openBrowser(url: string): Promise<boolean> {
   }
 }
 
-export async function login(): Promise<string> {
+export async function login(options: { signal?: AbortSignal } = {}): Promise<string> {
+  options.signal?.throwIfAborted();
   const state = crypto.randomUUID();
   let done!: (session: Session) => void;
   const completed = new Promise<Session>((resolve) => done = resolve);
@@ -109,7 +110,16 @@ export async function login(): Promise<string> {
     const timeout = new Promise<never>((_, reject) => {
       timer = setTimeout(() => reject(new Error("Sign-in timed out")), 180_000);
     });
-    const session = await Promise.race([completed, timeout]).finally(() => clearTimeout(timer));
+    let cancel: (() => void) | undefined;
+    const cancelled = new Promise<never>((_, reject) => {
+      cancel = () => reject(new Error("Sign-in cancelled"));
+      options.signal?.addEventListener("abort", cancel, { once: true });
+      if (options.signal?.aborted) cancel();
+    });
+    const session = await Promise.race([completed, timeout, cancelled]).finally(() => {
+      clearTimeout(timer);
+      if (cancel) options.signal?.removeEventListener("abort", cancel);
+    });
     await saveSession(session);
     return session.email;
   } finally {

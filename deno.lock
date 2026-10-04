@@ -1,0 +1,17 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:@agentclientprotocol/sdk@1.7.0": "1.7.0_zod@4.6.1"
+  },
+  "npm": {
+    "@agentclientprotocol/sdk@1.7.0_zod@4.6.1": {
+      "integrity": "sha512-ZORuxsuEnLjRly7t6Ad7zAsWitjWsyprswyPUHz/yycPb+tTm3DGa8XheaHhRXqX8LS9snuxaYavXSRA50TlHw==",
+      "dependencies": [
+        "zod"
+      ]
+    },
+    "zod@4.6.1": {
+      "integrity": "sha512-341aRWQsve0rvronKNTqZpjmzdbUDlFuzHaI/XLg/Ej82qffDJRRfBTCuv7+9q/rMjB6LSLyEBnW4InJeMtt/Q=="
+    }
+  }
+}

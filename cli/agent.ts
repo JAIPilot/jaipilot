@@ -105,16 +105,23 @@ async function request(
 
 function pause(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => {
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", cancel);
+      resolve();
+    }, ms);
+    const cancel = () => {
       clearTimeout(timer);
       reject(new Error("Cancelled"));
-    }, { once: true });
+    };
+    signal?.addEventListener("abort", cancel, { once: true });
+    if (signal?.aborted) cancel();
   });
 }
 
-export async function workflows(): Promise<{ id: string; title: string; description: string }[]> {
-  const response = await request("GET");
+export async function workflows(
+  signal?: AbortSignal,
+): Promise<{ id: string; title: string; description: string }[]> {
+  const response = await request("GET", undefined, signal);
   if (response.protocolVersion !== PROTOCOL_VERSION || !Array.isArray(response.workflows)) {
     throw new Error("JAIPilot returned an incompatible workflow catalog");
   }
@@ -203,9 +210,16 @@ export async function runWorkflow(
   workflow: string,
   scope: Scope,
   signal?: AbortSignal,
+  options: {
+    protocolVersion?: 4 | 6;
+    userRequest?: string;
+    report?: (message: string) => void | Promise<void>;
+    execute?: typeof runCommand;
+  } = {},
 ): Promise<WorkflowResult> {
   const started = performance.now();
-  const catalog = await workflows();
+  const catalog = await workflows(signal);
+  const report = options.report ?? console.error;
   if (!catalog.some((item) => item.id === workflow)) {
     throw new Error(`Unknown workflow: ${workflow}. Run \`jaipilot workflows\` to list them.`);
   }
@@ -217,11 +231,12 @@ export async function runWorkflow(
     selections: scope.selections,
     trigger: { projectWide: scope.projectWide },
     jobId: crypto.randomUUID(),
+    ...(options.userRequest ? { userRequest: options.userRequest } : {}),
   };
   const history: Record<string, unknown>[] = [];
   for (let turn = 0; turn < 300; turn++) {
     const body = {
-      protocolVersion: PROTOCOL_VERSION,
+      protocolVersion: options.protocolVersion ?? PROTOCOL_VERSION,
       requestId: crypto.randomUUID(),
       workflow,
       context,
@@ -231,7 +246,7 @@ export async function runWorkflow(
     if (reply.continue) {
       const progress = reply.parallel;
       if (progress?.totalClasses) {
-        console.error(
+        await report(
           `JAIPilot: ${progress.completedClasses}/${progress.totalClasses} classes complete`,
         );
       }
@@ -239,7 +254,7 @@ export async function runWorkflow(
     }
     if (!Array.isArray(reply.content)) throw new Error("JAIPilot returned an invalid agent turn");
     for (const block of reply.content) {
-      if (block.type === "text" && block.text?.trim()) console.error(block.text.trim());
+      if (block.type === "text" && block.text?.trim()) await report(block.text.trim());
     }
     const results: Record<string, unknown>[] = [];
     for (const block of reply.content) {
@@ -263,7 +278,7 @@ export async function runWorkflow(
       let value: unknown, error = false;
       try {
         if (block.name !== "run_command") throw new Error(`Unsupported local tool: ${block.name}`);
-        value = await runCommand(root, block.input, signal);
+        value = await (options.execute ?? runCommand)(root, block.input, signal);
       } catch (failure) {
         if (signal?.aborted) throw failure;
         value = { error: failure instanceof Error ? failure.message : "Local tool failed" };

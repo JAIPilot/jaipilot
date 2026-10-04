@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: v2.7.14
       - name: Verify release identity
         run: |
           test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
@@ -27,28 +27,17 @@ jobs:
       - uses: softprops/action-gh-release@v3
         with:
           draft: true
-          name: JAIPilot CLI ${{ github.ref_name }}
+          name: JAIPilot ACP ${{ github.ref_name }}
           body: |
-            JAIPilot is a fast, high coverage testing agent for Java. Generate tests, repair failures, stabilize flaky tests, and improve coverage using your existing JAIPilot account.
+            JAIPilot's ACP adapter brings six workflow-based Java testing outcomes to IntelliJ AI Assistant and other ACP clients.
 
-            Install on macOS or Linux:
+            Generate tests, improve coverage, fix failing tests, stabilize flaky tests, test current changes, and lock existing behavior. Choose an outcome in the mode selector or use a slash command with an exact scope.
 
-            ```bash
-            curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot/main/install.sh | sh
-            ```
+            The adapter uses your existing JAIPilot account, subscription, and credits. Builds and tests run through approved local IDE terminals. No remote workspace or bulk source archive is used. Approved command output and project metadata are sent to JAIPilot's managed model service.
 
-            The installer selects your platform, verifies the SHA-256 checksum, and installs into `~/.local/bin`. Existing installations can use `jaipilot update`. Before workflows, the CLI automatically updates to newer stable releases; set `JAIPILOT_NO_UPDATE=1` to opt out.
+            Download the archive for your platform, extract it, and configure the executable as a custom ACP agent. Public catalog availability depends on ACP Registry review.
 
-            On Windows, download `jaipilot-x86_64-pc-windows-msvc.exe` and place it on your PATH as `jaipilot.exe`.
-
-            ```bash
-            jaipilot auth login
-            jaipilot run improve_coverage --class com.acme.OrderService
-            ```
-
-            Choose an entire repository, paths, classes, or line selections. JAIPilot targets 90% selected-scope line coverage and verifies tests locally with your project's build.
-
-            [Usage and installation](https://github.com/JAIPilot/jaipilot#readme) · [Get help](https://github.com/JAIPilot/jaipilot/discussions)
+            [IntelliJ setup and limitations](https://github.com/JAIPilot/jaipilot/blob/main/docs/intellij-acp.md)
 
   binaries:
     needs: release
@@ -68,19 +57,22 @@ jobs:
       - uses: actions/checkout@v7
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
-      - name: Compile CLI
+          deno-version: v2.7.14
+      - name: Compile ACP adapter
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          mkdir -p dist
+          mkdir -p dist/package
           case "$TARGET" in *windows*) EXT=.exe ;; *) EXT= ;; esac
-          deno compile -A --target "$TARGET" --output "dist/jaipilot-$TARGET$EXT" cli/main.ts
-          (cd dist && sha256sum "jaipilot-$TARGET$EXT" > "jaipilot-$TARGET$EXT.sha256")
+          deno compile -A --frozen --target "$TARGET" --output "dist/package/jaipilot-acp$EXT" acp/main.ts
+          cp LICENSE THIRD_PARTY_NOTICES.md dist/package/
+          cp -R licenses dist/package/
+          (cd dist/package && zip -r -9 "../jaipilot-acp-$TARGET.zip" "jaipilot-acp$EXT" LICENSE THIRD_PARTY_NOTICES.md licenses)
+          (cd dist && sha256sum "jaipilot-acp-$TARGET.zip" > "jaipilot-acp-$TARGET.zip.sha256")
       - uses: softprops/action-gh-release@v3
         with:
           draft: true
-          files: dist/jaipilot-*
+          files: dist/jaipilot-acp-*
           fail_on_unmatched_files: true
 
   publish:

@@ -4,12 +4,13 @@
     "lineWidth": 100,
     "semiColons": true,
     "singleQuote": false,
-    "include": ["cli", "tests", "deno.json"]
+    "include": ["cli", "acp", "tests", "scripts", "deno.json"]
   },
-  "lint": { "rules": { "tags": ["recommended"] }, "include": ["cli", "tests"] },
+  "lint": { "rules": { "tags": ["recommended"] }, "include": ["cli", "acp", "tests", "scripts"] },
   "tasks": {
-    "check": "deno fmt --check && deno lint && deno check cli/main.ts tests/cli-project_test.ts && deno test -A tests",
+    "check": "deno fmt --check && deno lint && deno check cli/main.ts acp/main.ts tests/cli-project_test.ts && deno test -A tests",
     "install": "deno install -g -A -n jaipilot ./cli/main.ts",
-    "compile": "deno compile -A --output dist/jaipilot cli/main.ts"
+    "compile": "deno compile -A --output dist/jaipilot cli/main.ts",
+    "compile:acp": "deno compile -A --output dist/jaipilot-acp acp/main.ts"
   }
 }
