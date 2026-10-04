@@ -1,78 +1,32 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/jaipilot-logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/jaipilot-logo.svg">
-    <img src="assets/jaipilot-logo.svg" alt="JAIPilot" width="96" height="96">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/JAIPilot/jaipilot/main/assets/jaipilot-logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/JAIPilot/jaipilot/main/assets/jaipilot-logo.svg">
+    <img src="https://raw.githubusercontent.com/JAIPilot/jaipilot/main/assets/jaipilot-logo.svg" alt="JAIPilot" width="96" height="96">
   </picture>
 </p>
 
-<h1 align="center">JAIPilot — workflow-based Java testing in your IDE</h1>
+<h1 align="center">JAIPilot — faster, more accurate Java testing with better coverage than your coding agent</h1>
 
-<p align="center"><strong>Generate tests · Improve coverage · Fix failing tests<br>
-Stabilize flaky tests · Test current changes · Lock existing behavior</strong></p>
+<p align="center">
+  <strong>5× faster than testing with a regular coding agent.<br>
+  Enterprise grade quality unit tests. A 90% line coverage target.</strong>
+</p>
 
-JAIPilot's ACP adapter brings six testing outcomes to IntelliJ AI Assistant and other ACP clients
-with terminal support. Choose an outcome, supply an exact Java scope, and review the commands, test
-results, coverage evidence, and complete diff in your IDE. Use your existing JAIPilot account,
-subscription, and credits.
+<h2 align="center">Optimized for outcomes</h2>
 
-## Get started in IntelliJ
+<p align="center">
+  <strong>Generate tests · Improve coverage · Fix failing tests<br>
+  Stabilize flaky tests · Test current changes · Lock existing behavior</strong>
+</p>
 
-The ACP Registry submission requires upstream review before JAIPilot appears in the public
-**Settings → Tools → AI Assistant → Agents** catalog. You can use it now as a custom agent:
+<p align="center">
+  <a href="https://github.com/JAIPilot/jaipilot/releases/latest">Download CLI</a> ·
+  <a href="#install">Get started</a> ·
+  <a href="https://www.jaipilot.com/">JAIPilot.com</a>
+</p>
 
-1. Download your platform's archive and checksum from the
-   [JAIPilot ACP release](https://github.com/JAIPilot/jaipilot/releases/latest), verify the hash, and extract it.
-2. Add the extracted executable as **JAIPilot** using AI Chat → **Add Custom Agent**.
-3. Disable **Pass custom MCP servers** and **Pass IntelliJ MCP server** for this bounded adapter.
-4. Select JAIPilot in AI Chat and sign in when prompted.
-5. Choose an outcome or enter a slash command with scope:
-
-```text
-/generate_tests --class com.acme.OrderService
-/improve_coverage --selection src/main/java/com/acme/OrderService.java:42-88
-/fix_tests --all
-```
-
-[Complete IntelliJ setup, all outcomes, and limitations](docs/intellij-acp.md).
-
-Requirements: Git, your project's supported JDK and build tools, AI Assistant with ACP terminal
-support, and a JAIPilot account. The release executable includes its runtime; JAIPilot does not
-install Java or build tools. No npm or npx distribution is published.
-
-## Exact scope and evidence
-
-Use exactly one scope type: the entire Git repository (`--all`), repeated paths (`--path`), Java
-classes (`--class`), or selected line ranges (`--selection`). Attached Java file links can supply
-scope when no explicit flags are present. Relative paths use the IDE session's working directory.
-Save editor buffers before running, since commands use the files on disk.
-
-The workflows instruct the service to preserve production source and unrelated work, follow the
-repository's existing test conventions, run focused verification and the final test suite, and
-measure coverage only through configured tools. Instructions alone do not enforce correctness.
-Review the full diff and rerun your required checks. Missing coverage, failed checks, and blockers
-remain explicit; no coverage target or speedup is guaranteed.
-
-## Permissions and privacy
-
-Commands run in local IDE terminals with your user permissions. JAIPilot asks for service consent
-and approval for each command, displays execution evidence, and supports cancellation and timeouts.
-Rejecting a command stops the workflow. This adapter uses the local-tools service protocol and does
-not start remote workspaces or bulk source-upload workers.
-
-Selected paths, project metadata, your text request, and approved command output are sent to
-JAIPilot's managed model service and its provider. Commands can read source into their output;
-inspect them before approving them. Keep credentials and private logs out of public issues.
-
-This release supports six stable outcomes and ephemeral sessions. Custom MCP servers, image/audio
-prompts, session restoration, and the CLI's experimental 100% coverage outcome are unavailable.
-
-## Earlier CLI demonstrations
-
-These recordings show earlier CLI runs, not this ACP adapter. The experimental `coverage_100`
-outcome is available in CLI 1.0.2 and is not part of the ACP release.
-
-### Watch it run on Apache Kafka
+## Watch it run on Apache Kafka
 
 <p align="center">
   <img src="assets/kafka-cli-demo.gif" alt="Actual macOS Terminal recording of JAIPilot improving Apache Kafka's Deadline and LockUtils tests, from 34.3% to 97.1% selected line coverage" width="900">
@@ -85,7 +39,7 @@ Recorded directly from macOS Terminal with JAIPilot CLI. The GIF shortens idle w
 <details>
 <summary>Run the same workflow</summary>
 
-After [installing the earlier CLI](https://github.com/JAIPilot/jaipilot/blob/v1.0.2/README.md#install) and signing in, run inside an Apache Kafka checkout:
+After [installing](#install) and signing in, run inside an Apache Kafka checkout:
 
 ```bash
 jaipilot run improve_coverage \
@@ -97,7 +51,7 @@ This recording used a development build, [Kafka commit `adf8c4c`](https://github
 
 </details>
 
-### Watch 100% coverage on Spring Petclinic (Experimental)
+## Watch 100% coverage on Spring Petclinic (Experimental)
 
 <p align="center">
   <img src="assets/petclinic-coverage-100-demo.gif" alt="Actual macOS Terminal recording of JAIPilot's experimental coverage_100 workflow on the entire official Spring Framework Petclinic project, from 85.7% to 100% line coverage in 3 minutes 21 seconds" width="900">
@@ -110,7 +64,7 @@ Recorded directly from macOS Terminal with the released JAIPilot CLI and product
 <details>
 <summary>Run the same workflow</summary>
 
-After [installing the earlier CLI](https://github.com/JAIPilot/jaipilot/blob/v1.0.2/README.md#install) and signing in, use the official Spring Framework Petclinic repository:
+After [installing](#install) and signing in, use the official Spring Framework Petclinic repository:
 
 ```bash
 git clone https://github.com/spring-petclinic/spring-framework-petclinic.git
@@ -124,20 +78,145 @@ This recording used CLI **1.0.2**, official [Petclinic commit `2d75ede`](https:/
 
 </details>
 
-## Development
+JAIPilot is a fast, high coverage testing agent for Java, **optimized for the testing outcome you choose**. **Choose an outcome. Select your code. Get verified tests.** Each outcome guides how JAIPilot plans, writes, repairs, and verifies your tests using your project's existing build and test framework.
 
-```sh
-deno task check
-deno task compile:acp
-deno run -A scripts/check-acp.ts dist/jaipilot-acp
+## Spend less time asking for tests
+
+Long waits. Repeated prompts. More test code to maintain, while important scenarios still slip through. If that is your experience asking a general coding agent to write tests, JAIPilot gives Java testing a clear finish line.
+
+- **Focus on the scenarios that matter.** Generate tests for behavior, boundaries, and failure paths with meaningful assertions. Aim for focused, maintainable tests that protect your code.
+- **Let the agent carry the task through.** JAIPilot plans, writes, repairs, and verifies the tests. Focused checks and a final regression suite provide evidence for the outcome.
+- **5× faster than testing with a regular coding agent.** Run one command to generate tests, verify them locally, and measure coverage.
+- **See the coverage you gained.** JAIPilot targets **at least 90% line coverage in your selected production scope** when coverage tooling is configured. It reports fresh measurements and concrete blockers.
+
+Use the whole repository, a list of classes, paths, or selected lines. Builds, tests, and coverage reporting run on your computer. Sign in with your existing JAIPilot account and use the same subscription and credits.
+
+## Install
+
+Requirements: Git, a JDK, and your project's Maven, Gradle, or other Java build tools.
+
+On **macOS or Linux**, install with one command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot/main/install.sh | sh
 ```
 
-CI verifies source and the packaged ACP handshake on Linux, macOS, and Windows. The release workflow
-publishes only ACP archives and their SHA-256 checksums for macOS Intel/Apple Silicon, Linux
-x86-64/ARM64, and Windows x86-64. ACP stdio contains only protocol messages; diagnostics use stderr.
+The installer detects your OS and CPU, verifies the release's SHA-256 checksum, and installs
+`jaipilot` into `~/.local/bin`. If that directory is not on your `PATH`, add this to your shell profile:
 
-The earlier CLI remains available at [v1.0.2](https://github.com/JAIPilot/jaipilot/releases/tag/v1.0.2)
-with its [versioned documentation](https://github.com/JAIPilot/jaipilot/blob/v1.0.2/README.md).
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
 
-[JAIPilot.com](https://www.jaipilot.com/) ·
-[Report an issue](https://github.com/JAIPilot/jaipilot/issues) · [MIT License](LICENSE)
+On **Windows**, download the [Windows executable](https://github.com/JAIPilot/jaipilot/releases/latest/download/jaipilot-x86_64-pc-windows-msvc.exe),
+rename it to `jaipilot.exe`, and put it in a directory on your `PATH`.
+
+Sign in and run inside your Java repository:
+
+```bash
+jaipilot auth login
+jaipilot run improve_coverage --class com.acme.OrderService
+```
+
+Sign-in opens [jaipilot.com](https://www.jaipilot.com/) and uses the same JAIPilot account, subscription, and credits as the IntelliJ distribution.
+
+## Updates
+
+Before `run` and `workflows`, the CLI checks for a newer stable GitHub release. When one is available,
+it downloads the matching binary, verifies its checksum and version, installs it, and restarts with
+your original arguments. Failed checks or downloads leave the current installation usable and the
+requested command continues. Help, version, and account commands do not check for updates.
+
+```bash
+jaipilot update          # Install the latest stable release now
+jaipilot update --check  # Check without installing
+JAIPILOT_NO_UPDATE=1 jaipilot run improve_coverage --class com.acme.OrderService
+```
+
+The installer can also upgrade or repair an existing installation. To choose a directory or pin a release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot/main/install.sh | \
+  JAIPILOT_INSTALL_DIR="$HOME/bin" JAIPILOT_VERSION=v1.0.0 sh
+```
+
+Updates leave your Java repositories untouched. Downloads require internet access and write
+access to the CLI's installation directory.
+
+## Run an outcome
+
+```bash
+jaipilot workflows
+jaipilot run improve_coverage --all
+jaipilot run generate_tests --class com.acme.OrderService --class com.acme.InvoiceService
+jaipilot run stabilize_flaky_tests --path src/test/java/com/acme/OrderServiceTest.java
+jaipilot run improve_coverage --selection src/main/java/com/acme/OrderService.java:42-88
+```
+
+Run these commands inside a Git repository, or add `--repo /path/to/repository`. You can repeat `--path`, `--class`, or `--selection` to supply a list. Use exactly one scope type per run:
+
+| Scope | Example | Meaning |
+| --- | --- | --- |
+| Entire repository | `--all` | Discover the Java source and tests across the repository. |
+| Paths | `--path module/src/main/java` | One or more files or directories. |
+| Classes | `--class com.acme.OrderService` | One or more Java classes; simple names work when unambiguous. |
+| Selections | `--selection path/File.java:42-88` | One or more line ranges, verified in their containing classes. |
+
+| Outcome | Workflow |
+| --- | --- |
+| Create focused tests and verify them | `generate_tests` |
+| Measure coverage and close meaningful gaps | `improve_coverage` |
+| **100% coverage (Experimental): make code agent ready** | `coverage_100` |
+| Repair failing tests and rerun the suite | `fix_tests` |
+| Reproduce and stabilize flaky tests | `stabilize_flaky_tests` |
+| Test behavior changed in your current Git diff | `test_current_changes` |
+| Capture existing behavior before refactoring | `lock_behavior` |
+
+The agent uses your existing build and test framework. It is instructed to preserve production code and unrelated edits, runs focused tests and the final suite, and reports fresh coverage when configured. If coverage tooling is absent, it reports that plainly.
+
+**100% Coverage (Experimental)** is a CLI-only outcome that targets 100% line coverage
+for your selected production code to make it agent ready. It uses the same workflow as
+`improve_coverage`, with a prompt requesting 100% instead of the usual 90% target.
+The agent reports measured coverage and concrete blockers when the target cannot be reached.
+
+```bash
+jaipilot run coverage_100 --all
+jaipilot run coverage_100 --class com.acme.OrderService
+```
+
+The final job output shows the total time taken, including agent requests and local
+commands, for example `Time taken: 1m 53s`.
+
+Use `--json` for structured results in scripts, including elapsed time in `durationMs`:
+
+```bash
+jaipilot run improve_coverage --class com.acme.OrderService --json
+```
+
+Exit codes are `0` for a completed workflow, `2` for a concrete blocker, and `1` for a CLI or service error. Review the result and `git diff` before accepting changes. Repository-wide work may consume more credits than a focused class run.
+
+## Verified on Petclinic
+
+| Selected classes | Time | Line / branch coverage | Full suite |
+| --- | --- | --- | --- |
+| 1 | 62 seconds | 100% / 100% | 83 passing tests |
+| 2 | 67 seconds | 100% / 100% | 85 passing tests |
+| 5 | 126 seconds | 100% / 100% | 95 passing tests |
+
+Each run began from the same clean Petclinic commit using Java 17 and a warm Maven dependency cache. Fresh clean builds independently confirmed the results. Only test files changed. Runtime and coverage vary by project; quantifying a 5× speedup requires a controlled sequential comparison.
+
+## Local execution and privacy
+
+Your refreshable sign-in is stored locally with user-only file permissions. Workflow requests send selected paths, project metadata, and local command output to JAIPilot's managed service and model provider. Parallel class work can also upload selected source and related test/build context to a private job tied to your account.
+
+Commands, builds, and tests run locally with your user permissions. Review the result and `git diff` before accepting changes. Keep credentials, private source, and unredacted logs out of public issues.
+
+## Get help
+
+[Ask a question](https://github.com/JAIPilot/jaipilot/discussions) · [Report an issue](https://github.com/JAIPilot/jaipilot/issues) · [Report a vulnerability privately](https://github.com/JAIPilot/jaipilot/security/advisories/new)
+
+For issues, include your CLI version, OS, JDK, build tool, workflow, and sanitized output.
+
+---
+
+[JAIPilot.com](https://www.jaipilot.com/) · [Download](https://github.com/JAIPilot/jaipilot/releases/latest) · [MIT License](LICENSE)
