@@ -139,12 +139,23 @@ Run these commands inside a Git repository, or add `--repo /path/to/repository`.
 | --- | --- |
 | Create focused tests and verify them | `generate_tests` |
 | Measure coverage and close meaningful gaps | `improve_coverage` |
+| **100% coverage (Experimental): make code agent ready** | `coverage_100` |
 | Repair failing tests and rerun the suite | `fix_tests` |
 | Reproduce and stabilize flaky tests | `stabilize_flaky_tests` |
 | Test behavior changed in your current Git diff | `test_current_changes` |
 | Capture existing behavior before refactoring | `lock_behavior` |
 
 The agent uses your existing build and test framework. It is instructed to preserve production code and unrelated edits, runs focused tests and the final suite, and reports fresh coverage when configured. If coverage tooling is absent, it reports that plainly.
+
+**100% Coverage (Experimental)** is a CLI-only outcome that targets 100% line coverage
+for your selected production code to make it agent ready. It uses the same workflow as
+`improve_coverage`, with a prompt requesting 100% instead of the usual 90% target.
+The agent reports measured coverage and concrete blockers when the target cannot be reached.
+
+```bash
+jaipilot run coverage_100 --all
+jaipilot run coverage_100 --class com.acme.OrderService
+```
 
 The final job output shows the total time taken, including agent requests and local
 commands, for example `Time taken: 1m 53s`.
