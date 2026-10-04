@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { runCommand } from "../cli/agent.ts";
+import { runCommand, workflows } from "../cli/agent.ts";
 
 Deno.test("local runner returns real exit status and bounded output", async () => {
   const root = await Deno.makeTempDir();
@@ -22,5 +22,63 @@ Deno.test("local runner returns real exit status and bounded output", async () =
     await assert.rejects(() => runCommand(root, { command: "echo test", timeoutSeconds: 7201 }));
   } finally {
     await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("service outages retry but a terminal server response stops", async () => {
+  const config = await Deno.makeTempDir();
+  const previousConfig = Deno.env.get("JAIPILOT_CONFIG_DIR");
+  const originalFetch = globalThis.fetch;
+  try {
+    Deno.env.set("JAIPILOT_CONFIG_DIR", config);
+    await Deno.mkdir(`${config}/jaipilot`);
+    await Deno.writeTextFile(
+      `${config}/jaipilot/session.json`,
+      JSON.stringify({
+        access_token: "test-token",
+        refresh_token: "test-refresh",
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        email: "test@example.com",
+      }),
+    );
+    let calls = 0;
+    globalThis.fetch = (() => {
+      calls++;
+      return Promise.resolve(
+        calls === 1
+          ? Response.json({ error: "temporarily unavailable", retryable: true }, {
+            status: 503,
+            headers: { "Retry-After": "0" },
+          })
+          : Response.json({ protocolVersion: 6, workflows: [] }),
+      );
+    }) as typeof fetch;
+    assert.deepEqual(await workflows(), []);
+    assert.equal(calls, 2);
+
+    calls = 0;
+    globalThis.fetch = (() => {
+      calls++;
+      return calls === 1
+        ? Promise.reject(new TypeError("connection lost"))
+        : Promise.resolve(Response.json({ protocolVersion: 6, workflows: [] }));
+    }) as typeof fetch;
+    assert.deepEqual(await workflows(), []);
+    assert.equal(calls, 2);
+
+    calls = 0;
+    globalThis.fetch = (() => {
+      calls++;
+      return Promise.resolve(Response.json({ error: "invalid tool result", retryable: false }, {
+        status: 502,
+      }));
+    }) as typeof fetch;
+    await assert.rejects(workflows(), /invalid tool result/);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (previousConfig === undefined) Deno.env.delete("JAIPILOT_CONFIG_DIR");
+    else Deno.env.set("JAIPILOT_CONFIG_DIR", previousConfig);
+    await Deno.remove(config, { recursive: true });
   }
 });

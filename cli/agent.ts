@@ -39,7 +39,7 @@ async function request(
   const token = await bearerToken();
   const id = body && typeof body === "object" && "requestId" in body ? body.requestId : undefined;
   const started = Date.now();
-  let serverFailures = 0;
+  let transientFailures = 0;
   let waiting = false;
   while (true) {
     if (signal?.aborted) throw new Error("Cancelled");
@@ -59,30 +59,38 @@ async function request(
       });
     } catch {
       if (signal?.aborted) throw new Error("Cancelled");
-      if (method === "GET") throw new Error("JAIPilot is unreachable");
-      await pause(3000, signal);
+      transientFailures++;
+      await pause(Math.min(3000 * 2 ** Math.min(transientFailures - 1, 4), 30_000), signal);
       continue;
     }
     let value: Record<string, unknown>;
     try {
       value = await response.json();
-    } catch {
+    } catch (error) {
+      if (error instanceof TypeError) {
+        if (signal?.aborted) throw new Error("Cancelled");
+        transientFailures++;
+        await pause(Math.min(3000 * 2 ** Math.min(transientFailures - 1, 4), 30_000), signal);
+        continue;
+      }
       value = { error: `JAIPilot returned HTTP ${response.status}` };
     }
-    if (response.status === 202 || response.status === 429 || response.status >= 500) {
-      if (method === "GET" && response.status !== 429) {
-        throw new Error(String(value.error ?? "JAIPilot unavailable"));
-      }
-      if (response.status >= 500 && ++serverFailures >= 3) {
-        throw new Error(`${String(value.error ?? "JAIPilot unavailable")} (request ${id})`);
-      }
+    const pending = response.status === 202;
+    const transient = value.retryable !== false &&
+      ([408, 425, 429].includes(response.status) || response.status >= 500);
+    if (pending || transient) {
       if (!waiting) {
         console.error(`JAIPilot: waiting for the service (HTTP ${response.status})…`);
         waiting = true;
       }
-      const retry = Number(response.headers.get("retry-after"));
+      const retry = Number(response.headers.get("retry-after") ?? NaN);
+      if (transient) transientFailures++;
       await pause(
-        Number.isFinite(retry) && retry > 0 ? Math.min(retry * 1000, 30_000) : 3000,
+        Number.isFinite(retry) && retry >= 0
+          ? Math.min(retry * 1000, 30_000)
+          : pending
+          ? 3000
+          : Math.min(3000 * 2 ** Math.min(transientFailures - 1, 4), 30_000),
         signal,
       );
       continue;
