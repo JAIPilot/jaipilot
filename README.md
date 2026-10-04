@@ -13,6 +13,13 @@
   Enterprise grade quality unit tests. A 90% line coverage target.</strong>
 </p>
 
+<h2 align="center">Optimized for outcomes</h2>
+
+<p align="center">
+  <strong>Generate tests · Improve coverage · Fix failing tests<br>
+  Stabilize flaky tests · Test current changes · Lock existing behavior</strong>
+</p>
+
 <p align="center">
   <a href="https://github.com/JAIPilot/jaipilot/releases/latest">Download CLI</a> ·
   <a href="#install">Get started</a> ·
@@ -44,7 +51,7 @@ This recording used a development build, [Kafka commit `adf8c4c`](https://github
 
 </details>
 
-JAIPilot is a fast, high coverage testing agent for Java. **Choose an outcome. Select your code. Get verified tests.** Generate tests, repair failures, stabilize flaky tests, or improve coverage with one CLI command, using your project's existing build and test framework.
+JAIPilot is a fast, high coverage testing agent for Java, **optimized for the testing outcome you choose**. **Choose an outcome. Select your code. Get verified tests.** Each outcome guides how JAIPilot plans, writes, repairs, and verifies your tests using your project's existing build and test framework.
 
 ## Spend less time asking for tests
 
