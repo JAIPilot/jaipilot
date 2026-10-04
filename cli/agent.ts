@@ -28,6 +28,7 @@ export type WorkflowResult = {
   testFailures: unknown[];
   nextActions: unknown[];
   gitStatus: string;
+  durationMs: number;
 };
 
 async function request(
@@ -195,6 +196,7 @@ export async function runWorkflow(
   scope: Scope,
   signal?: AbortSignal,
 ): Promise<WorkflowResult> {
+  const started = performance.now();
   const catalog = await workflows();
   if (!catalog.some((item) => item.id === workflow)) {
     throw new Error(`Unknown workflow: ${workflow}. Run \`jaipilot workflows\` to list them.`);
@@ -238,11 +240,13 @@ export async function runWorkflow(
         if (!block.input || !["complete", "blocked"].includes(String(block.input.status))) {
           throw new Error("JAIPilot returned an invalid result");
         }
+        const gitStatus = await git(root, "status", "--short");
         return {
           workflow,
           scope,
           ...block.input,
-          gitStatus: await git(root, "status", "--short"),
+          gitStatus,
+          durationMs: Math.round(performance.now() - started),
         } as WorkflowResult;
       }
       if (!block.id || !block.name || !block.input) {

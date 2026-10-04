@@ -146,7 +146,10 @@ Run these commands inside a Git repository, or add `--repo /path/to/repository`.
 
 The agent uses your existing build and test framework. It is instructed to preserve production code and unrelated edits, runs focused tests and the final suite, and reports fresh coverage when configured. If coverage tooling is absent, it reports that plainly.
 
-Use `--json` for structured results in scripts:
+The final job output shows the total time taken, including agent requests and local
+commands, for example `Time taken: 1m 53s`.
+
+Use `--json` for structured results in scripts, including elapsed time in `durationMs`:
 
 ```bash
 jaipilot run improve_coverage --class com.acme.OrderService --json

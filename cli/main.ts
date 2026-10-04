@@ -56,6 +56,14 @@ function parseRun(args: string[]): RunOptions {
   return options;
 }
 
+function formatDuration(durationMs: number): string {
+  if (durationMs < 60_000) return `${(durationMs / 1000).toFixed(1)}s`;
+  const seconds = Math.round(durationMs / 1000);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor(seconds % 3600 / 60);
+  return `${hours ? `${hours}h ` : ""}${minutes}m ${seconds % 60}s`;
+}
+
 export async function main(args: string[]): Promise<number> {
   const [command, subcommand, ...rest] = args;
   if (command === "--version" || command === "version") {
@@ -115,6 +123,7 @@ export async function main(args: string[]): Promise<number> {
           }
         }
         if (result.gitStatus) console.log(`\nGit status:\n${result.gitStatus}`);
+        console.log(`\nTime taken: ${formatDuration(result.durationMs)}`);
       }
       return result.status === "complete" ? 0 : 2;
     } finally {
