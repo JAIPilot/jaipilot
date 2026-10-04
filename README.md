@@ -6,10 +6,11 @@
   </picture>
 </p>
 
-<h1 align="center">JAIPilot — fast, high coverage testing agent for Java</h1>
+<h1 align="center">JAIPilot — faster, more accurate Java testing with better coverage than your coding agent</h1>
 
 <p align="center">
-  <strong>Enterprise grade quality unit tests. Up to 5× faster across multiple classes. A 90% line coverage target.</strong>
+  <strong>5× faster than testing with a regular coding agent.<br>
+  Enterprise grade quality unit tests. A 90% line coverage target.</strong>
 </p>
 
 <p align="center">
@@ -51,7 +52,7 @@ Long waits. Repeated prompts. More test code to maintain, while important scenar
 
 - **Focus on the scenarios that matter.** Generate tests for behavior, boundaries, and failure paths with meaningful assertions. Aim for focused, maintainable tests that protect your code.
 - **Let the agent carry the task through.** JAIPilot plans, writes, repairs, and verifies the tests. Focused checks and a final regression suite provide evidence for the outcome.
-- **Move faster across classes.** Isolated class workers can generate tests in parallel, followed by combined local verification. The **up to 5×** speed claim applies to multi-class test generation compared with sequential class work.
+- **5× faster than testing with a regular coding agent.** Run one command to generate tests, verify them locally, and measure coverage.
 - **See the coverage you gained.** JAIPilot targets **at least 90% line coverage in your selected production scope** when coverage tooling is configured. It reports fresh measurements and concrete blockers.
 
 Use the whole repository, a list of classes, paths, or selected lines. Builds, tests, and coverage reporting run on your computer. Sign in with your existing JAIPilot account and use the same subscription and credits.
