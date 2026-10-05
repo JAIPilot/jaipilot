@@ -9,7 +9,8 @@
 <h1 align="center">JAIPilot — faster, more accurate Java testing with better coverage than your coding agent</h1>
 
 <p align="center">
-  <strong>5× faster than testing with a regular coding agent.<br>
+  <strong>Make your tests bulletproof.<br>
+  5× faster than testing with a regular coding agent.<br>
   Enterprise grade quality unit tests. A 90% line coverage target.</strong>
 </p>
 
