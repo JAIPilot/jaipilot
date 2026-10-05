@@ -6,11 +6,15 @@
   </picture>
 </p>
 
-<h1 align="center">JAIPilot</h1>
+<h1 align="center">JAIPilot — faster Java testing, stronger coverage, fewer regressions</h1>
 
-<p align="center"><strong>Make your tests bulletproof.</strong></p>
+<p align="center">
+  <strong>Make your tests bulletproof.<br>
+  Enterprise grade quality unit tests. A 90% line coverage target.<br>
+  Make your coding agent better at Java testing.</strong>
+</p>
 
-JAIPilot is a Java testing agent. It writes, repairs, and verifies tests using your project's existing build and test framework. Use it from the terminal or connect it to your coding agent through MCP.
+JAIPilot is a Java testing agent, **optimized for outcomes**. **Choose an outcome. Select your code. Get verified tests.** It writes, repairs, and verifies tests using your project's existing build and test framework. Use it from the terminal or connect it to your coding agent through MCP.
 
 <p align="center">
   <a href="https://github.com/JAIPilot/jaipilot/releases/latest">Download CLI</a> ·
@@ -21,7 +25,11 @@ JAIPilot is a Java testing agent. It writes, repairs, and verifies tests using y
 
 ## How it works
 
-Choose a testing outcome and the code you want to work on. JAIPilot inspects the project, writes or repairs tests, runs them locally, and reports the results. Coverage workflows target **90% line coverage in the selected code** when coverage tooling is configured, and report measured gaps or blockers.
+- **Spend less time asking for tests.** One workflow carries the task through inspection, test generation, repairs, and local verification.
+- **Cover the scenarios that matter.** Meaningful assertions protect existing behavior, boundaries, and failure paths.
+- **Change code with more confidence.** Lock behavior before your coding agent edits, then verify the preserved tests afterward.
+
+`generate_tests`, `improve_coverage`, and `lock_behavior` target **at least 90% line coverage in the selected production code** when coverage tooling is configured, and report measured gaps or blockers. Locking behavior also requires assertions for what the code does and passing tests before edits.
 
 | You want to… | Run this workflow |
 | --- | --- |
@@ -68,7 +76,7 @@ Choose the whole repository, classes, paths, or selected lines. JAIPilot runs fo
 
 **Make Codex, Claude Code, or another MCP coding agent better at changing Java code.** JAIPilot adds stronger test coverage of existing behavior and a verification step before the agent finishes.
 
-1. **Lock behavior before editing.** JAIPilot creates and runs characterization tests for current behavior, boundaries, and failure paths.
+1. **Lock behavior before editing.** JAIPilot creates and runs characterization tests for current behavior, boundaries, and failure paths, targeting at least 90% line coverage in the selected code when coverage tooling is configured.
 2. **Make the change.** Your coding agent edits the production code while preserving those tests.
 3. **Verify the original baseline.** JAIPilot reruns the same tests. Unintended changes to covered behavior become test failures the agent can investigate and repair.
 
