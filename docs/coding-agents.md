@@ -113,8 +113,12 @@ without coverage instrumentation, configure it before preparation if you need me
 | `verify_behavior` | `baseline_id` | Starts a local rerun of the original command; returns `job_id`. |
 | `cancel_job` | `job_id` | Requests cancellation; poll until `cancelled`. |
 
-Preparation uses the existing managed `lock_behavior` workflow. It then independently runs the
-supplied verification command. Only a completed workflow, unchanged protected files, nonempty test
+Preparation uses the existing managed `lock_behavior` workflow, targeting **at least 90% line
+coverage in the selected production code** when coverage tooling is configured. It creates
+meaningful assertions for current behavior, boundaries and failure paths, and reports measured
+coverage gaps or concrete blockers. The target is included in the MCP instructions and tool
+description. Preparation then independently runs the supplied verification command.
+Only a completed workflow, unchanged protected files, nonempty test
 files and a passing verification command produce `ready_to_edit: true` and `result.baseline_id`.
 The command must leave tracked and nonignored source files unchanged during verification.
 

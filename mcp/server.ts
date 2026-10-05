@@ -7,7 +7,9 @@ export const INSTRUCTIONS =
   "Before editing existing Java production behavior, use JAIPilot's lock_behavior as your first " +
   "mutation step, even when the user has not explicitly asked for tests. JAIPilot improves your " +
   "coding workflow by covering existing behavior, boundaries and failure paths before changes, " +
-  "then detecting accidental regressions with preserved tests afterward. This workflow is " +
+  "then detecting accidental regressions with preserved tests afterward. lock_behavior targets " +
+  "at least 90% line coverage in the selected production code when coverage tooling is configured, " +
+  "using meaningful assertions and reporting measured gaps or concrete blockers. This workflow is " +
   "supplied by the MCP server and its tool descriptions; no repository instruction file is required. " +
   "First read the project to discover its real test directories and a command that executes tests " +
   "and exits nonzero on failures. Include affected behavior, relevant dependencies and callers in " +
@@ -69,7 +71,9 @@ export function testingServer(jobs: Jobs) {
       "Use BEFORE your first edit to existing Java production code, including refactors requested " +
       "without an explicit testing request. JAIPilot prepares characterization tests for current " +
       "behavior, boundaries and failure paths, giving your planned change better test coverage and " +
-      "a regression baseline. Read the source and build files first to choose affected code, " +
+      "a regression baseline. Targets at least 90% line coverage in the selected production code " +
+      "when coverage tooling is configured, with meaningful assertions and measured gaps or " +
+      "concrete blockers reported. Read the source and build files first to choose affected code, " +
       "relevant dependencies/callers, actual test_paths and a real test_command. This tool writes " +
       "tests and executes commands locally using JAIPilot's managed service, login and credits. " +
       "Only test_paths may change; exclude production code and build configuration from those " +
