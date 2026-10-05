@@ -107,11 +107,14 @@ Two fresh Codex sessions received the same ordinary refactor request in a small 
 | Saved regression suite | Codex alone | Codex + JAIPilot |
 | --- | --- | --- |
 | Passing JUnit tests | 3 | **16** |
-| Line coverage across the fixture | 40% | **65.7%** |
-| Branch coverage across the fixture | 30% | **80%** |
+| Line coverage of the selected `Deadline` class | 47.1% | **100%** |
+| Line coverage across both fixture classes | 40% | **65.7%** |
+| Branch coverage across both fixture classes | 30% | **80%** |
 | Injected faults caught by the saved tests | 3/10 | **7/10** |
 
-**13 additional reusable tests. Four additional faults caught.** The refactored class itself reached **100% line coverage**. Both runs used the same model, settings, initial tests, and warm build caches. This is one measured example; results vary.
+**The 90% target applies to the selected code:** `Deadline` reached **100% line coverage (17/17 lines)**. The combined **65.7% (23/35 lines)** also includes `LockUtils`, which was outside the selected scope and remained at 6/18 covered lines.
+
+**13 additional reusable tests. Four additional faults caught.** Both runs used the same model, settings, initial tests, and warm build caches. This is one measured example; results vary.
 
 [Method, evidence, and reproduction →](docs/benchmarks/codex-mcp-2026-10-05/README.md)
 
