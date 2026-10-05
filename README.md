@@ -14,7 +14,11 @@
   Make your coding agent better at Java testing.</strong>
 </p>
 
-JAIPilot is a Java testing agent, **optimized for outcomes**. **Choose an outcome. Select your code. Get verified tests.** It writes, repairs, and verifies tests using your project's existing build and test framework. Use it from the terminal or connect it to your coding agent through MCP.
+**Give Codex, Claude Code, or your existing coding agent a Java testing specialist.** Testing with a general coding agent can mean long waits, repeated prompts, and missed behavior or edge cases. JAIPilot helps your agent **lock existing behavior before edits and catch regressions afterward**.
+
+**Built for faster testing, 90%+ coverage, and stronger regression protection.** JAIPilot writes, repairs, and verifies tests in one focused workflow, targeting **at least 90% line coverage in your selected code** when coverage tooling is configured. It focuses on meaningful assertions, boundary cases, and failure paths, giving your coding agent real test results to guide its fixes.
+
+**Optimized for outcomes. Choose an outcome. Select your code. Get verified tests.** Use JAIPilot from the terminal or connect it to your coding agent through MCP. It works with your project's existing build and test framework.
 
 <p align="center">
   <a href="https://github.com/JAIPilot/jaipilot/releases/latest">Download CLI</a> ·
