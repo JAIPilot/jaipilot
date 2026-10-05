@@ -1,4 +1,6 @@
 import { bearerToken } from "./auth.ts";
+import { spawn } from "node:child_process";
+import process from "node:process";
 import { git, projectContext, type Scope } from "./project.ts";
 
 const ENDPOINT = "https://otxfylhjrlaesjagfhfi.supabase.co/functions/v1/invoke-testing-agent";
@@ -128,25 +130,6 @@ export async function workflows(
   return response.workflows as { id: string; title: string; description: string }[];
 }
 
-async function tail(
-  stream: ReadableStream<Uint8Array>,
-): Promise<{ text: string; truncated: boolean }> {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let text = "", truncated = false;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    text += decoder.decode(value, { stream: true });
-    if (text.length > MAX_OUTPUT) {
-      text = text.slice(-MAX_OUTPUT);
-      truncated = true;
-    }
-  }
-  text += decoder.decode();
-  return { text, truncated };
-}
-
 export async function runCommand(
   root: string,
   input: Record<string, unknown>,
@@ -160,38 +143,72 @@ export async function runCommand(
   ) {
     throw new Error("Invalid local command request");
   }
+  if (signal?.aborted) throw new Error("Cancelled");
   const purpose = typeof input.purpose === "string" ? input.purpose : "task";
   console.error(`JAIPilot: ${purpose}…`);
   const start = performance.now();
-  const child = new Deno.Command(Deno.build.os === "windows" ? "cmd.exe" : "/bin/sh", {
-    args: Deno.build.os === "windows" ? ["/d", "/s", "/c", command] : ["-lc", command],
-    cwd: root,
-    stdin: "null",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const stdout = tail(child.stdout);
-  const stderr = tail(child.stderr);
+  const windows = Deno.build.os === "windows";
+  // A process group lets cancellation stop Maven/Java grandchildren as well as the shell.
+  const child = spawn(
+    windows ? "cmd.exe" : "/bin/sh",
+    windows ? ["/d", "/s", "/c", command] : ["-lc", command],
+    { cwd: root, detached: !windows, stdio: ["ignore", "pipe", "pipe"] },
+  );
+  const out = { text: "", truncated: false }, err = { text: "", truncated: false };
+  for (const [stream, target] of [[child.stdout!, out], [child.stderr!, err]] as const) {
+    stream.setEncoding("utf8").on("data", (chunk: string) => {
+      target.text += chunk;
+      if (target.text.length > MAX_OUTPUT) {
+        target.text = target.text.slice(-MAX_OUTPUT);
+        target.truncated = true;
+      }
+    });
+  }
+  const completed = new Promise<number>((resolve, reject) => {
+    child.once("error", reject);
+    child.once("close", (code) => resolve(code ?? 1));
+  });
   let timedOut = false;
+  let terminating = false;
+  let escalation: ReturnType<typeof setTimeout> | undefined;
+  let termination: Promise<void> | undefined;
+  const killGroup = (signal: NodeJS.Signals) => {
+    try {
+      if (child.pid) process.kill(-child.pid, signal);
+    } catch { /* Already exited. */ }
+  };
+  const cancel = () => {
+    if (terminating || !child.pid) return;
+    terminating = true;
+    if (windows) {
+      termination = new Deno.Command("taskkill", {
+        args: ["/PID", String(child.pid), "/T", "/F"],
+        stdout: "null",
+        stderr: "null",
+      }).output().then(() => {
+        child.kill("SIGKILL");
+      }).catch(() => {
+        child.kill("SIGKILL");
+      });
+    } else {
+      killGroup("SIGTERM");
+      escalation = setTimeout(() => killGroup("SIGKILL"), 2000);
+    }
+  };
   const timer = setTimeout(() => {
     timedOut = true;
-    try {
-      child.kill();
-    } catch { /* exited */ }
+    cancel();
   }, Number(timeoutSeconds) * 1000);
-  const cancel = () => {
-    try {
-      child.kill();
-    } catch { /* exited */ }
-  };
   signal?.addEventListener("abort", cancel, { once: true });
+  if (signal?.aborted) cancel();
   try {
-    const [status, out, err] = await Promise.all([child.status, stdout, stderr]);
+    const code = await completed;
+    await termination;
     if (signal?.aborted) throw new Error("Cancelled");
     const merged = [out.text, err.text].filter(Boolean).join("\n");
     return {
       command,
-      exitCode: timedOut ? 124 : status.code,
+      exitCode: timedOut ? 124 : code,
       output: merged.length > MAX_OUTPUT
         ? `\n… earlier command output omitted …\n${merged.slice(-MAX_OUTPUT)}`
         : merged,
@@ -201,6 +218,8 @@ export async function runCommand(
     };
   } finally {
     clearTimeout(timer);
+    clearTimeout(escalation);
+    if (terminating && !windows) killGroup("SIGKILL");
     signal?.removeEventListener("abort", cancel);
   }
 }

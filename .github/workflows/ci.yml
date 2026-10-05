@@ -31,6 +31,13 @@ jobs:
           deno compile -A --frozen --output "dist/jaipilot-acp$EXT" acp/main.ts
           deno run -A --frozen scripts/check-acp.ts "dist/jaipilot-acp$EXT"
 
+      - name: Compile and check packaged CLI MCP server
+        shell: bash
+        run: |
+          case "${{ runner.os }}" in Windows) EXT=.exe ;; *) EXT= ;; esac
+          deno compile -A --frozen --output "dist/jaipilot$EXT" cli/main.ts
+          deno run -A --frozen scripts/check-mcp.ts "dist/jaipilot$EXT"
+
       - name: Reject whitespace errors
         run: git show --check --format= HEAD
 

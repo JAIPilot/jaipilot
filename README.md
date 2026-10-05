@@ -196,6 +196,39 @@ jaipilot run improve_coverage --class com.acme.OrderService --json
 
 Exit codes are `0` for a completed workflow, `2` for a concrete blocker, and `1` for a CLI or service error. Review the result and `git diff` before accepting changes. Repository-wide work may consume more credits than a focused class run.
 
+## Connect your coding agent
+
+Use JAIPilot through MCP to capture existing Java behavior **before your coding agent edits it**,
+then verify the preserved tests after its edits:
+
+```bash
+jaipilot auth login
+codex mcp add jaipilot -- jaipilot mcp --repo /absolute/path/to/java-repository
+```
+
+The local stdio MCP server writes tests and executes build and test commands in your checkout.
+Your coding agent calls the tools and receives job IDs, progress, and command results.
+
+| Tool | Purpose |
+| --- | --- |
+| `lock_behavior` | Prepare characterization tests for the selected code before edits and verify the baseline. |
+| `get_job_status` | Poll progress and read readiness or verification evidence. |
+| `verify_behavior` | Rerun the preserved baseline tests after production edits. |
+| `cancel_job` | Stop a running job and its local commands. |
+
+The coding agent waits for `ready_to_edit: true`, preserves `result.baseline_id` and the baseline
+tests, makes its production edits, then verifies that baseline until `verified: true`.
+Preparation uses JAIPilot's testing agent and independently reruns the supplied test command.
+Verification runs locally and reports real test failures.
+
+Background jobs support longer builds without holding one MCP call open. Local command timeouts
+default to **1 hour**, configurable up to **2 hours**. Jobs have no overall elapsed-time cutoff;
+status polls returning while a job is running do not cancel it.
+
+See [coding agent setup and workflow instructions](docs/coding-agents.md) for the source checkout
+command, project instructions, tool inputs and limits. MCP supplies the tools; the coding agent's
+instructions tell it to prepare before editing. This integration requires a build with the `mcp` command.
+
 ## Verified on Petclinic
 
 | Selected classes | Time | Line / branch coverage | Full suite |

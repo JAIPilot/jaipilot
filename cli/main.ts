@@ -4,6 +4,7 @@ import { runWorkflow, workflows } from "./agent.ts";
 import { repositoryRoot, resolveScope } from "./project.ts";
 import { VERSION } from "./version.ts";
 import { shouldAutoUpdate, updateCli } from "./update.ts";
+import { serve } from "../mcp/main.ts";
 
 const HELP = `JAIPilot CLI — high-quality Java tests with measured coverage
 
@@ -11,6 +12,7 @@ Usage:
   jaipilot auth login|status|logout
   jaipilot workflows
   jaipilot update [--check]
+  jaipilot mcp [--repo DIR]
   jaipilot run <workflow> [--repo DIR] (--all | --path PATH... | --class CLASS... | --selection FILE:START-END...) [--json]
 
 Examples:
@@ -84,6 +86,10 @@ export async function main(args: string[]): Promise<number> {
       await logout();
       console.log("Signed out");
     } else throw new Error("Use `jaipilot auth login|status|logout`");
+    return 0;
+  }
+  if (command === "mcp") {
+    await serve(args.slice(1));
     return 0;
   }
   if (command === "update") {
