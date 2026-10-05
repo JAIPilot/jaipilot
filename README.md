@@ -10,15 +10,12 @@
 
 <p align="center">
   <strong>Make your tests bulletproof.<br>
-  Enterprise grade quality unit tests. A 90% line coverage target.<br>
-  Make your coding agent better at Java testing.</strong>
+  Enterprise grade unit tests. A 90%+ line coverage target.</strong>
 </p>
 
-**Give Codex, Claude Code, or your existing coding agent a Java testing specialist.** Testing with a general coding agent can mean long waits, repeated prompts, and missed behavior or edge cases. JAIPilot helps your agent **lock existing behavior before edits and catch regressions afterward**.
+Long waits. Repeated prompts. Missed edge cases. **Give Codex, Claude Code, or another MCP coding agent a Java testing specialist.** Lock behavior before edits. Catch regressions afterward.
 
-**Built for faster testing, 90%+ coverage, and stronger regression protection.** JAIPilot writes, repairs, and verifies tests in one focused workflow, targeting **at least 90% line coverage in your selected code** when coverage tooling is configured. It focuses on meaningful assertions, boundary cases, and failure paths, giving your coding agent real test results to guide its fixes.
-
-**Optimized for outcomes. Choose an outcome. Select your code. Get verified tests.** Use JAIPilot from the terminal or connect it to your coding agent through MCP. It works with your project's existing build and test framework.
+**Optimized for outcomes. Choose an outcome. Select your code. Get verified tests.** Use the CLI or connect your coding agent through MCP.
 
 <p align="center">
   <a href="https://github.com/JAIPilot/jaipilot/releases/latest">Download CLI</a> ·
@@ -29,33 +26,35 @@
 
 ## How it works
 
-Under the hood, JAIPilot combines **frontier LLM reasoning, optimized testing tools, prompts tailored to each outcome, and parallel workers in its managed service**. Independent class tasks can run concurrently. Builds, tests, and coverage run on your machine, using your existing toolchain and supported parallelism to make use of available hardware.
+**Frontier LLM reasoning. Optimized testing tools. Prompts tailored to each outcome. Parallel workers in the managed service.** Independent class tasks can run concurrently; local execution uses your toolchain and supported hardware parallelism.
 
-- **Spend less time asking for tests.** One workflow carries the task through inspection, test generation, repairs, and local verification.
-- **Cover the scenarios that matter.** Meaningful assertions protect existing behavior, boundaries, and failure paths.
-- **Change code with more confidence.** Lock behavior before your coding agent edits, then verify the preserved tests afterward.
+1. **Inspect** your code, build, and test framework.
+2. **Generate or repair** tests for behavior, boundaries, and failure paths, with meaningful assertions.
+3. **Verify** with focused tests, the final regression suite, and fresh coverage reports when configured.
 
-`generate_tests`, `improve_coverage`, and `lock_behavior` target **at least 90% line coverage in the selected production code** when coverage tooling is configured, and report measured gaps or blockers. Locking behavior also requires assertions for what the code does and passing tests before edits.
+**90%+ line coverage target** for `generate_tests`, `improve_coverage`, and `lock_behavior`, measured in selected production code when coverage is configured. Gaps and blockers are reported. Behavior baselines must pass before edits.
 
-| You want to… | Run this workflow |
+| Outcome | Workflow |
 | --- | --- |
-| Create unit tests | `generate_tests` |
+| Generate unit tests | `generate_tests` |
 | Improve coverage | `improve_coverage` |
 | Fix failing tests | `fix_tests` |
 | Stabilize flaky tests | `stabilize_flaky_tests` |
-| Test your current changes | `test_current_changes` |
-| Capture behavior before a refactor | `lock_behavior` |
+| Test current changes | `test_current_changes` |
+| Lock behavior before a refactor | `lock_behavior` |
 | Target 100% line coverage (experimental) | `coverage_100` |
 
 ## Install
 
-You need Git, a JDK, and your project's build tools. On macOS or Linux:
+Requires Git, a JDK, and your project's build tools.
+
+**macOS / Linux**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot/main/install.sh | sh
 ```
 
-On Windows, [download the executable](https://github.com/JAIPilot/jaipilot/releases/latest/download/jaipilot-x86_64-pc-windows-msvc.exe) and put it on your `PATH`.
+**Windows:** [Download the executable](https://github.com/JAIPilot/jaipilot/releases/latest/download/jaipilot-x86_64-pc-windows-msvc.exe) and add it to your `PATH`.
 
 Sign in, then run inside your Java repository:
 
@@ -64,7 +63,9 @@ jaipilot auth login
 jaipilot run improve_coverage --class com.acme.OrderService
 ```
 
-Use your existing JAIPilot account, subscription, and credits. The CLI automatically checks for updates before workflows. See the [CLI guide](docs/cli-guide.md) for installation paths, manual updates, and troubleshooting.
+Same JAIPilot account, subscription, and credits. Automatic update checks before workflows.
+
+[Install paths, manual updates, and troubleshooting →](docs/cli-guide.md)
 
 ## Use the CLI
 
@@ -74,21 +75,19 @@ jaipilot run test_current_changes --all
 jaipilot run lock_behavior --path src/main/java/com/acme
 ```
 
-Choose the whole repository, classes, paths, or selected lines. JAIPilot runs focused checks and a final regression suite. Review the result and `git diff` before accepting changes.
+Scope: whole repository, classes, paths, or selected lines. Review the result and `git diff` before accepting changes.
 
 [All commands, scopes, JSON output, and exit codes →](docs/cli-guide.md#run-an-outcome)
 
 ## MCP for coding agents
 
-**Make Codex, Claude Code, or another MCP coding agent better at changing Java code.** JAIPilot adds stronger test coverage of existing behavior and a verification step before the agent finishes.
+**Give your agent a tested baseline before editing—and real failures to guide repairs afterward.**
 
-1. **Lock behavior before editing.** JAIPilot creates and runs characterization tests for current behavior, boundaries, and failure paths, targeting at least 90% line coverage in the selected code when coverage tooling is configured.
-2. **Make the change.** Your coding agent edits the production code while preserving those tests.
-3. **Verify the original baseline.** JAIPilot reruns the same tests. Unintended changes to covered behavior become test failures the agent can investigate and repair.
+1. **Lock:** `lock_behavior` creates and runs characterization tests before production edits, targeting 90%+ line coverage when configured.
+2. **Edit:** Your coding agent changes production code. Baseline tests stay unchanged.
+3. **Verify:** `verify_behavior` reruns the original baseline. Your agent investigates failures and repairs unintended changes before finishing.
 
-Capturing expectations before the edit reduces regression risk and gives the agent concrete feedback about what broke. Passing tests protect the behavior they exercise; intentional behavior changes need an explicit review of the old expectations.
-
-Connect the agent you use:
+Passing tests protect the behavior they exercise. Review old expectations for intentional behavior changes.
 
 **Codex**
 
@@ -102,13 +101,13 @@ codex mcp add jaipilot -- jaipilot mcp --repo /absolute/path/to/java-repository
 claude mcp add --transport stdio jaipilot -- jaipilot mcp --repo /absolute/path/to/java-repository
 ```
 
-Start a new agent session. **The workflow is built into the MCP instructions and tool descriptions; no repository instruction file is required.** The MCP server writes tests and runs commands locally. Jobs run in the background, with a default local command timeout of 1 hour.
+Start a new agent session. **MCP instructions and tool descriptions include the workflow. No repository instruction file required.** Tests and commands run locally. Jobs run in the background; **1 hour per local command by default**.
 
-MCP requires a build with the `mcp` command. [Setup from source, tool contracts, and timeout options →](docs/coding-agents.md)
+Requires a build with the `mcp` command. [Source setup, tool contracts, and timeout options →](docs/coding-agents.md)
 
 ### Measured example: Codex with JAIPilot
 
-Two fresh Codex sessions received the same ordinary refactor request in a small fixture containing two Kafka utilities. The MCP run used the testing workflow automatically, with no repository instruction file or extra testing prompt.
+Same refactor. Two fresh Codex sessions. Two Kafka utility classes. The MCP session used JAIPilot automatically, with **no repository instruction file or extra testing prompt**.
 
 | Saved regression suite | Codex alone | Codex + JAIPilot |
 | --- | --- | --- |
@@ -118,9 +117,9 @@ Two fresh Codex sessions received the same ordinary refactor request in a small 
 | Branch coverage across both fixture classes | 30% | **80%** |
 | Injected faults caught by the saved tests | 3/10 | **7/10** |
 
-**The 90% target applies to the selected code:** `Deadline` reached **100% line coverage (17/17 lines)**. The combined **65.7% (23/35 lines)** also includes `LockUtils`, which was outside the selected scope and remained at 6/18 covered lines.
+**The 90% target applies to selected code.** `Deadline`: **100% (17/17 lines)**. The combined **65.7% (23/35)** includes untargeted `LockUtils`, unchanged at 6/18 covered lines.
 
-**13 additional reusable tests. Four additional faults caught.** Both runs used the same model, settings, initial tests, and warm build caches. This is one measured example; results vary.
+**13 more reusable tests. Four more faults caught.** Same model, settings, initial tests, and warm build caches. One paired example; results vary.
 
 [Method, evidence, and reproduction →](docs/benchmarks/codex-mcp-2026-10-05/README.md)
 
@@ -129,11 +128,11 @@ Two fresh Codex sessions received the same ordinary refactor request in a small 
 - **Apache Kafka:** 34.3% → 97.1% line coverage for two classes in **1m 53s**; all **949 module tests passed**.
 - **Spring Petclinic:** 85.7% → 100% line coverage in **3m 21s** with the experimental `coverage_100` workflow; all **111 tests passed**.
 
-Both runs preserved production code. These are individual runs with warm build caches; results vary by project. [Watch the recordings and see the full measurements →](docs/examples.md)
+Production code preserved. Individual runs with warm build caches; results vary. [Recordings and full measurements →](docs/examples.md)
 
 ## Local execution and privacy
 
-Builds and tests run on your computer. Selected source, project context, and command output are sent to JAIPilot's managed service and model provider. Sign-in credentials are stored locally with user-only permissions.
+Builds and tests run locally. Selected source, project context, and command output go to JAIPilot's managed service and model provider. Sign-in credentials stay local with user-only permissions.
 
 [Privacy details](docs/cli-guide.md#local-execution-and-privacy) · [Ask a question](https://github.com/JAIPilot/jaipilot/discussions) · [Report an issue](https://github.com/JAIPilot/jaipilot/issues) · [Report a vulnerability privately](https://github.com/JAIPilot/jaipilot/security/advisories/new)
 
