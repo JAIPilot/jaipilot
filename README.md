@@ -29,6 +29,8 @@
 
 ## How it works
 
+Under the hood, JAIPilot combines **frontier LLM reasoning, optimized testing tools, prompts tailored to each outcome, and parallel workers in its managed service**. Independent class tasks can run concurrently. Builds, tests, and coverage run on your machine, using your existing toolchain and supported parallelism to make use of available hardware.
+
 - **Spend less time asking for tests.** One workflow carries the task through inspection, test generation, repairs, and local verification.
 - **Cover the scenarios that matter.** Meaningful assertions protect existing behavior, boundaries, and failure paths.
 - **Change code with more confidence.** Lock behavior before your coding agent edits, then verify the preserved tests afterward.
