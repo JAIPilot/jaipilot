@@ -25,6 +25,26 @@
   <a href="https://www.jaipilot.com/">JAIPilot.com</a>
 </p>
 
+## See it run
+
+### Apache Kafka
+
+<p align="center">
+  <img src="assets/kafka-cli-demo.gif" alt="Actual Terminal recording of JAIPilot improving Apache Kafka's Deadline and LockUtils tests from 34.3% to 97.1% line coverage" width="900">
+</p>
+
+**34.3% → 97.1% line coverage for two classes in 1m 53s.** Added **13 tests**; all **949 module tests passed**.
+
+### Spring Petclinic — 100% coverage (experimental)
+
+<p align="center">
+  <img src="assets/petclinic-coverage-100-demo.gif" alt="Actual Terminal recording of JAIPilot's experimental coverage_100 workflow on Spring Petclinic, from 85.7% to 100% line coverage in 3m 21s" width="900">
+</p>
+
+**85.7% → 100% line coverage across the project in 3m 21s.** Added **36 tests** with `coverage_100`; all **111 tests passed**.
+
+Production code preserved. Actual Terminal recordings; GIFs shorten idle waits. Reported times are full job durations with warm build caches; results vary. [Commands, recordings, and full measurements →](docs/examples.md)
+
 ## How it works
 
 **Frontier LLM reasoning. Optimized testing tools. Prompts tailored to each outcome. Parallel workers in the managed service.** Independent class tasks can run concurrently; local execution uses your toolchain and supported hardware parallelism.
@@ -79,13 +99,6 @@ jaipilot run lock_behavior --path src/main/java/com/acme
 Scope: whole repository, classes, paths, or selected lines. Review the result and `git diff` before accepting changes.
 
 [All commands, scopes, JSON output, and exit codes →](docs/cli-guide.md#run-an-outcome)
-
-## See it run
-
-- **Apache Kafka:** 34.3% → 97.1% line coverage for two classes in **1m 53s**; all **949 module tests passed**.
-- **Spring Petclinic:** 85.7% → 100% line coverage in **3m 21s** with the experimental `coverage_100` workflow; all **111 tests passed**.
-
-Production code preserved. Individual runs with warm build caches; results vary. [Recordings and full measurements →](docs/examples.md)
 
 ## Why use JAIPilot if my coding agent already writes tests?
 
