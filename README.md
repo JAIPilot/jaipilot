@@ -10,6 +10,7 @@
 
 <p align="center">
   <strong>Make your tests bulletproof.<br>
+  ~5× faster testing (JAIPilot estimate).<br>
   Enterprise grade unit tests. A 90%+ line coverage target.</strong>
 </p>
 
@@ -88,9 +89,12 @@ Production code preserved. Individual runs with warm build caches; results vary.
 
 ## Why use JAIPilot if my coding agent already writes tests?
 
-**Better regression protection.** JAIPilot captures behavior and edge cases before edits, then verifies the same tests afterward. Your agent gets concrete failures to guide repairs.
+**Fast testing. High coverage. Stronger tests. Less work for your coding agent.**
 
-**Save your coding agent's tokens.** JAIPilot handles testing separately with optimized prompts, tools, and workers. This can reduce testing context, token use, and costs in your coding agent. JAIPilot credits apply.
+- **~5× faster testing than a general coding agent (JAIPilot estimate).** Optimized prompts, tools, and parallel workers carry the testing workflow. Actual runtime varies by project. CLI examples: **97.1% coverage in 1m 53s** on Kafka; **100% in 3m 21s** on Petclinic (experimental).
+- **90%+ line coverage target.** Meaningful assertions for selected behavior, boundaries, and failure paths, measured with your configured coverage tools.
+- **Stronger regression protection.** Lock behavior before edits; verify the original tests afterward. Our paired Codex example's saved tests caught **7/10 injected faults vs 3/10** with Codex alone.
+- **Token efficiency.** Offload test planning, generation, and repairs to JAIPilot's optimized service. This can reduce your coding agent's testing context, token use, and costs; JAIPilot credits apply.
 
 ### Measured example: Codex with JAIPilot
 
