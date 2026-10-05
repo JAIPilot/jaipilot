@@ -24,6 +24,7 @@
 <p align="center">
   <a href="https://github.com/JAIPilot/jaipilot/releases/latest">Download CLI</a> ·
   <a href="#install">Get started</a> ·
+  <a href="#mcp-for-coding-agents">MCP setup</a> ·
   <a href="https://www.jaipilot.com/">JAIPilot.com</a>
 </p>
 
@@ -196,7 +197,7 @@ jaipilot run improve_coverage --class com.acme.OrderService --json
 
 Exit codes are `0` for a completed workflow, `2` for a concrete blocker, and `1` for a CLI or service error. Review the result and `git diff` before accepting changes. Repository-wide work may consume more credits than a focused class run.
 
-## Connect your coding agent
+## MCP for coding agents
 
 Use JAIPilot through MCP to capture existing Java behavior **before your coding agent edits it**,
 then verify the preserved tests after its edits:
