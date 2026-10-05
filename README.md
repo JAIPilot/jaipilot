@@ -13,9 +13,9 @@
   Enterprise grade unit tests. A 90%+ line coverage target.</strong>
 </p>
 
-Long waits. Repeated prompts. Missed edge cases. **Give Codex, Claude Code, or another MCP coding agent a Java testing specialist.** Lock behavior before edits. Catch regressions afterward.
+**Your Java testing specialist—straight from the terminal.** Generate, repair, and verify tests. Fewer prompts. Stronger assertions.
 
-**Optimized for outcomes. Choose an outcome. Select your code. Get verified tests.** Use the CLI or connect your coding agent through MCP.
+**Optimized for outcomes. Choose an outcome. Select your code. Get verified tests.** Start with the CLI. Add MCP when you want JAIPilot inside your coding agent.
 
 <p align="center">
   <a href="https://github.com/JAIPilot/jaipilot/releases/latest">Download CLI</a> ·
@@ -79,9 +79,40 @@ Scope: whole repository, classes, paths, or selected lines. Review the result an
 
 [All commands, scopes, JSON output, and exit codes →](docs/cli-guide.md#run-an-outcome)
 
+## See it run
+
+- **Apache Kafka:** 34.3% → 97.1% line coverage for two classes in **1m 53s**; all **949 module tests passed**.
+- **Spring Petclinic:** 85.7% → 100% line coverage in **3m 21s** with the experimental `coverage_100` workflow; all **111 tests passed**.
+
+Production code preserved. Individual runs with warm build caches; results vary. [Recordings and full measurements →](docs/examples.md)
+
+## Why use JAIPilot if my coding agent already writes tests?
+
+**Better regression protection.** JAIPilot captures behavior and edge cases before edits, then verifies the same tests afterward. Your agent gets concrete failures to guide repairs.
+
+**Save your coding agent's tokens.** JAIPilot handles testing separately with optimized prompts, tools, and workers. This can reduce testing context, token use, and costs in your coding agent. JAIPilot credits apply.
+
+### Measured example: Codex with JAIPilot
+
+Same refactor. Two fresh Codex sessions. Two Kafka utility classes. The MCP session used JAIPilot automatically, with **no repository instruction file or extra testing prompt**.
+
+| Saved regression suite | Codex alone | Codex + JAIPilot |
+| --- | --- | --- |
+| Passing JUnit tests | 3 | **16** |
+| Line coverage of the selected `Deadline` class | 47.1% | **100%** |
+| Line coverage across both fixture classes | 40% | **65.7%** |
+| Branch coverage across both fixture classes | 30% | **80%** |
+| Injected faults caught by the saved tests | 3/10 | **7/10** |
+
+**13 more reusable tests. Four more deliberately introduced bugs caught.** Same model, settings, initial tests, and warm build caches. One paired example; results vary.
+
+**The 90% target applies to selected code.** `Deadline`: **100% (17/17 lines)**. The combined **65.7% (23/35)** includes untargeted `LockUtils`, unchanged at 6/18 covered lines.
+
+[Method, evidence, and reproduction →](docs/benchmarks/codex-mcp-2026-10-05/README.md)
+
 ## MCP for coding agents
 
-**Give your agent a tested baseline before editing—and real failures to guide repairs afterward.**
+**Optional: make Codex, Claude Code, or another MCP agent better at Java testing.** Give it a tested baseline before edits and real failures to guide repairs.
 
 1. **Lock:** `lock_behavior` creates and runs characterization tests before production edits, targeting 90%+ line coverage when configured.
 2. **Edit:** Your coding agent changes production code. Baseline tests stay unchanged.
@@ -104,31 +135,6 @@ claude mcp add --transport stdio jaipilot -- jaipilot mcp --repo /absolute/path/
 Start a new agent session. **MCP instructions and tool descriptions include the workflow. No repository instruction file required.** Tests and commands run locally. Jobs run in the background; **1 hour per local command by default**.
 
 Requires a build with the `mcp` command. [Source setup, tool contracts, and timeout options →](docs/coding-agents.md)
-
-### Measured example: Codex with JAIPilot
-
-Same refactor. Two fresh Codex sessions. Two Kafka utility classes. The MCP session used JAIPilot automatically, with **no repository instruction file or extra testing prompt**.
-
-| Saved regression suite | Codex alone | Codex + JAIPilot |
-| --- | --- | --- |
-| Passing JUnit tests | 3 | **16** |
-| Line coverage of the selected `Deadline` class | 47.1% | **100%** |
-| Line coverage across both fixture classes | 40% | **65.7%** |
-| Branch coverage across both fixture classes | 30% | **80%** |
-| Injected faults caught by the saved tests | 3/10 | **7/10** |
-
-**The 90% target applies to selected code.** `Deadline`: **100% (17/17 lines)**. The combined **65.7% (23/35)** includes untargeted `LockUtils`, unchanged at 6/18 covered lines.
-
-**13 more reusable tests. Four more faults caught.** Same model, settings, initial tests, and warm build caches. One paired example; results vary.
-
-[Method, evidence, and reproduction →](docs/benchmarks/codex-mcp-2026-10-05/README.md)
-
-## See it run
-
-- **Apache Kafka:** 34.3% → 97.1% line coverage for two classes in **1m 53s**; all **949 module tests passed**.
-- **Spring Petclinic:** 85.7% → 100% line coverage in **3m 21s** with the experimental `coverage_100` workflow; all **111 tests passed**.
-
-Production code preserved. Individual runs with warm build caches; results vary. [Recordings and full measurements →](docs/examples.md)
 
 ## Local execution and privacy
 
