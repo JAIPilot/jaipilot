@@ -1,8 +1,13 @@
 # Use JAIPilot inside your coding agent
 
-JAIPilot's local stdio MCP server lets a coding agent prepare Java characterization tests before
-editing existing production code, then verify the preserved behavior after its edits. It uses the
-same workflow runner, account and credits as the CLI. Builds and tests run in your checkout.
+Connect JAIPilot to an existing coding agent such as Codex or Claude Code to improve its Java testing
+workflow. JAIPilot prepares characterization tests before production edits, covering current behavior,
+boundaries and failure paths, then reruns the preserved tests after the change. Capturing expectations
+before the edit helps catch accidental behavior changes and gives the coding agent real failure
+evidence to guide repairs. Coverage can be measured when the project has coverage tooling configured.
+
+The local stdio MCP server uses the same workflow runner, account and credits as the CLI.
+Builds and tests run in your checkout.
 The MCP server executes the local commands itself. Your coding agent invokes the tools and receives
 job IDs, progress, and command evidence; it makes the planned production edits once the baseline is
 ready.
@@ -47,13 +52,22 @@ codex mcp add jaipilot -- deno run -A \
   /absolute/path/to/jaipilot-cli/cli/main.ts mcp --repo /absolute/path/to/java-repository
 ```
 
-## Make preparation part of the edit workflow
+## Connect Claude Code
 
-The server supplies tool descriptions and workflow instructions. Add the following to the Java
-repository's existing `AGENTS.md` (or your coding agent's equivalent project instructions):
+After installing JAIPilot and signing in, add the same local server:
 
-```text
-Before editing existing Java production code:
+```sh
+claude mcp add --transport stdio jaipilot -- jaipilot mcp --repo /absolute/path/to/java-repository
+```
+
+Start a new session after configuring it. See the [official Claude Code MCP setup](https://code.claude.com/docs/en/mcp).
+
+## The testing workflow is included
+
+The MCP server supplies the workflow in its initialization instructions and tool descriptions.
+No repository instruction file or extra testing prompt is required. Once connected, the coding
+agent receives guidance to:
+
 1. Identify the affected behavior and scope, the actual test directories, and a test command that
    runs the tests and exits nonzero on failures. Include relevant dependencies and callers in scope.
 2. Call JAIPilot's lock_behavior before production edits. Supply the scope, explicit test_paths,
@@ -64,13 +78,10 @@ Before editing existing Java production code:
 5. Call verify_behavior with that baseline_id and poll until verified=true. Investigate failures;
    do not regenerate the baseline to bless a regression.
 
-Do not edit the checkout while a JAIPilot job is running. If the planned scope expands, prepare the
-additional scope against its original code before editing it. An intentional behavior change must
-be identified explicitly and its old expectations reviewed with the user.
-```
-
-MCP makes the tools available; project instructions guide when the coding agent calls them. The
-server does not intercept the host's file writes or guarantee that the host follows those instructions.
+The descriptions also instruct the agent to leave the checkout alone during a running job, prepare
+additional original code before expanding the edit scope, and explicitly review old expectations
+when the requested change intentionally alters behavior. The host decides which tools to invoke;
+MCP instructions do not intercept its file writes.
 
 ## Tool contract
 
@@ -136,7 +147,7 @@ behavior covered by those tests; they do not prove all possible behavior or comp
 - Long-lived MCP servers do not update themselves during a session. Run `jaipilot update` and
   restart the coding agent to use a newer installed version.
 
-The existing [local execution and privacy policy](../README.md#local-execution-and-privacy) applies.
+The existing [local execution and privacy policy](cli-guide.md#local-execution-and-privacy) applies.
 
 ## Verify a development build
 

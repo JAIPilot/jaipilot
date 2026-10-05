@@ -54,20 +54,6 @@ await Deno.writeTextFile(
   </plugins></build>
 </project>\n`,
 );
-await Deno.writeTextFile(
-  join(root, "AGENTS.md"),
-  `# Java change workflow
-
-Before editing existing Java production code, use JAIPilot MCP to lock the affected behavior.
-The test directory is src/test/java; the verification command is mvn -q clean verify.
-Do not change pom.xml or the test command. Before preparation you may read source/build files.
-Call lock_behavior with the planned scope and intent. Poll get_job_status with wait_seconds=30
-until ready_to_edit=true. Keep result.baseline_id. If blocked, failed or cancelled, report the
-blocker without editing production code. Do not edit while a job is running.
-Preserve all generated baseline tests unchanged. After production edits call verify_behavior with
-the original baseline_id and poll until verified=true. Do not regenerate the baseline after edits.
-`,
-);
 await git(root, "init", "-q");
 await git(root, "add", ".");
 await git(
@@ -104,8 +90,7 @@ const child = new Deno.Command("codex", {
     "-o",
     join(artifacts, "codex-final.txt"),
     "Refactor ShippingCost.quote to use named constants for tier prices and the express surcharge. " +
-    "Preserve all observable behavior. Follow the repository instructions. " +
-    "Report the original baseline ID and the final verification evidence. Do not commit or push.",
+    "Preserve all observable behavior. Do not commit or push.",
   ],
   stdin: "null",
   stdout: "piped",

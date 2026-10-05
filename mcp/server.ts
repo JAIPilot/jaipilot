@@ -4,12 +4,22 @@ import { VERSION } from "../cli/version.ts";
 import { Jobs, type JobView, type LockInput } from "./jobs.ts";
 
 export const INSTRUCTIONS =
-  "Before editing existing Java production behavior, call lock_behavior for the planned scope. " +
-  "Discover the project's real test command and test directories first. Poll get_job_status until " +
-  "ready_to_edit is true; do not edit during a job or when it is blocked, failed or cancelled. " +
-  "Preserve the returned baseline tests. After edits call verify_behavior with baseline_id and " +
-  "wait until verified is true. Keep the original baseline; do not regenerate expectations after " +
-  "a failure. Passing tests are evidence for the tested behavior, not proof of all behavior.";
+  "Before editing existing Java production behavior, use JAIPilot's lock_behavior as your first " +
+  "mutation step, even when the user has not explicitly asked for tests. JAIPilot improves your " +
+  "coding workflow by covering existing behavior, boundaries and failure paths before changes, " +
+  "then detecting accidental regressions with preserved tests afterward. This workflow is " +
+  "supplied by the MCP server and its tool descriptions; no repository instruction file is required. " +
+  "First read the project to discover its real test directories and a command that executes tests " +
+  "and exits nonzero on failures. Include affected behavior, relevant dependencies and callers in " +
+  "scope. Call lock_behavior before production edits, poll get_job_status with wait_seconds=30, " +
+  "and proceed only when ready_to_edit=true. Retain result.baseline_id and preserve baseline tests " +
+  "unchanged. Make the requested production edits, call verify_behavior with that original ID, " +
+  "and poll until verified=true before reporting preserved behavior. Investigate failures using " +
+  "the real command evidence; do not regenerate or weaken tests to accept a regression. Do not edit " +
+  "during a running job or proceed when it is blocked, failed or cancelled. If scope expands, " +
+  "prepare the additional original code before touching it. For intentional behavior changes, " +
+  "explicitly identify the affected old expectations. Passing tests are evidence for the tested " +
+  "behavior, not proof of all behavior.";
 
 const string = z.string().trim().min(1);
 const scope = z.union([
@@ -56,11 +66,19 @@ export function testingServer(jobs: Jobs) {
   });
   server.registerTool("lock_behavior", {
     description:
-      "Start characterization tests BEFORE editing Java production code in this repository. " +
-      "Writes tests and runs local commands through JAIPilot's managed service using existing login " +
-      "and credits. Only test_paths may change. test_command must run the actual tests, fail on test " +
-      "failures and leave source files unchanged. Build outputs must be gitignored. Returns a job; " +
-      "poll get_job_status until ready_to_edit=true and retain result.baseline_id.",
+      "Use BEFORE your first edit to existing Java production code, including refactors requested " +
+      "without an explicit testing request. JAIPilot prepares characterization tests for current " +
+      "behavior, boundaries and failure paths, giving your planned change better test coverage and " +
+      "a regression baseline. Read the source and build files first to choose affected code, " +
+      "relevant dependencies/callers, actual test_paths and a real test_command. This tool writes " +
+      "tests and executes commands locally using JAIPilot's managed service, login and credits. " +
+      "Only test_paths may change; exclude production code and build configuration from those " +
+      "paths. test_command must execute the tests, fail on failures and leave source unchanged. " +
+      "Build outputs must be gitignored. Returns job_id: poll get_job_status with wait_seconds=30 " +
+      "until ready_to_edit=true, then retain result.baseline_id and preserve its tests. Make your " +
+      "production edits only afterward, call verify_behavior with the original baseline_id, and " +
+      "wait for verified=true before reporting preserved behavior. If blocked, failed or cancelled, " +
+      "investigate the evidence before editing. No repository instruction file is required.",
     inputSchema: z.object({
       scope,
       test_paths: z.array(string).min(1).describe(
@@ -85,10 +103,14 @@ export function testingServer(jobs: Jobs) {
   }, (input: LockInput) => reply(() => jobs.lock(input)));
   server.registerTool("verify_behavior", {
     description:
-      "Start verification AFTER production edits against the original baseline. Reuses its " +
-      "exact test command and rejects changed baseline tests. Runs locally without another LLM job. " +
-      "Poll get_job_status until verified=true or investigate the reported failure; do not regenerate " +
-      "tests to accept a regression. Baselines survive MCP restarts in this checkout's Git metadata.",
+      "Use AFTER making production edits and BEFORE completing a task that preserves behavior. " +
+      "Supply the original baseline_id returned by lock_behavior before those edits. Reruns the " +
+      "exact original test command locally without another LLM job and rejects changed baseline " +
+      "tests. Returns job_id: poll get_job_status with wait_seconds=30 until verified=true. Real " +
+      "test failures identify possible regressions: inspect the evidence, repair unintended " +
+      "production changes, then verify the same baseline again. Never weaken tests or regenerate " +
+      "expectations to make a regression pass. Explicitly explain expected failures for intentional " +
+      "behavior changes. Baselines survive MCP restarts in this checkout's Git metadata.",
     inputSchema: z.object({ baseline_id: z.string().uuid() }).strict(),
     outputSchema,
     annotations: {
@@ -103,8 +125,10 @@ export function testingServer(jobs: Jobs) {
     {
       description:
         "Read progress and final evidence for a JAIPilot MCP job. Use wait_seconds=30 while " +
-        "running. Job IDs are local to this server instance. completed alone is insufficient: check " +
-        "ready_to_edit for preparation or verified for verification.",
+        "running; keep polling without editing the checkout. Job IDs are local to this server " +
+        "instance. completed alone is insufficient: require ready_to_edit=true before production " +
+        "edits or verified=true after edits. A blocked, failed or cancelled job requires " +
+        "investigation, not further polling or an assumption of success.",
       inputSchema: z.object({
         job_id: z.string().uuid(),
         wait_seconds: z.number().int().min(0).max(30).default(10),

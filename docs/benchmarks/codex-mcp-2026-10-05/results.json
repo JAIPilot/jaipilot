@@ -1,0 +1,275 @@
+{
+  "date": "2026-10-05",
+  "scope": "Retained JUnit regression suites in an isolated Maven fixture containing Kafka Deadline and LockUtils; refactor task targets Deadline.fromDelay.",
+  "kafka_commit": "99b940733a9f6bc409457dba7108f08421d81e42",
+  "codex_cli": "0.160.0",
+  "codex_model": "gpt-6.1-sol",
+  "reasoning_effort": "xhigh",
+  "environment": "macOS, Amazon Corretto 17.0.13, JUnit 5.11.4, JaCoCo 0.8.12, warm Maven cache",
+  "prompt": "Refactor Deadline.fromDelay by extracting its BigInteger deadline calculation and saturation into a private static helper. Preserve all observable behavior and existing tests. Do not change pom.xml, other production classes, or commit or push. Do not inspect sibling checkouts or their results.",
+  "initial_junit_tests": 3,
+  "repository_instruction_files": false,
+  "faults": [
+    {
+      "id": "negative-delay-accepted",
+      "name": "Deadline",
+      "from": "delay < 0",
+      "to": "delay < -1"
+    },
+    {
+      "id": "time-unit-ignored",
+      "name": "Deadline",
+      "from": "timeUnit.toNanos(delay)",
+      "to": "delay"
+    },
+    {
+      "id": "delay-subtracted",
+      "name": "Deadline",
+      "from": "add(BigInteger.valueOf",
+      "to": "subtract(BigInteger.valueOf"
+    },
+    {
+      "id": "overflow-clamped-to-zero",
+      "name": "Deadline",
+      "from": "new Deadline(Long.MAX_VALUE)",
+      "to": "new Deadline(0)"
+    },
+    {
+      "id": "equality-inverted",
+      "name": "Deadline",
+      "from": "nanoseconds == other.nanoseconds",
+      "to": "nanoseconds != other.nanoseconds"
+    },
+    {
+      "id": "supplier-result-lost",
+      "name": "LockUtils",
+      "from": "return supplier.get();",
+      "to": "supplier.get(); return null;"
+    },
+    {
+      "id": "supplier-lock-not-released",
+      "name": "LockUtils",
+      "from": "lock.unlock();",
+      "to": "/* unlock omitted */"
+    },
+    {
+      "id": "runnable-lock-not-released",
+      "name": "LockUtils",
+      "from": "lock.unlock();",
+      "to": "/* unlock omitted */",
+      "last": true
+    },
+    {
+      "id": "read-lock-becomes-write-lock",
+      "name": "LockUtils",
+      "from": "return inLock(lock.readLock(), supplier);",
+      "to": "return inLock(lock.writeLock(), supplier);"
+    },
+    {
+      "id": "runnable-never-called",
+      "name": "LockUtils",
+      "from": "runnable.run();",
+      "to": "/* callback omitted */"
+    }
+  ],
+  "runs": [
+    {
+      "mode": "codex-alone",
+      "duration_seconds": 204.07649504999998,
+      "tests": 3,
+      "lines": {
+        "missed": 21,
+        "covered": 14
+      },
+      "branches": {
+        "missed": 7,
+        "covered": 3
+      },
+      "mutation_results": [
+        {
+          "id": "negative-delay-accepted",
+          "detected": false
+        },
+        {
+          "id": "time-unit-ignored",
+          "detected": false
+        },
+        {
+          "id": "delay-subtracted",
+          "detected": false
+        },
+        {
+          "id": "overflow-clamped-to-zero",
+          "detected": false
+        },
+        {
+          "id": "equality-inverted",
+          "detected": true
+        },
+        {
+          "id": "supplier-result-lost",
+          "detected": false
+        },
+        {
+          "id": "supplier-lock-not-released",
+          "detected": false
+        },
+        {
+          "id": "runnable-lock-not-released",
+          "detected": true
+        },
+        {
+          "id": "read-lock-becomes-write-lock",
+          "detected": false
+        },
+        {
+          "id": "runnable-never-called",
+          "detected": true
+        }
+      ],
+      "classes": {
+        "org/apache/kafka/server/util/Deadline": {
+          "branch": {
+            "covered": 3,
+            "missed": 7
+          },
+          "line": {
+            "covered": 8,
+            "missed": 9
+          }
+        },
+        "org/apache/kafka/server/util/LockUtils": {
+          "line": {
+            "covered": 6,
+            "missed": 12
+          }
+        }
+      },
+      "retained_test_sha256": {
+        "src/test/java/org/apache/kafka/server/util/ExistingBehaviorTest.java": "04caeb128000cd43025125f67ab3180f88b920a26affb382117fbe4bb323bdd4"
+      }
+    },
+    {
+      "mode": "codex-with-jaipilot",
+      "duration_seconds": 197.85797682299994,
+      "tests": 16,
+      "lines": {
+        "missed": 12,
+        "covered": 23
+      },
+      "branches": {
+        "missed": 2,
+        "covered": 8
+      },
+      "mutation_results": [
+        {
+          "id": "negative-delay-accepted",
+          "detected": true
+        },
+        {
+          "id": "time-unit-ignored",
+          "detected": true
+        },
+        {
+          "id": "delay-subtracted",
+          "detected": true
+        },
+        {
+          "id": "overflow-clamped-to-zero",
+          "detected": true
+        },
+        {
+          "id": "equality-inverted",
+          "detected": true
+        },
+        {
+          "id": "supplier-result-lost",
+          "detected": false
+        },
+        {
+          "id": "supplier-lock-not-released",
+          "detected": false
+        },
+        {
+          "id": "runnable-lock-not-released",
+          "detected": true
+        },
+        {
+          "id": "read-lock-becomes-write-lock",
+          "detected": false
+        },
+        {
+          "id": "runnable-never-called",
+          "detected": true
+        }
+      ],
+      "baseline_id": "5e9ff1ad-f3da-4cb5-be6c-892cb2c5efa7",
+      "classes": {
+        "org/apache/kafka/server/util/Deadline": {
+          "branch": {
+            "covered": 8,
+            "missed": 2
+          },
+          "line": {
+            "covered": 17,
+            "missed": 0
+          }
+        },
+        "org/apache/kafka/server/util/LockUtils": {
+          "line": {
+            "covered": 6,
+            "missed": 12
+          }
+        }
+      },
+      "retained_test_sha256": {
+        "src/test/java/org/apache/kafka/server/util/DeadlineFromDelayCharacterizationTest.java": "4626ce43e9e5cf1d45a094c158f5cfea430e3307158e226b7d3f31b5c36f45e1",
+        "src/test/java/org/apache/kafka/server/util/ExistingBehaviorTest.java": "04caeb128000cd43025125f67ab3180f88b920a26affb382117fbe4bb323bdd4"
+      },
+      "mcp_flow": [
+        {
+          "tool": "lock_behavior",
+          "kind": "lock_behavior",
+          "state": "running",
+          "ready_to_edit": false,
+          "verified": false
+        },
+        {
+          "tool": "get_job_status",
+          "kind": "lock_behavior",
+          "state": "running",
+          "ready_to_edit": false,
+          "verified": false
+        },
+        {
+          "tool": "get_job_status",
+          "kind": "lock_behavior",
+          "state": "running",
+          "ready_to_edit": false,
+          "verified": false
+        },
+        {
+          "tool": "get_job_status",
+          "kind": "lock_behavior",
+          "state": "completed",
+          "ready_to_edit": true,
+          "verified": false
+        },
+        {
+          "tool": "verify_behavior",
+          "kind": "verify_behavior",
+          "state": "running",
+          "ready_to_edit": false,
+          "verified": false
+        },
+        {
+          "tool": "get_job_status",
+          "kind": "verify_behavior",
+          "state": "completed",
+          "ready_to_edit": false,
+          "verified": true
+        }
+      ]
+    }
+  ]
+}
