@@ -44,7 +44,7 @@ jobs:
           if npm view "jaipilot@${TAG#v}" dist.integrity > package/published-integrity 2>/dev/null; then
             test "$(cat package/published-integrity)" = "$EXPECTED"
           else
-            npm publish package/jaipilot-cli.tgz --access public
+            npm publish ./package/jaipilot-cli.tgz --access public
           fi
 
   install:

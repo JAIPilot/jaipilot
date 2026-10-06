@@ -1,0 +1,83 @@
+name: Verify public installations
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published stable release to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Require the expected stable latest release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$TAG" = "v$(cat VERSION)"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)" = "$TAG"
+      - name: Verify the public macOS and Linux command
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          export JAIPILOT_INSTALL_DIR="$RUNNER_TEMP/public install/bin"
+          curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot/main/install.sh | sh
+          "$JAIPILOT_INSTALL_DIR/jaipilot" --version | grep -Fx "JAIPilot CLI ${TAG#v}"
+      - name: Verify the public Windows command
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:JAIPILOT_INSTALL_DIR = "$env:RUNNER_TEMP/public install/bin"
+          irm https://github.com/JAIPilot/jaipilot/releases/latest/download/install.ps1 | iex
+          if ((& "$env:JAIPILOT_INSTALL_DIR/jaipilot.exe" --version) -ne "JAIPilot CLI $($env:TAG.Substring(1))") { throw "Incorrect latest installation" }
+      - name: Verify the public npm command
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          export NPM_CONFIG_PREFIX="$RUNNER_TEMP/public npm"
+          npm install -g jaipilot
+          "$NPM_CONFIG_PREFIX/bin/jaipilot" --version | grep -Fx "JAIPilot CLI ${TAG#v}"
+      - name: Verify the public npm command on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:NPM_CONFIG_PREFIX = "$env:RUNNER_TEMP/public npm"
+          npm install -g jaipilot
+          if ($LASTEXITCODE -ne 0) { throw "npm registry installation failed" }
+          if ((& "$env:NPM_CONFIG_PREFIX/jaipilot.cmd" --version) -ne "JAIPilot CLI $($env:TAG.Substring(1))" -or $LASTEXITCODE -ne 0) { throw "Incorrect npm-installed version" }
+      - name: Enable Linux Homebrew
+        if: matrix.os == 'ubuntu-latest'
+        run: echo '/home/linuxbrew/.linuxbrew/bin' >> "$GITHUB_PATH"
+      - name: Verify the official Homebrew tap and command
+        if: runner.os == 'macOS' || matrix.os == 'ubuntu-latest'
+        shell: bash
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p verified
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern jaipilot.rb --dir verified
+          gh api repos/JAIPilot/homebrew-tap/contents/Formula/jaipilot.rb --jq .content | python3 -c 'import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.read()))' > verified/published.rb
+          cmp verified/jaipilot.rb verified/published.rb
+          brew install JAIPilot/tap/jaipilot
+          brew test JAIPilot/tap/jaipilot
+          jaipilot --version | grep -Fx "JAIPilot CLI ${TAG#v}"

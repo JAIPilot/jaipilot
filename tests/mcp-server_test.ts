@@ -337,6 +337,24 @@ Deno.test("command cancellation and timeouts terminate descendants, including on
           new RegExp(`^"[^"\\r\\n]+","${pid}",`, "m"),
           `Cancelled descendant ${pid} is still running`,
         );
+      } else if (Deno.build.os === "linux") {
+        // A killed child can retain its PID as a zombie until reaped. Check whether it can
+        // still execute, rather than whether the kernel still recognizes its PID.
+        let state = "";
+        const deadline = Date.now() + 2_000;
+        do {
+          const stat = await Deno.readTextFile(`/proc/${pid}/stat`).catch((error) => {
+            if (error instanceof Deno.errors.NotFound) return "";
+            throw error;
+          });
+          state = stat ? stat.slice(stat.lastIndexOf(")") + 2).split(" ")[0] : "";
+          if (!state || state === "Z" || state === "X") break;
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        } while (Date.now() < deadline);
+        assert.ok(
+          !state || state === "Z" || state === "X",
+          `Cancelled descendant ${pid} is still ${state}`,
+        );
       } else {
         assert.throws(() => Deno.kill(pid, "SIGTERM"), /No such process|not found|os error 3/i);
       }
