@@ -13,7 +13,8 @@ assert.equal(init.success, true);
 const transport = new StdioClientTransport({
   command: binary,
   args: ["mcp", "--repo", root],
-  env: { JAIPILOT_CONFIG_DIR: root },
+  // Deno's Node shim can miss Windows' mixed-case Path when the SDK builds its allowlist.
+  env: { JAIPILOT_CONFIG_DIR: root, PATH: Deno.env.get("PATH") ?? "" },
   stderr: "pipe",
 });
 transport.stderr?.on("data", (chunk: Uint8Array) => {
