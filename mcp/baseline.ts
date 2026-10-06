@@ -61,7 +61,7 @@ export async function testPaths(root: string, paths: string[]): Promise<string[]
 }
 
 export async function snapshot(root: string): Promise<Files> {
-  const output = await new Deno.Command("git", {
+  const output = await new Deno.Command(Deno.build.os === "windows" ? "git.exe" : "git", {
     args: ["-C", root, "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
     stdout: "piped",
     stderr: "piped",

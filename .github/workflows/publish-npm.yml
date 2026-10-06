@@ -1,0 +1,79 @@
+name: Publish npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Verified stable release tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+      - name: Require a complete verified stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease --jq '(.isDraft == false) and (.isPrerelease == false)' | grep -Fx true
+          mkdir package
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'jaipilot-cli.tgz*' --dir package
+          cd package
+          sha256sum -c jaipilot-cli.tgz.sha256
+          tar -xzf jaipilot-cli.tgz
+          test "$(node -p 'require("./package/package.json").name')" = jaipilot
+          test "v$(node -p 'require("./package/package.json").version')" = "$TAG"
+      - name: Publish the exact tested package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          npm whoami
+          EXPECTED=$(node -e 'const c=require("crypto"),f=require("fs"); console.log("sha512-"+c.createHash("sha512").update(f.readFileSync("package/jaipilot-cli.tgz")).digest("base64"))')
+          if npm view "jaipilot@${TAG#v}" dist.integrity > package/published-integrity 2>/dev/null; then
+            test "$(cat package/published-integrity)" = "$EXPECTED"
+          else
+            npm publish package/jaipilot-cli.tgz --access public
+          fi
+
+  install:
+    needs: publish
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Fresh npm registry installation on macOS and Linux
+        if: runner.os != 'Windows'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          npm install --global --prefix "$RUNNER_TEMP/registry install" "jaipilot@${TAG#v}"
+          "$RUNNER_TEMP/registry install/bin/jaipilot" --version | grep -Fx "JAIPilot CLI ${TAG#v}"
+          "$RUNNER_TEMP/registry install/bin/jaipilot" --help | grep -F 'jaipilot run'
+      - name: Fresh npm registry installation on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          $version = $env:TAG.Substring(1)
+          npm install --global --prefix "$env:RUNNER_TEMP/registry install" "jaipilot@$version"
+          if ($LASTEXITCODE -ne 0) { throw "npm registry installation failed" }
+          if ((& "$env:RUNNER_TEMP/registry install/jaipilot.cmd" --version) -ne "JAIPilot CLI $version" -or $LASTEXITCODE -ne 0) { throw "Incorrect npm-installed version" }
+          & "$env:RUNNER_TEMP/registry install/jaipilot.cmd" --help
+          if ($LASTEXITCODE -ne 0) { throw "npm launcher failed" }

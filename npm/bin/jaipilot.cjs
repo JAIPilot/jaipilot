@@ -7,7 +7,7 @@ const child = spawn(
   { stdio: "inherit" },
 );
 child.on("error", (error) => {
-  console.error(`JAIPilot: ${error.message}. Reinstall with npm install -g @jaipilot/cli.`);
+  console.error(`JAIPilot: ${error.message}. Reinstall with npm install -g jaipilot.`);
   process.exitCode = 1;
 });
 // The native CLI handles cancellation; keep the launcher alive until it finishes cleanup.

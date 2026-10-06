@@ -187,7 +187,7 @@ export async function runCommand(
     if (terminating || !child.pid) return;
     terminating = true;
     if (windows) {
-      termination = new Deno.Command("taskkill", {
+      termination = new Deno.Command("taskkill.exe", {
         args: ["/PID", String(child.pid), "/T", "/F"],
         stdout: "null",
         stderr: "null",

@@ -112,9 +112,10 @@ jobs:
           cp LICENSE THIRD_PARTY_NOTICES.md dist/npm/
           cp -R licenses dist/npm/
           npm pack ./dist/npm --pack-destination dist --ignore-scripts
-          mv "dist/jaipilot-cli-$(cat VERSION).tgz" dist/jaipilot-cli.tgz
+          mv "dist/jaipilot-$(cat VERSION).tgz" dist/jaipilot-cli.tgz
+          (cd dist && sha256sum jaipilot-cli.tgz > jaipilot-cli.tgz.sha256)
           cp install.sh install.ps1 dist/
-          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" dist/*.tgz dist/jaipilot.rb dist/install.sh dist/install.ps1
+          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" dist/*.tgz dist/*.tgz.sha256 dist/jaipilot.rb dist/install.sh dist/install.ps1
       - name: Require every installation asset before exposing the candidate
         env:
           GH_TOKEN: ${{ github.token }}
@@ -126,7 +127,7 @@ jobs:
               grep -Fx "$ASSET" dist/asset-names
             done
           done
-          for ASSET in install.sh install.ps1 jaipilot.rb jaipilot-cli.tgz; do
+          for ASSET in install.sh install.ps1 jaipilot.rb jaipilot-cli.tgz jaipilot-cli.tgz.sha256; do
             grep -Fx "$ASSET" dist/asset-names
           done
           gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false

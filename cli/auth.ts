@@ -49,7 +49,7 @@ async function openBrowser(url: string): Promise<boolean> {
   const command = Deno.build.os === "darwin"
     ? ["open", url]
     : Deno.build.os === "windows"
-    ? ["cmd", "/c", "start", "", url]
+    ? ["cmd.exe", "/c", "start", "", url]
     : ["xdg-open", url];
   try {
     return (await new Deno.Command(command[0], {

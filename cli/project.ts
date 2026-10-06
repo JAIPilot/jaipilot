@@ -7,7 +7,7 @@ export type Scope = {
 };
 
 export async function git(root: string, ...args: string[]): Promise<string> {
-  const result = await new Deno.Command("git", {
+  const result = await new Deno.Command(Deno.build.os === "windows" ? "git.exe" : "git", {
     args: ["-C", root, ...args],
     stdout: "piped",
     stderr: "piped",

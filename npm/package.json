@@ -1,5 +1,5 @@
 {
-  "name": "@jaipilot/cli",
+  "name": "jaipilot",
   "version": "1.1.1",
   "description": "JAIPilot Java testing workflows, MCP server, and local CLI",
   "license": "MIT",
