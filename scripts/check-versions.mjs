@@ -6,6 +6,8 @@ for (const [path, pattern] of [
   ['internal/jaipilot/common.go', /const Version = "([^"]+)"/],
   ['npm/package.json', /"version": "([^"]+)"/],
   ['build-tools/pom.xml', /<artifactId>jaipilot-build-tools<\/artifactId>\s*<version>([^<]+)<\/version>/],
+  ['build-tools/core/pom.xml', /<parent>[\s\S]*?<version>([^<]+)<\/version>/],
+  ['build-tools/maven-plugin/pom.xml', /<parent>[\s\S]*?<version>([^<]+)<\/version>/],
   ['build-tools/build.gradle', /version = '([^']+)'/],
   ['build-tools/core/src/main/java/com/jaipilot/build/NativeExecutable.java', /VERSION = "([^"]+)"/],
 ]) {

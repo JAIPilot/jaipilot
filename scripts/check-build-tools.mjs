@@ -18,9 +18,11 @@ function put(dir, name, value) {
 }
 function command(executable, args, cwd, success = true, message) {
   const batch = windows && /\.(bat|cmd)$/.test(executable);
-  const quote = value => '"' + value.replaceAll('"', '""') + '"';
-  const result = spawnSync(batch ? (process.env.ComSpec || 'cmd.exe') : executable, batch ? ['/d', '/s', '/c', '"' + [executable, ...args].map(quote).join(' ') + '"'] : args, {
-    windowsVerbatimArguments: batch, cwd, encoding: 'utf8', timeout: 240_000,
+  const quote = value => "'" + value.replaceAll("'", "''") + "'";
+  const result = spawnSync(batch ? 'powershell.exe' : executable,
+    batch ? ['-NoProfile', '-NonInteractive', '-Command',
+      '& ' + [executable, ...args].map(quote).join(' ') + '; exit $LASTEXITCODE'] : args, {
+    cwd, encoding: 'utf8', timeout: 240_000,
     shell: false, maxBuffer: 4 * 1024 * 1024,
     env: { ...process.env, JAIPILOT_NO_UPDATE: '1' } });
   const output = (result.stdout || '') + (result.stderr || '');
