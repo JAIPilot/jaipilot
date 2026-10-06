@@ -52,7 +52,9 @@ ${platform("macos", "apple-darwin")}
 ${platform("linux", "unknown-linux-gnu")}
 
   def install
-    bin.install Dir["jaipilot-*"].first => "jaipilot"
+    binary = Dir["jaipilot-*"].first
+    chmod 0755, binary
+    bin.install binary => "jaipilot"
     resource("notices").stage do
       (share/"jaipilot").install "LICENSE", "THIRD_PARTY_NOTICES.md", "licenses"
     end
