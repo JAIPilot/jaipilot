@@ -48,8 +48,8 @@ approval policy to `never` alone does not authorize a write-capable MCP tool. Se
 For a source checkout, without installing or replacing your released CLI:
 
 ```sh
-codex mcp add jaipilot -- deno run -A \
-  /absolute/path/to/jaipilot-cli/cli/main.ts mcp --repo /absolute/path/to/java-repository
+go build -o dist/jaipilot ./cmd/jaipilot
+codex mcp add jaipilot -- /absolute/path/to/jaipilot-cli/dist/jaipilot mcp --repo /absolute/path/to/java-repository
 ```
 
 ## Connect Claude Code
@@ -155,20 +155,13 @@ The existing [local execution and privacy policy](cli-guide.md#local-execution-a
 
 ## Verify a development build
 
-```sh
-deno task check
-deno task compile
-deno run -A --frozen scripts/check-mcp.ts dist/jaipilot
-```
-
-For an opt-in test through a separate Codex session, sign in to both products and provide Maven and
-a compatible JDK (17 recommended), then run:
+Requires Go 1.26.2, Node.js 20 or later for the official protocol test clients, and a JDK for the real Java regression gate. These development dependencies are not bundled in the released executable.
 
 ```sh
-deno run -A --frozen scripts/check-codex-mcp.ts dist/jaipilot
+npm install --ignore-scripts
+sh scripts/check.sh
 ```
 
-This spends JAIPilot and coding-agent credits. It creates a disposable Java checkout under `dist`,
-asks Codex to refactor through the real MCP integration, checks the original baseline was prepared
-before edits, and independently injects a regression, verifies failure, restores the refactor and
-verifies success. The checkout, Codex event log and summary remain under the printed artifact path.
+The checks build the native CLI and ACP adapter, exercise their real stdio transports with official SDK clients, and run Java baseline/regression, file preservation, authentication, cancellation, and verified update tests. CI runs on Linux, macOS, and Windows; release installations also run on both ARM64 targets.
+
+The paid Codex comparison and its Deno reproduction scripts are historical evidence preserved at [v1.1.1](https://github.com/JAIPilot/jaipilot/tree/v1.1.1/scripts). They are not current native release gates and do not demonstrate a new native paid-service run.

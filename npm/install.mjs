@@ -1,3 +1,4 @@
+import { gunzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -14,7 +15,7 @@ if (!platform || !architecture || (process.platform === "win32" && process.arch 
   throw new Error(`Unsupported JAIPilot platform: ${process.platform}/${process.arch}`);
 }
 const extension = process.platform === "win32" ? ".exe" : "";
-const asset = `jaipilot-${architecture}-${platform}${extension}`;
+const asset = `jaipilot-${architecture}-${platform}${extension}.gz`;
 const base = `https://github.com/JAIPilot/jaipilot/releases/download/v${version}`;
 const destination = join(root, "bin", `jaipilot-native${extension}`);
 const temporary = `${destination}.${process.pid}.tmp${extension}`;
@@ -33,7 +34,7 @@ try {
     throw new Error("JAIPilot checksum mismatch; installation stopped");
   }
   await mkdir(join(root, "bin"), { recursive: true });
-  await writeFile(temporary, binary, { mode: 0o755 });
+  await writeFile(temporary, gunzipSync(binary, { maxOutputLength: 16 * 1024 * 1024 }), { mode: 0o755 });
   await chmod(temporary, 0o755);
   const result = spawnSync(temporary, ["--version"], { encoding: "utf8", timeout: 30_000 });
   if (result.status !== 0 || result.stdout.trim() !== `JAIPilot CLI ${version}`) {

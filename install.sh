@@ -31,6 +31,16 @@ temporary=$(mktemp -d "$install_dir/.jaipilot-install.XXXXXX")
 trap 'exit_status=$?; rm -rf "$temporary"; exit "$exit_status"' 0
 trap 'exit 1' HUP INT TERM
 asset="jaipilot-$architecture-$platform"
+release_version="${version#v}"
+major="${release_version%%.*}"
+minor="${release_version#*.}"
+minor="${minor%%.*}"
+compressed=false
+if [ "$major" -gt 1 ] || { [ "$major" -eq 1 ] && [ "$minor" -ge 2 ]; }; then
+  command -v gzip >/dev/null 2>&1 || { echo "Install gzip first." >&2; exit 1; }
+  asset="$asset.gz"
+  compressed=true
+fi
 base="https://github.com/$repository/releases/download/$version"
 echo "Installing JAIPilot CLI $version for $architecture-${platform}..." >&2
 curl -fSL --retry 2 --connect-timeout 10 --max-time 180 \
@@ -51,6 +61,10 @@ fi
 [ "$actual" = "$expected" ] || {
   echo "Checksum mismatch. Existing installation unchanged." >&2; exit 1;
 }
+if [ "$compressed" = true ]; then
+  mv "$temporary/jaipilot" "$temporary/jaipilot.gz"
+  gzip -d "$temporary/jaipilot.gz"
+fi
 chmod 755 "$temporary/jaipilot"
 [ "$("$temporary/jaipilot" --version)" = "JAIPilot CLI ${version#v}" ] || {
   echo "Downloaded CLI failed its version check. Existing installation unchanged." >&2; exit 1;

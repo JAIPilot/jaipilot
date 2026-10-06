@@ -1,12 +1,27 @@
 {
   "name": "jaipilot",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "JAIPilot Java testing workflows, MCP server, and local CLI",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/JAIPilot/jaipilot.git" },
-  "homepage": "https://www.jaipilot.com/#getting-started",
-  "engines": { "node": ">=20" },
-  "bin": { "jaipilot": "bin/jaipilot.cjs" },
-  "scripts": { "postinstall": "node install.mjs" },
-  "files": ["bin/jaipilot.cjs", "install.mjs", "LICENSE", "THIRD_PARTY_NOTICES.md", "licenses/"]
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JAIPilot/jaipilot.git"
+  },
+  "homepage": "https://www.jaipilot.com/cli",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "jaipilot": "bin/jaipilot.cjs"
+  },
+  "scripts": {
+    "postinstall": "node install.mjs"
+  },
+  "files": [
+    "bin/jaipilot.cjs",
+    "install.mjs",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses/"
+  ]
 }

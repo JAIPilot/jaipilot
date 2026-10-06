@@ -1,0 +1,12 @@
+{
+  "name": "jaipilot-development",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:protocols": "node scripts/check-mcp.mjs dist/jaipilot && node scripts/check-acp.mjs dist/jaipilot-acp"
+  },
+  "devDependencies": {
+    "@agentclientprotocol/sdk": "1.7.0",
+    "@modelcontextprotocol/sdk": "1.32.0"
+  }
+}

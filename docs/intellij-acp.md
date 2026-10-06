@@ -20,7 +20,7 @@ support and organization policies.
 1. Download the matching archive from the [JAIPilot ACP release](https://github.com/JAIPilot/jaipilot/releases/latest).
    Compare its SHA-256 hash with the supplied `.sha256` file, extract it, and place `jaipilot-acp`
    (`jaipilot-acp.exe` on Windows) in a stable directory. The executable includes its runtime; no npm,
-   npx, Python, or separate Deno installation is required.
+   npx, Python, Go, or JavaScript runtime installation is required.
 2. In AI Chat, choose **Add Custom Agent**. IntelliJ opens `~/.jetbrains/acp.json`.
 3. Add a `JAIPilot` entry to the existing `agent_servers` object, preserving other entries:
 
@@ -102,9 +102,8 @@ experimental 100% coverage outcome. It does not alter IntelliJ's bundled Claude 
 ## Develop and verify
 
 ```sh
-deno task check
-deno task compile:acp
-deno run -A scripts/check-acp.ts dist/jaipilot-acp
+npm install --ignore-scripts
+sh scripts/check.sh
 ```
 
 The tracked CI runs these checks on Linux, macOS, and Windows. Release artifacts are versioned binary
