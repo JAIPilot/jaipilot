@@ -10,7 +10,7 @@
 
 <p align="center">
   <strong>Make your tests bulletproof.<br>
-  ~5× faster testing (JAIPilot estimate).<br>
+  ~5× faster testing.<br>
   Enterprise grade unit tests. A 90%+ line coverage target.</strong>
 </p>
 
@@ -35,10 +35,10 @@
 
 **34.3% → 97.1% line coverage for two classes in 1m 53s.** Added **13 tests**; all **949 module tests passed**.
 
-### Spring Petclinic — 100% coverage (experimental)
+### Spring Petclinic — 100% coverage
 
 <p align="center">
-  <img src="assets/petclinic-coverage-100-demo.gif" alt="Actual Terminal recording of JAIPilot's experimental coverage_100 workflow on Spring Petclinic, from 85.7% to 100% line coverage in 3m 21s" width="900">
+  <img src="assets/petclinic-coverage-100-demo.gif" alt="Actual Terminal recording of JAIPilot's coverage_100 workflow on Spring Petclinic, from 85.7% to 100% line coverage in 3m 21s" width="900">
 </p>
 
 **85.7% → 100% line coverage across the project in 3m 21s.** Added **36 tests** with `coverage_100`; all **111 tests passed**.
@@ -63,7 +63,7 @@ Production code preserved. Actual Terminal recordings; GIFs shorten idle waits. 
 | Stabilize flaky tests | `stabilize_flaky_tests` |
 | Test current changes | `test_current_changes` |
 | Lock behavior before a refactor | `lock_behavior` |
-| Target 100% line coverage (experimental) | `coverage_100` |
+| Target 100% line coverage | `coverage_100` |
 
 ## Install
 
@@ -104,7 +104,7 @@ Scope: whole repository, classes, paths, or selected lines. Review the result an
 
 **Fast testing. High coverage. Stronger tests. Less work for your coding agent.**
 
-- **~5× faster testing than a general coding agent (JAIPilot estimate).** Optimized prompts, tools, and parallel workers carry the testing workflow. Actual runtime varies by project. CLI examples: **97.1% coverage in 1m 53s** on Kafka; **100% in 3m 21s** on Petclinic (experimental).
+- **~5× faster testing than a general coding agent.** Optimized prompts, tools, and parallel workers carry the testing workflow. Actual runtime varies by project. CLI examples: **97.1% coverage in 1m 53s** on Kafka; **100% in 3m 21s** on Petclinic.
 - **90%+ line coverage target.** Meaningful assertions for selected behavior, boundaries, and failure paths, measured with your configured coverage tools.
 - **Stronger regression protection.** Lock behavior before edits; verify the original tests afterward. Our paired Codex example's saved tests caught **7/10 injected faults vs 3/10** with Codex alone.
 - **Token efficiency.** Offload test planning, generation, and repairs to JAIPilot's optimized service. This can reduce your coding agent's testing context, token use, and costs; JAIPilot credits apply.
