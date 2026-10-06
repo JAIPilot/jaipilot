@@ -325,7 +325,21 @@ Deno.test("command cancellation and timeouts terminate descendants, including on
         assert.equal(result.value.exitCode, 124);
         assert.equal(result.value.timedOut, true);
       }
-      assert.throws(() => Deno.kill(pid, "SIGTERM"), /No such process|not found|os error 3/i);
+      if (Deno.build.os === "windows") {
+        // TerminateProcess can return AccessDenied for an already terminated process whose
+        // handle has not been released. Check the live process list instead of killing it again.
+        const processes = await new Deno.Command("tasklist", {
+          args: ["/FI", `PID eq ${pid}`, "/FO", "CSV", "/NH"],
+        }).output();
+        assert.equal(processes.success, true);
+        assert.doesNotMatch(
+          new TextDecoder().decode(processes.stdout),
+          new RegExp(`^"[^"\\r\\n]+","${pid}",`, "m"),
+          `Cancelled descendant ${pid} is still running`,
+        );
+      } else {
+        assert.throws(() => Deno.kill(pid, "SIGTERM"), /No such process|not found|os error 3/i);
+      }
       await Deno.remove(join(root, "pid.txt"));
     }
   } finally {
