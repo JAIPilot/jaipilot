@@ -81,6 +81,7 @@ jobs:
           deno compile -A --frozen --target "$TARGET" --output "dist/jaipilot-$TARGET$EXT" cli/main.ts
           (cd dist && sha256sum "jaipilot-$TARGET$EXT" > "jaipilot-$TARGET$EXT.sha256")
           (cd dist/package && zip -r -9 "../jaipilot-notices-$TARGET.zip" LICENSE THIRD_PARTY_NOTICES.md licenses)
+          (cd dist && sha256sum "jaipilot-notices-$TARGET.zip" > "jaipilot-notices-$TARGET.zip.sha256")
       - uses: softprops/action-gh-release@v3
         with:
           draft: true
@@ -121,7 +122,7 @@ jobs:
           gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' > dist/asset-names
           for TARGET in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin x86_64-pc-windows-msvc; do
             case "$TARGET" in *windows*) EXT=.exe ;; *) EXT= ;; esac
-            for ASSET in "jaipilot-$TARGET$EXT" "jaipilot-$TARGET$EXT.sha256" "jaipilot-acp-$TARGET.zip" "jaipilot-acp-$TARGET.zip.sha256" "jaipilot-notices-$TARGET.zip"; do
+            for ASSET in "jaipilot-$TARGET$EXT" "jaipilot-$TARGET$EXT.sha256" "jaipilot-acp-$TARGET.zip" "jaipilot-acp-$TARGET.zip.sha256" "jaipilot-notices-$TARGET.zip" "jaipilot-notices-$TARGET.zip.sha256"; do
               grep -Fx "$ASSET" dist/asset-names
             done
           done

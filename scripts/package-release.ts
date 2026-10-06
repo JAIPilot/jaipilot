@@ -12,19 +12,30 @@ const targets = [
 ];
 const hashes: Record<string, string> = {};
 for (const target of targets) {
-  const checksum = (await Deno.readTextFile(join(directory, `jaipilot-${target}.sha256`)))
-    .trim().split(/\s+/)[0];
-  if (!/^[0-9a-f]{64}$/.test(checksum)) throw new Error(`Invalid checksum for ${target}`);
-  hashes[target] = checksum;
+  for (const prefix of ["jaipilot", "jaipilot-notices"]) {
+    const asset = `${prefix}-${target}${prefix === "jaipilot-notices" ? ".zip" : ""}`;
+    const checksum = (await Deno.readTextFile(join(directory, `${asset}.sha256`)))
+      .trim().split(/\s+/)[0];
+    if (!/^[0-9a-f]{64}$/.test(checksum)) throw new Error(`Invalid checksum for ${asset}`);
+    hashes[asset] = checksum;
+  }
 }
 function platform(os: string, suffix: string) {
   return `  on_${os} do
     if Hardware::CPU.arm?
       url "https://github.com/JAIPilot/jaipilot/releases/download/v${VERSION}/jaipilot-aarch64-${suffix}", using: :nounzip
-      sha256 "${hashes[`aarch64-${suffix}`]}"
+      sha256 "${hashes[`jaipilot-aarch64-${suffix}`]}"
+      resource "notices" do
+        url "https://github.com/JAIPilot/jaipilot/releases/download/v${VERSION}/jaipilot-notices-aarch64-${suffix}.zip"
+        sha256 "${hashes[`jaipilot-notices-aarch64-${suffix}.zip`]}"
+      end
     else
       url "https://github.com/JAIPilot/jaipilot/releases/download/v${VERSION}/jaipilot-x86_64-${suffix}", using: :nounzip
-      sha256 "${hashes[`x86_64-${suffix}`]}"
+      sha256 "${hashes[`jaipilot-x86_64-${suffix}`]}"
+      resource "notices" do
+        url "https://github.com/JAIPilot/jaipilot/releases/download/v${VERSION}/jaipilot-notices-x86_64-${suffix}.zip"
+        sha256 "${hashes[`jaipilot-notices-x86_64-${suffix}.zip`]}"
+      end
     end
   end`;
 }
@@ -42,6 +53,9 @@ ${platform("linux", "unknown-linux-gnu")}
 
   def install
     bin.install Dir["jaipilot-*"].first => "jaipilot"
+    resource("notices").stage do
+      (share/"jaipilot").install "LICENSE", "THIRD_PARTY_NOTICES.md", "licenses"
+    end
   end
 
   test do
