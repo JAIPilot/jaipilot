@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 
 const version = (await readFile(new URL("../VERSION", import.meta.url), "utf8")).trim();
 const binary = resolve(`dist/jaipilot${process.platform === "win32" ? ".exe" : ""}`);
@@ -25,7 +26,7 @@ test("npm postinstall verifies compressed bytes and preserves the installed bina
         const data = await readFile(new URL(String(url).endsWith(".sha256") ? "./checksum" : "./download.gz", import.meta.url));
         return { ok: true, status: 200, arrayBuffer: async () => data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) };
       };`);
-    const run = () => spawnSync(process.execPath, ["--import", join(root, "preload.mjs"), join(root, "install.mjs")], { encoding: "utf8" });
+    const run = () => spawnSync(process.execPath, ["--import", pathToFileURL(join(root, "preload.mjs")).href, join(root, "install.mjs")], { encoding: "utf8" });
     let result = run();
     assert.equal(result.status, 0, result.stderr);
     const installed = join(root, "bin", `jaipilot-native${process.platform === "win32" ? ".exe" : ""}`);
