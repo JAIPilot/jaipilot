@@ -16,6 +16,9 @@ const transport = new StdioClientTransport({
   env: { JAIPILOT_CONFIG_DIR: root },
   stderr: "pipe",
 });
+transport.stderr?.on("data", (chunk: Uint8Array) => {
+  console.error(new TextDecoder().decode(chunk).trimEnd());
+});
 const client = new Client({ name: "jaipilot-release-check", version: "1" });
 try {
   await client.connect(transport);
