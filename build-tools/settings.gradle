@@ -1,0 +1,2 @@
+rootProject.name = 'jaipilot-build-tools'
+include 'core', 'gradle-plugin'

@@ -137,10 +137,11 @@ func runCommand(ctx context.Context, root string, in object) (CommandResult, err
 }
 
 type workflowOptions struct {
-	Protocol    int
-	UserRequest string
-	Report      func(string)
-	Execute     Execute
+	Protocol       int
+	UserRequest    string
+	CoveragePolicy object
+	Report         func(string)
+	Execute        Execute
 }
 
 func serviceRequest(ctx context.Context, method string, body any) (object, error) {
@@ -271,6 +272,21 @@ func runWorkflow(ctx context.Context, root, workflow string, scope Scope, option
 	if !found {
 		return nil, fmt.Errorf("Unknown workflow: %s. Run `jaipilot workflows` to list them", workflow)
 	}
+	if options.CoveragePolicy != nil {
+		catalog, err := serviceRequest(ctx, "GET", nil)
+		if err != nil {
+			return nil, err
+		}
+		supported := false
+		for _, version := range list(catalog["coveragePolicyVersions"]) {
+			if version == float64(1) {
+				supported = true
+			}
+		}
+		if !supported {
+			return nil, errors.New("The service does not support coverage policy version 1; the target was not sent or ignored")
+		}
+	}
 	project, err := projectContext(ctx, root, scope)
 	if err != nil {
 		return nil, err
@@ -288,6 +304,9 @@ func runWorkflow(ctx context.Context, root, workflow string, scope Scope, option
 		protocol = 6
 	}
 	state := object{"workflow": workflow, "revision": 0, "project": project, "selections": scope.Selections, "trigger": object{"projectWide": scope.ProjectWide}, "jobId": uuid()}
+	if options.CoveragePolicy != nil {
+		state["coveragePolicy"] = options.CoveragePolicy
+	}
 	if options.UserRequest != "" {
 		state["userRequest"] = options.UserRequest
 	}

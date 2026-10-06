@@ -67,6 +67,20 @@ curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot/main/install.sh |
 Updates leave your Java repositories untouched. Downloads require internet access and write
 access to the CLI's installation directory.
 
+## Verify a coverage target
+
+For single-module Maven projects with active JaCoCo configuration:
+
+```sh
+jaipilot run improve_coverage --all --coverage-target 80
+jaipilot run improve_coverage --class com.acme.OrderService --coverage-target 80 --branch-coverage-target 70
+```
+
+These optional flags run fresh tests and verify local JaCoCo XML counters. Existing
+configured minima are retained. Without these flags, existing workflows keep their
+current behavior. For Maven/Gradle build tasks and exported coverage policies, see
+[the build tools guide](build-tools.md).
+
 ## Run an outcome
 
 ```bash

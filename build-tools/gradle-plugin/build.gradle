@@ -1,0 +1,27 @@
+plugins {
+    id 'com.gradle.plugin-publish' version '2.2.1'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    withSourcesJar()
+    withJavadocJar()
+}
+
+dependencies { implementation project(':core') }
+
+gradlePlugin {
+    website = 'https://github.com/JAIPilot/jaipilot'
+    vcsUrl = 'https://github.com/JAIPilot/jaipilot'
+    plugins {
+        jaipilot {
+            id = 'com.jaipilot'
+            implementationClass = 'com.jaipilot.gradle.JAIPilotPlugin'
+            displayName = 'JAIPilot Java coverage workflows'
+            description = 'Generate and verify meaningful Java tests against configured JaCoCo coverage requirements.'
+            tags.set(['java', 'testing', 'jacoco', 'coverage'])
+            compatibility(it) { features { configurationCache = false } }
+        }
+    }
+}

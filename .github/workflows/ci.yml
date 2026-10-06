@@ -39,10 +39,57 @@ jobs:
         if: runner.os != 'Windows'
         run: sh -n install.sh
 
+  build-tools:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            java: '21'
+            gradle: '8.14.4'
+          - os: macos-latest
+            java: '21'
+            gradle: '8.14.4'
+          - os: windows-latest
+            java: '21'
+            gradle: '8.14.4'
+          - os: ubuntu-latest
+            java: '17'
+            gradle: '8.14.4'
+          - os: ubuntu-latest
+            java: '21'
+            gradle: '9.7.1'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: ${{ matrix.gradle }}
+      - name: Build and locally install the adapters
+        shell: bash
+        run: |
+          mkdir -p dist
+          go build -o "dist/jaipilot${{ runner.os == 'Windows' && '.exe' || '' }}" ./cmd/jaipilot
+          mvn -f build-tools/pom.xml install -B
+          gradle -p build-tools build publishToMavenLocal --no-daemon
+      - name: Verify real consumer builds and preservation of stricter gates
+        run: node scripts/check-build-tools.mjs
+
   build:
-    needs: validate
+    needs: [validate, build-tools]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Require all platform checks
-        run: test '${{ needs.validate.result }}' = success
+        run: test '${{ needs.validate.result }}' = success && test '${{ needs.build-tools.result }}' = success

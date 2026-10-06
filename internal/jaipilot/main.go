@@ -18,10 +18,12 @@ Usage:
   jaipilot update [--check]
   jaipilot mcp [--repo DIR]
   jaipilot acp
+  jaipilot coverage check|run --policy FILE [--repo DIR] [--json]
   jaipilot run <workflow> [--repo DIR] (--all | --path PATH... | --class CLASS... | --selection FILE:START-END...) [--json]
 
 Examples:
   jaipilot run improve_coverage --all
+  jaipilot run improve_coverage --all --coverage-target 80
   jaipilot run stabilize_flaky_tests --path src/test/java/com/acme/OrderTest.java
   jaipilot run generate_tests --class com.acme.OrderService
   jaipilot run improve_coverage --selection src/main/java/com/acme/OrderService.java:42-88
@@ -31,9 +33,12 @@ credits apply. Selected source, project context, and command output may be sent 
 the managed testing service. Review the complete diff afterward.`
 
 type runOptions struct {
-	repo  string
-	scope ScopeInput
-	json  bool
+	repo           string
+	scope          ScopeInput
+	json           bool
+	coveragePolicy string
+	coverageTarget *float64
+	branchTarget   *float64
 }
 
 func parseRun(args []string) (runOptions, error) {
@@ -44,12 +49,24 @@ func parseRun(args []string) (runOptions, error) {
 			options.scope.All = true
 		case "--json":
 			options.json = true
-		case "--repo", "--path", "--class", "--selection":
+		case "--repo", "--path", "--class", "--selection", "--coverage-policy", "--policy", "--coverage-target", "--branch-coverage-target":
 			i++
 			if i == len(args) || args[i] == "" || strings.HasPrefix(args[i], "--") {
 				return options, fmt.Errorf("Missing value for %s", arg)
 			}
 			switch arg {
+			case "--coverage-policy", "--policy":
+				options.coveragePolicy = args[i]
+			case "--coverage-target", "--branch-coverage-target":
+				n, err := percentage(args[i])
+				if err != nil {
+					return options, err
+				}
+				if arg == "--coverage-target" {
+					options.coverageTarget = &n
+				} else {
+					options.branchTarget = &n
+				}
 			case "--repo":
 				options.repo = args[i]
 			case "--path":
@@ -126,6 +143,64 @@ func mainCommand(ctx context.Context, args []string) (int, error) {
 			fmt.Printf("%-24s %s\n", str(item["id"]), str(item["description"]))
 		}
 		return 0, nil
+	case "coverage":
+		if len(args) < 2 || (args[1] != "check" && args[1] != "run") {
+			return 1, errors.New("Use jaipilot coverage check|run --policy FILE [--repo DIR] [--json]")
+		}
+		options, err := parseRun(args[2:])
+		if err != nil {
+			return 1, err
+		}
+		root, err := repositoryRoot(ctx, options.repo)
+		if err != nil {
+			return 1, err
+		}
+		if options.coveragePolicy == "" {
+			return 1, errors.New("Coverage requires --coverage-policy FILE (or --policy FILE)")
+		}
+		p, err := loadCoveragePolicy(root, options.coveragePolicy)
+		if err != nil {
+			return 1, err
+		}
+		if options.scope.All || len(options.scope.Paths)+len(options.scope.Classes)+len(options.scope.Selections) > 0 {
+			return 1, errors.New("Coverage scope comes from the policy; use run improve_coverage for scope flags")
+		}
+		scopeInput := ScopeInput{All: true}
+		if len(p.ScopePaths) > 0 {
+			scopeInput = ScopeInput{Paths: p.ScopePaths}
+		}
+		scope, err := resolveScope(ctx, root, scopeInput)
+		if err != nil {
+			return 1, err
+		}
+		if options.coverageTarget != nil {
+			if err := addCoverageTarget(root, p, "LINE", *options.coverageTarget, scope); err != nil {
+				return 1, err
+			}
+		}
+		if options.branchTarget != nil {
+			if err := addCoverageTarget(root, p, "BRANCH", *options.branchTarget, scope); err != nil {
+				return 1, err
+			}
+		}
+		if err := p.validate(root); err != nil {
+			return 1, err
+		}
+		result, err := runCoverage(ctx, root, "improve_coverage", scope, p, args[1] == "check")
+		if err != nil {
+			return 1, err
+		}
+		if options.json {
+			if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
+				return 1, err
+			}
+		} else {
+			fmt.Println(coverageText(result))
+		}
+		if str(result["status"]) != "complete" {
+			return 2, nil
+		}
+		return 0, nil
 	case "run":
 		if len(args) < 2 || strings.HasPrefix(args[1], "--") {
 			return 1, errors.New("Specify a workflow; run `jaipilot workflows`")
@@ -142,7 +217,37 @@ func mainCommand(ctx context.Context, args []string) (int, error) {
 		if err != nil {
 			return 1, err
 		}
-		result, err := runWorkflow(ctx, root, args[1], scope, workflowOptions{})
+		var result object
+		if options.coveragePolicy != "" || options.coverageTarget != nil || options.branchTarget != nil {
+			if args[1] != "improve_coverage" {
+				return 1, errors.New("Coverage policy options require improve_coverage")
+			}
+			var p *CoveragePolicy
+			if options.coveragePolicy != "" {
+				p, err = loadCoveragePolicy(root, options.coveragePolicy)
+			} else {
+				p, err = discoverMavenCoverage(ctx, root)
+			}
+			if err != nil {
+				return 1, err
+			}
+			if options.coverageTarget != nil {
+				if err := addCoverageTarget(root, p, "LINE", *options.coverageTarget, scope); err != nil {
+					return 1, err
+				}
+			}
+			if options.branchTarget != nil {
+				if err := addCoverageTarget(root, p, "BRANCH", *options.branchTarget, scope); err != nil {
+					return 1, err
+				}
+			}
+			if err := p.validate(root); err != nil {
+				return 1, err
+			}
+			result, err = runCoverage(ctx, root, args[1], scope, p, false)
+		} else {
+			result, err = runWorkflow(ctx, root, args[1], scope, workflowOptions{})
+		}
 		if err != nil {
 			return 1, err
 		}
@@ -153,7 +258,11 @@ func mainCommand(ctx context.Context, args []string) (int, error) {
 				return 1, err
 			}
 		} else {
-			fmt.Println(resultText(result))
+			if result["coveragePolicy"] != nil || result["coverageBefore"] != nil {
+				fmt.Println(coverageText(result))
+			} else {
+				fmt.Println(resultText(result))
+			}
 		}
 		if str(result["status"]) != "complete" {
 			return 2, nil

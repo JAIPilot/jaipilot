@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+node scripts/check-versions.mjs
 [ -z "$(gofmt -l cmd internal)" ] || { echo "Run gofmt before committing." >&2; exit 1; }
 go vet ./...
 go test -race ./...

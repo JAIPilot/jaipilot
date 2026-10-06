@@ -1,0 +1,4 @@
+.gradle/
+/core/build/
+/gradle-plugin/build/
+**/target/

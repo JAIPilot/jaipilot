@@ -27,7 +27,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for attempt in $(seq 1 90); do
+          for attempt in $(seq 1 180); do
             gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&per_page=30" > /tmp/runs.json
             RESULT=$(node -e 'const r=require("/tmp/runs.json").workflow_runs.filter(r=>r.name==="CI"); if(r.some(r=>r.status==="completed"&&r.conclusion!=="success")) console.log("failed"); else if(r.some(r=>r.status==="completed"&&r.conclusion==="success")) console.log("passed"); else console.log("waiting")')
             test "$RESULT" != failed
@@ -37,9 +37,13 @@ jobs:
           test "$RESULT" = passed
       - name: Verify identity and create the immutable release tag
         id: identity
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v$(cat VERSION)"
           echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'
+          PREVIOUS=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          node -e 'const [previous,next]=process.argv.slice(1).map(v=>v.replace(/^v/,"").split(".").map(Number)); if(next[0]!==previous[0] || next[1]!==previous[1] || (next[2]!==previous[2] && next[2]!==previous[2]+1)) throw Error("CLI releases must advance by patch only");' "$PREVIOUS" "$TAG"
           if test "$GITHUB_REF_TYPE" = tag; then test "$GITHUB_REF_NAME" = "$TAG"; fi
           git fetch origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
@@ -56,7 +60,11 @@ jobs:
           tag_name: ${{ steps.identity.outputs.tag }}
           name: JAIPilot ${{ steps.identity.outputs.tag }}
           body: |
-            Replaces the bundled Deno/V8 runtime with small native Go executables. No Go, Node.js, or Deno installation is required for the standalone CLI, Homebrew CLI, or IntelliJ ACP adapter. The npm launcher uses your installed Node.js.
+            Adds opt-in JaCoCo coverage targets and Maven/Gradle coverage adapters. Configured minimums are preserved, line and branch requirements remain separate, and only fresh local test/report evidence can pass verification. Existing workflows remain compatible without the new flags.
+
+            Build adapters currently install from source into the local Maven repository; Maven Central and Gradle Plugin Portal publisher setup is prepared. [Coverage commands and adapter setup](https://github.com/JAIPilot/jaipilot/blob/main/docs/build-tools.md)
+
+            Small native Go executables require no Go, Node.js, or Deno installation for the standalone CLI, Homebrew CLI, or IntelliJ ACP adapter. The npm launcher uses your installed Node.js.
 
             Compressed, checksum-verified installers support macOS Intel/Apple Silicon, Linux x64/ARM64, and Windows x64. The existing CLI commands, MCP tool contracts, durable behavior baselines, authentication format, and bounded ACP terminal permissions are preserved. Raw assets remain available so older compiled CLIs can update to this release.
 
@@ -232,6 +240,12 @@ jobs:
       - name: Enable Linux Homebrew
         if: runner.os == 'Linux' && matrix.target == 'x86_64-unknown-linux-gnu'
         run: echo '/home/linuxbrew/.linuxbrew/bin' >> "$GITHUB_PATH"
+      - name: Verify fresh native bootstrap used by build adapters
+        shell: bash
+        run: |
+          mkdir -p dist/bootstrap
+          javac -d dist/bootstrap build-tools/core/src/main/java/com/jaipilot/build/*.java scripts/NativeBootstrapCheck.java
+          java -Duser.home="$RUNNER_TEMP/adapter bootstrap" -cp dist/bootstrap NativeBootstrapCheck
       - name: Fresh Homebrew installation and formula test
         if: runner.os == 'macOS' || matrix.target == 'x86_64-unknown-linux-gnu'
         shell: bash

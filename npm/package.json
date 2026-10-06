@@ -1,6 +1,6 @@
 {
   "name": "jaipilot",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "JAIPilot Java testing workflows, MCP server, and local CLI",
   "license": "MIT",
   "repository": {

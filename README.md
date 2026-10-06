@@ -114,6 +114,25 @@ jaipilot run lock_behavior --path src/main/java/com/acme
 
 Scope: whole repository, classes, paths, or selected lines. Review the result and `git diff` before accepting changes.
 
+For a fresh, verified coverage target on a single-module Maven project:
+
+```bash
+jaipilot run improve_coverage --all --coverage-target 80
+```
+
+Build tool adapters also provide local coverage checks and generation:
+
+```bash
+./mvnw com.jaipilot:jaipilot-maven-plugin:1.2.1:check -Djaipilot.coverage.line=80
+./mvnw com.jaipilot:jaipilot-maven-plugin:1.2.1:run -Djaipilot.coverage.line=80
+./gradlew jaipilotCheck -Pjaipilot.coverage.line=80
+./gradlew jaipilotRun -Pjaipilot.coverage.line=80
+```
+
+The adapters currently require installation from source into your local Maven repository;
+public registry publisher setup is prepared. Use `mvnw.cmd` / `gradlew.bat` in Windows
+PowerShell. [Adapter setup, class/branch targets, and supported JaCoCo rules →](docs/build-tools.md)
+
 [All commands, scopes, JSON output, and exit codes →](docs/cli-guide.md#run-an-outcome)
 
 ## Why use JAIPilot if my coding agent already writes tests?
