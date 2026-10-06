@@ -29,6 +29,8 @@ jobs:
           draft: true
           name: JAIPilot ${{ github.ref_name }}
           body: |
+            Fixes the CLI installer 404 caused by v1.1.0 containing only ACP archives. This release includes verified CLI binaries and checksums for all five supported platform targets, a Windows installer, an npm-compatible package, and the official Homebrew formula. Native installation and protocol checks must pass before promotion to latest.
+
             The JAIPilot CLI includes a local stdio MCP server for coding agents: prepare characterization tests before Java edits and verify the preserved baseline afterward. Configure `jaipilot mcp --repo /absolute/path/to/repository` in your MCP client.
 
             [Coding agent setup and tool contracts](https://github.com/JAIPilot/jaipilot/blob/main/docs/coding-agents.md)
@@ -257,3 +259,35 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --prerelease=false --latest
+
+  latest:
+    needs: publish
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify the exact public curl command against latest
+        if: runner.os != 'Windows'
+        run: |
+          export JAIPILOT_INSTALL_DIR="$RUNNER_TEMP/latest install/bin"
+          curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot/main/install.sh | sh
+          "$JAIPILOT_INSTALL_DIR/jaipilot" --version | grep -Fx "JAIPilot CLI $(cat VERSION)"
+      - name: Verify the exact public PowerShell command against latest
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:JAIPILOT_INSTALL_DIR = "$env:RUNNER_TEMP/latest install/bin"
+          irm https://github.com/JAIPilot/jaipilot/releases/latest/download/install.ps1 | iex
+          if ((& "$env:JAIPILOT_INSTALL_DIR/jaipilot.exe" --version) -ne "JAIPilot CLI $(Get-Content VERSION)") { throw "Incorrect latest installation" }
+      - name: Verify the public Homebrew command against the published tap
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          brew install JAIPilot/tap/jaipilot
+          brew test JAIPilot/tap/jaipilot
