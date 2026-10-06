@@ -151,8 +151,14 @@ export async function runCommand(
   // A process group lets cancellation stop Maven/Java grandchildren as well as the shell.
   const child = spawn(
     windows ? "cmd.exe" : "/bin/sh",
-    windows ? ["/d", "/s", "/c", command] : ["-lc", command],
-    { cwd: root, detached: !windows, stdio: ["ignore", "pipe", "pipe"] },
+    windows ? ["/d", "/s", "/c", `"${command}"`] : ["-lc", command],
+    {
+      cwd: root,
+      detached: !windows,
+      stdio: ["ignore", "pipe", "pipe"],
+      // cmd.exe parses quotes itself; C-runtime argument escaping breaks quoted executable paths.
+      windowsVerbatimArguments: windows,
+    },
   );
   const out = { text: "", truncated: false }, err = { text: "", truncated: false };
   for (const [stream, target] of [[child.stdout!, out], [child.stderr!, err]] as const) {

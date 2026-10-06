@@ -87,13 +87,175 @@ jobs:
           files: dist/jaipilot-*
           fail_on_unmatched_files: true
 
-  publish:
+  candidate:
     needs: binaries
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Publish complete release
+      - uses: actions/checkout@v7
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.14
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Package npm and Homebrew distributions
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+        run: |
+          mkdir -p dist/npm
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern '*.sha256' --dir dist
+          deno run -A scripts/package-release.ts dist
+          cp -R npm/. dist/npm/
+          cp LICENSE THIRD_PARTY_NOTICES.md dist/npm/
+          cp -R licenses dist/npm/
+          npm pack ./dist/npm --pack-destination dist --ignore-scripts
+          cp install.sh install.ps1 dist/
+          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" dist/*.tgz dist/jaipilot.rb dist/install.sh dist/install.ps1
+      - name: Require every installation asset before exposing the candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' > dist/asset-names
+          for TARGET in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin x86_64-pc-windows-msvc; do
+            case "$TARGET" in *windows*) EXT=.exe ;; *) EXT= ;; esac
+            for ASSET in "jaipilot-$TARGET$EXT" "jaipilot-$TARGET$EXT.sha256" "jaipilot-acp-$TARGET.zip" "jaipilot-acp-$TARGET.zip.sha256" "jaipilot-notices-$TARGET.zip"; do
+              grep -Fx "$ASSET" dist/asset-names
+            done
+          done
+          for ASSET in install.sh install.ps1 jaipilot.rb "jaipilot-cli-$(cat VERSION).tgz"; do
+            grep -Fx "$ASSET" dist/asset-names
+          done
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
+
+  install:
+    needs: candidate
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: macos-15
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.14
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run native platform gates
+        run: deno task check
+      - name: Download candidate packages
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern '*.tgz' --pattern 'jaipilot.rb' --pattern "jaipilot-acp-${{ matrix.target }}.zip*" --dir dist
+      - name: Fresh standalone installation on macOS and Linux
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          JAIPILOT_VERSION="$GITHUB_REF_NAME" JAIPILOT_INSTALL_DIR="$RUNNER_TEMP/standalone install/bin" sh install.sh
+          "$RUNNER_TEMP/standalone install/bin/jaipilot" --version | grep -Fx "JAIPilot CLI $(cat VERSION)"
+          deno run -A --frozen scripts/check-mcp.ts "$RUNNER_TEMP/standalone install/bin/jaipilot"
+      - name: Fresh standalone installation on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./install.ps1 -Version $env:GITHUB_REF_NAME -InstallDir "$env:RUNNER_TEMP/standalone install/bin"
+          $binary = "$env:RUNNER_TEMP/standalone install/bin/jaipilot.exe"
+          if ((& $binary --version) -ne "JAIPilot CLI $(Get-Content VERSION)") { throw "Incorrect installed version" }
+          deno run -A --frozen scripts/check-mcp.ts $binary
+          if ($LASTEXITCODE -ne 0) { throw "Installed MCP server failed" }
+      - name: Fresh npm installation
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          npm install --global --prefix "$RUNNER_TEMP/npm install" dist/*.tgz
+          "$RUNNER_TEMP/npm install/bin/jaipilot" --version | grep -Fx "JAIPilot CLI $(cat VERSION)"
+      - name: Fresh npm installation on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          npm install --global --prefix "$env:RUNNER_TEMP/npm install" (Get-ChildItem dist/*.tgz).FullName
+          if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
+          if ((& "$env:RUNNER_TEMP/npm install/jaipilot.cmd" --version) -ne "JAIPilot CLI $(Get-Content VERSION)" -or $LASTEXITCODE -ne 0) { throw "Incorrect npm-installed version" }
+      - name: Fresh Homebrew installation and formula test
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          TAP="$(brew --repository)/Library/Taps/jaipilot/homebrew-release-check"
+          mkdir -p "$TAP/Formula"
+          cp dist/jaipilot.rb "$TAP/Formula/jaipilot.rb"
+          git -C "$TAP" init
+          brew install jaipilot/release-check/jaipilot
+          brew test jaipilot/release-check/jaipilot
+      - name: Check installed ACP adapter
+        shell: bash
+        run: |
+          cd dist
+          case "${{ runner.os }}" in Windows) EXT=.exe ;; *) EXT= ;; esac
+          if command -v sha256sum >/dev/null; then
+            sha256sum -c "jaipilot-acp-${{ matrix.target }}.zip.sha256"
+          else
+            shasum -a 256 -c "jaipilot-acp-${{ matrix.target }}.zip.sha256"
+          fi
+          unzip "jaipilot-acp-${{ matrix.target }}.zip" -d acp
+          cd ..
+          deno run -A --frozen scripts/check-acp.ts "dist/acp/jaipilot-acp$EXT"
+
+  publish:
+    needs: install
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+      - name: Publish the verified npm package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          mkdir -p dist
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern '*.tgz' --pattern 'jaipilot.rb' --dir dist
+          npm publish dist/*.tgz --access public
+          npm install --global --prefix "$RUNNER_TEMP/npm registry install" "@jaipilot/cli@$(cat VERSION)"
+          "$RUNNER_TEMP/npm registry install/bin/jaipilot" --version | grep -Fx "JAIPilot CLI $(cat VERSION)"
+      - name: Update the official Homebrew tap
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh repo clone JAIPilot/homebrew-tap "$RUNNER_TEMP/tap"
+          mkdir -p "$RUNNER_TEMP/tap/Formula"
+          cp dist/jaipilot.rb "$RUNNER_TEMP/tap/Formula/jaipilot.rb"
+          cd "$RUNNER_TEMP/tap"
+          git config user.name "JAIPilot releases"
+          git config user.email "noreply@jaipilot.com"
+          git add Formula/jaipilot.rb
+          git commit -m "JAIPilot $GITHUB_REF_NAME"
+          gh auth setup-git
+          git push origin HEAD:main
+      - name: Promote only the verified complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --prerelease=false --latest

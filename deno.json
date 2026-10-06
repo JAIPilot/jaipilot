@@ -4,7 +4,7 @@
     "lineWidth": 100,
     "semiColons": true,
     "singleQuote": false,
-    "include": ["cli", "acp", "mcp", "tests", "scripts", "deno.json"]
+    "include": ["cli", "acp", "mcp", "npm", "tests", "scripts", "deno.json"]
   },
   "lint": {
     "rules": { "tags": ["recommended"] },

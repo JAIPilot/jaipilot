@@ -82,3 +82,18 @@ Deno.test("service outages retry but a terminal server response stops", async ()
     await Deno.remove(config, { recursive: true });
   }
 });
+
+Deno.test("local runner preserves quoted executable, script, and argument paths", async () => {
+  const root = await Deno.makeTempDir({ prefix: "jaipilot runner spaces " });
+  try {
+    await Deno.writeTextFile(`${root}/verification with spaces.ts`, "console.log(Deno.args[0]);\n");
+    const result = await runCommand(root, {
+      command: `"${Deno.execPath()}" run "verification with spaces.ts" "scope with spaces"`,
+      timeoutSeconds: 30,
+    });
+    assert.equal(result.exitCode, 0, result.output);
+    assert.equal(result.output.trim(), "scope with spaces");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
