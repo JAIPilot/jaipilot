@@ -39,6 +39,17 @@ jobs:
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           test "$TAG" = "v$(cat VERSION)"
           test "$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)" = "$TAG"
+      - name: Require npm to contain the exact tested release package
+        if: inputs.npm_registry
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p verified-npm
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern jaipilot-cli.tgz --dir verified-npm
+          EXPECTED=$(node -e 'const c=require("crypto"),f=require("fs"); console.log("sha512-"+c.createHash("sha512").update(f.readFileSync("verified-npm/jaipilot-cli.tgz")).digest("base64"))')
+          test "$(npm view "jaipilot@${TAG#v}" dist.integrity)" = "$EXPECTED"
+          test "$(npm view jaipilot version)" = "${TAG#v}"
       - name: Verify the public macOS and Linux command
         if: runner.os != 'Windows'
         shell: bash
