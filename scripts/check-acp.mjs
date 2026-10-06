@@ -43,7 +43,7 @@ try {
   } catch { /* exited */ }
   await exited;
   await client.closed;
-  
+
   if (diagnostics.trim()) console.error(diagnostics.trim());
   await rm(config, { recursive: true, force: true });
 }
