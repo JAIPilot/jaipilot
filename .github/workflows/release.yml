@@ -111,6 +111,7 @@ jobs:
           cp LICENSE THIRD_PARTY_NOTICES.md dist/npm/
           cp -R licenses dist/npm/
           npm pack ./dist/npm --pack-destination dist --ignore-scripts
+          mv "dist/jaipilot-cli-$(cat VERSION).tgz" dist/jaipilot-cli.tgz
           cp install.sh install.ps1 dist/
           gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" dist/*.tgz dist/jaipilot.rb dist/install.sh dist/install.ps1
       - name: Require every installation asset before exposing the candidate
@@ -124,7 +125,7 @@ jobs:
               grep -Fx "$ASSET" dist/asset-names
             done
           done
-          for ASSET in install.sh install.ps1 jaipilot.rb "jaipilot-cli-$(cat VERSION).tgz"; do
+          for ASSET in install.sh install.ps1 jaipilot.rb jaipilot-cli.tgz; do
             grep -Fx "$ASSET" dist/asset-names
           done
           gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
@@ -185,17 +186,20 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          npm install --global --prefix "$RUNNER_TEMP/npm install" dist/*.tgz
+          npm install --global --prefix "$RUNNER_TEMP/npm install" "https://github.com/JAIPilot/jaipilot/releases/download/$GITHUB_REF_NAME/jaipilot-cli.tgz"
           "$RUNNER_TEMP/npm install/bin/jaipilot" --version | grep -Fx "JAIPilot CLI $(cat VERSION)"
       - name: Fresh npm installation on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          npm install --global --prefix "$env:RUNNER_TEMP/npm install" (Get-ChildItem dist/*.tgz).FullName
+          npm install --global --prefix "$env:RUNNER_TEMP/npm install" "https://github.com/JAIPilot/jaipilot/releases/download/$env:GITHUB_REF_NAME/jaipilot-cli.tgz"
           if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
           if ((& "$env:RUNNER_TEMP/npm install/jaipilot.cmd" --version) -ne "JAIPilot CLI $(Get-Content VERSION)" -or $LASTEXITCODE -ne 0) { throw "Incorrect npm-installed version" }
+      - name: Enable Linux Homebrew
+        if: runner.os == 'Linux' && matrix.target == 'x86_64-unknown-linux-gnu'
+        run: echo '/home/linuxbrew/.linuxbrew/bin' >> "$GITHUB_PATH"
       - name: Fresh Homebrew installation and formula test
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' || matrix.target == 'x86_64-unknown-linux-gnu'
         shell: bash
         env:
           HOMEBREW_NO_AUTO_UPDATE: "1"
@@ -227,20 +231,12 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          registry-url: https://registry.npmjs.org
-      - name: Publish the verified npm package
+      - name: Download the verified tap formula
         env:
           GH_TOKEN: ${{ github.token }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           mkdir -p dist
-          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern '*.tgz' --pattern 'jaipilot.rb' --dir dist
-          npm publish dist/*.tgz --access public
-          npm install --global --prefix "$RUNNER_TEMP/npm registry install" "@jaipilot/cli@$(cat VERSION)"
-          "$RUNNER_TEMP/npm registry install/bin/jaipilot" --version | grep -Fx "JAIPilot CLI $(cat VERSION)"
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern 'jaipilot.rb' --dir dist
       - name: Update the official Homebrew tap
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
@@ -252,7 +248,7 @@ jobs:
           git config user.name "JAIPilot releases"
           git config user.email "noreply@jaipilot.com"
           git add Formula/jaipilot.rb
-          git commit -m "JAIPilot $GITHUB_REF_NAME"
+          git diff --cached --quiet || git commit -m "JAIPilot $GITHUB_REF_NAME"
           gh auth setup-git
           git push origin HEAD:main
       - name: Promote only the verified complete release
