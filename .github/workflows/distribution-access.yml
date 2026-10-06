@@ -1,0 +1,23 @@
+name: Distribution access
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+      - name: Inspect public npm namespaces
+        run: |
+          npm view jaipilot name version maintainers --json || true
+          npm view @jaipilot/cli name version maintainers --json || true
+      - name: Check npm publishing identity
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm whoami
+          npm org ls jaipilot --json || true
