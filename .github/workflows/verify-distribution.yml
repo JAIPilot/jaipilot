@@ -7,6 +7,10 @@ on:
         description: Published stable release to verify
         required: true
         type: string
+      npm_registry:
+        description: Include npm registry checks after npm publication
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -50,14 +54,14 @@ jobs:
           irm https://github.com/JAIPilot/jaipilot/releases/latest/download/install.ps1 | iex
           if ((& "$env:JAIPILOT_INSTALL_DIR/jaipilot.exe" --version) -ne "JAIPilot CLI $($env:TAG.Substring(1))") { throw "Incorrect latest installation" }
       - name: Verify the public npm command
-        if: runner.os != 'Windows'
+        if: inputs.npm_registry && runner.os != 'Windows'
         shell: bash
         run: |
           export NPM_CONFIG_PREFIX="$RUNNER_TEMP/public npm"
           npm install -g jaipilot
           "$NPM_CONFIG_PREFIX/bin/jaipilot" --version | grep -Fx "JAIPilot CLI ${TAG#v}"
       - name: Verify the public npm command on Windows
-        if: runner.os == 'Windows'
+        if: inputs.npm_registry && runner.os == 'Windows'
         shell: pwsh
         run: |
           $env:NPM_CONFIG_PREFIX = "$env:RUNNER_TEMP/public npm"
