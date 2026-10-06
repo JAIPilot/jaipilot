@@ -75,7 +75,23 @@ Requires Git, a JDK, and your project's build tools.
 curl -fsSL https://raw.githubusercontent.com/JAIPilot/jaipilot/main/install.sh | sh
 ```
 
-**Windows:** [Download the executable](https://github.com/JAIPilot/jaipilot/releases/latest/download/jaipilot-x86_64-pc-windows-msvc.exe) and add it to your `PATH`.
+**Windows (PowerShell)**
+
+```powershell
+irm https://github.com/JAIPilot/jaipilot/releases/latest/download/install.ps1 | iex
+```
+
+**npm**
+
+```bash
+npm install -g jaipilot
+```
+
+**Homebrew (macOS / Linux)**
+
+```bash
+brew install JAIPilot/tap/jaipilot
+```
 
 Sign in, then run inside your Java repository:
 
