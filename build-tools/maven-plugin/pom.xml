@@ -6,6 +6,7 @@
     <version>1.2.1</version>
   </parent>
   <artifactId>jaipilot-maven-plugin</artifactId>
+  <name>JAIPilot Maven plugin</name>
   <packaging>maven-plugin</packaging>
   <dependencies>
     <dependency>

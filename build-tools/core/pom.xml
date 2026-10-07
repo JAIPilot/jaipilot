@@ -6,4 +6,5 @@
     <version>1.2.1</version>
   </parent>
   <artifactId>jaipilot-build-tools-core</artifactId>
+  <name>JAIPilot build tools core</name>
 </project>
