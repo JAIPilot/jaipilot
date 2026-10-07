@@ -1,9 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/JAIPilot/jaipilot/main/assets/jaipilot-logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/JAIPilot/jaipilot/main/assets/jaipilot-logo.svg">
-    <img src="https://raw.githubusercontent.com/JAIPilot/jaipilot/main/assets/jaipilot-logo.svg" alt="JAIPilot" width="96" height="96">
-  </picture>
+  <img src="assets/jaipilot-logo.svg" alt="JAIPilot" width="96" height="96">
 </p>
 
 <h1 align="center">JAIPilot — faster Java testing, stronger coverage, fewer bugs</h1>
