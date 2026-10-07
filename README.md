@@ -129,9 +129,9 @@ Build tool adapters also provide local coverage checks and generation:
 ./gradlew jaipilotRun -Pjaipilot.coverage.line=80
 ```
 
-The adapters currently require installation from source into your local Maven repository;
-public registry publisher setup is prepared. Use `mvnw.cmd` / `gradlew.bat` in Windows
-PowerShell. [Adapter setup, class/branch targets, and supported JaCoCo rules →](docs/build-tools.md)
+The Maven adapter 1.2.1 is published on Maven Central. The Gradle plugin is submitted
+and awaiting Portal approval; install it from source until approved. Use `mvnw.cmd` /
+`gradlew.bat` in Windows PowerShell. [Adapter setup, class/branch targets, and supported JaCoCo rules →](docs/build-tools.md)
 
 [All commands, scopes, JSON output, and exit codes →](docs/cli-guide.md#run-an-outcome)
 

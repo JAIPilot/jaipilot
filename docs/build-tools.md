@@ -14,12 +14,13 @@ Line and branch requirements are evaluated separately, without rounding for pass
 
 ## Installation status
 
-The Maven Central and Gradle Plugin Portal publisher configuration is prepared.
-Until the publisher accounts are configured and the artifacts are publicly released,
-install the adapters from the JAIPilot source checkout into your local Maven repository:
+The Maven adapter, shared core, and parent POM 1.2.1 are published on Maven Central
+under `com.jaipilot`. The Maven commands below resolve directly from Central.
+The `com.jaipilot` Gradle plugin 1.2.1 has been submitted through JAIPilot's corporate
+publisher account and is awaiting the Portal's initial review. Until approved, install
+the Gradle adapter from the JAIPilot source checkout into your local Maven repository:
 
 ```sh
-mvn -f build-tools/pom.xml install
 gradle -p build-tools publishToMavenLocal
 ```
 

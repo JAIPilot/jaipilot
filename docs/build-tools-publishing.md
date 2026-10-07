@@ -1,6 +1,13 @@
 # Build tools publisher setup
 
-Publisher setup is prepared; this file is not evidence of public registry availability.
+Maven Central version 1.2.1 is published under the verified `com.jaipilot` namespace
+in the Jaipilot organization. The parent, shared core, and Maven plugin were verified
+from an empty dependency cache; the public artifact and signature bytes match the
+validated publishing bundle. The `com.jaipilot` Gradle plugin 1.2.1 is submitted through
+JAIPilot's corporate publisher account and is awaiting the Portal's initial approval.
+
+The publishing source is commit `ff4a0c4053b6e1443fbc4f9603544e7cd84e8043`;
+[all nine CI jobs passed](https://github.com/JAIPilot/jaipilot/actions/runs/37591836602).
 Keep credentials and signing keys outside this repository. The native CLI is released
 separately through the existing verified release workflow.
 
@@ -21,6 +28,15 @@ separately through the existing verified release workflow.
 mvn -f build-tools/pom.xml -Ppublish-central deploy
 ```
 
+For an encrypted exported key, Maven's Java signer also supports:
+
+```sh
+mvn -f build-tools/pom.xml -Ppublish-central -Dgpg.signer=bc \
+  -Dgpg.keyFilePath=/private/path/maven-signing-key.asc deploy
+```
+
+Supply its passphrase through `MAVEN_GPG_PASSPHRASE` in a private environment.
+
 The profile attaches sources/Javadocs, signs artifacts, and uploads a validated bundle
 using Sonatype's [official publishing plugin](https://central.sonatype.org/publish/publish-portal-maven/).
 It leaves final publishing under the publisher's control (`autoPublish=false`).
@@ -30,7 +46,8 @@ plugin 1.2.1 coordinates resolve from Maven Central in an empty local repository
 ## Gradle Plugin Portal
 
 1. Create or sign in to a [Gradle Plugin Portal account](https://plugins.gradle.org/user/login).
-   Link the JAIPilot organization/account; the Portal may request DNS ownership evidence.
+   Use a JAIPilot-controlled corporate account/email for `com.jaipilot`;
+   the Portal may request DNS ownership evidence for `jaipilot.com`.
 2. Generate publishing API keys and put them in your private `~/.gradle/gradle.properties`
    as instructed by the [Portal publishing guide](https://plugins.gradle.org/docs/publish-plugin).
 3. Publish the shared `com.jaipilot:jaipilot-build-tools-core:1.2.1` to Central first.
