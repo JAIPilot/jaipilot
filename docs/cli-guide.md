@@ -78,7 +78,7 @@ jaipilot run improve_coverage --class com.acme.OrderService --coverage-target 80
 
 These optional flags run fresh tests and verify local JaCoCo XML counters. Existing
 configured minima are retained. Without these flags, existing workflows keep their
-current behavior. For Maven/Gradle build tasks and exported coverage policies, see
+current behavior. For Maven build goals and exported coverage policies, see
 [the build tools guide](build-tools.md).
 
 ## Run an outcome

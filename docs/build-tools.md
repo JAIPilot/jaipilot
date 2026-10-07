@@ -1,6 +1,6 @@
-# Maven and Gradle coverage workflows
+# Maven coverage workflows
 
-JAIPilot 1.2.1 adds optional build tasks that read the evaluated JaCoCo configuration,
+JAIPilot 1.2.1 adds optional Maven goals that read the evaluated JaCoCo configuration,
 run fresh tests, and compare the XML counters with every supported coverage minimum.
 `check` performs local verification without a JAIPilot account or model call. `run`
 uses your signed-in account to generate tests when coverage is below the requirements,
@@ -16,18 +16,8 @@ Line and branch requirements are evaluated separately, without rounding for pass
 
 The Maven adapter, shared core, and parent POM 1.2.1 are published on Maven Central
 under `com.jaipilot`. The Maven commands below resolve directly from Central.
-The `com.jaipilot` Gradle plugin 1.2.1 has been submitted through JAIPilot's corporate
-publisher account and is awaiting the Portal's initial review. Until approved, install
-the Gradle adapter from the JAIPilot source checkout into your local Maven repository:
-
-```sh
-gradle -p build-tools publishToMavenLocal
-```
-
-Building the adapters requires JDK 17 or newer, Maven 3.9, and Gradle 8.14 or newer.
-Consumer Gradle builds must use a supported Gradle JVM (Gradle 9 requires JDK 17+).
-The adapters use native JAIPilot 1.2.1 from PATH or download that exact release with
-checksum verification when an adapter task runs. No Node.js or Deno is required.
+The Maven adapter uses native JAIPilot 1.2.1 from PATH or downloads that exact release with
+checksum verification when an adapter goal runs. No Node.js or Deno is required.
 Use `jaipilot.executable` to select an already installed 1.2.1 executable.
 
 ## Maven
@@ -56,49 +46,6 @@ use the same execution data file. A fresh `clean test` prevents deleted tests or
 old execution data from influencing the result. Existing `verify` gates run after
 the measured targets pass. Existing lifecycle bindings are not modified.
 
-## Gradle
-
-For the initial local installation, add `mavenLocal()` to plugin resolution in
-`settings.gradle`; once the Portal release is available, `gradlePluginPortal()` suffices:
-
-```groovy
-pluginManagement {
-    repositories { mavenLocal(); gradlePluginPortal() }
-}
-```
-
-Apply JAIPilot to a Java module with existing JaCoCo configuration:
-
-```groovy
-plugins {
-    id 'java'
-    id 'jacoco' // retain your project's existing JaCoCo configuration
-    id 'com.jaipilot' version '1.2.1'
-}
-```
-
-```sh
-./gradlew jaipilotCheck -Pjaipilot.coverage.line=80
-jaipilot auth login
-./gradlew jaipilotRun -Pjaipilot.coverage.line=80 -Pjaipilot.coverage.branch=70
-```
-
-Use `gradlew.bat` in PowerShell on Windows. Select a module with
-`:module:jaipilotRun`; select exact classes with
-`-Pjaipilot.coverage.classes=com.acme.OrderService,com.acme.Invoice`.
-Configured `JacocoCoverageVerification` minima are retained. Child builds rerun
-tests and reporting, enable XML for that invocation, and retain init scripts.
-`enableTestCoverage` is forwarded by default for opt-in builds such as Kafka.
-Other necessary project switches can be named with
-`-Pjaipilot.forwardProperties=enableTestCoverage,myBuildSwitch` or configured in
-`jaipilot.forwardProperties`. Choose nonsecret build switches: forwarded values
-appear in the local coverage policy and command diagnostics.
-
-The tasks are explicit and are not attached to `test` or `check`. This first version
-supports the standard Java `test` / `jacocoTestReport` pair, including module tasks.
-It does not support Gradle configuration cache, aggregate reports, Scala scoverage,
-custom test suites, or mismatched report/verification class directories.
-
 ## Native CLI
 
 For single-module Maven projects, a percentage opts into fresh verification:
@@ -109,8 +56,8 @@ jaipilot run improve_coverage --class com.acme.OrderService --coverage-target 80
 ```
 
 Without the new options, existing `run improve_coverage` behavior is preserved.
-Gradle and Maven adapters export a policy to `build/jaipilot/coverage-policy.json`
-or `target/jaipilot/coverage-policy.json`. You can reuse it directly:
+The Maven adapter exports a policy to `target/jaipilot/coverage-policy.json`.
+You can reuse it directly:
 
 ```sh
 jaipilot coverage check --policy target/jaipilot/coverage-policy.json
@@ -127,6 +74,6 @@ the first model call and rejects changes outside the declared test roots.
 Unsupported rule values, missing JaCoCo, missing targets, empty scopes, zero measurable
 counters, missing fresh XML, failing tests, and unmet requirements are blockers.
 Maximum iterations default to 3 (range 1–10); the total timeout defaults to 1,200 seconds
-(range 1–7,200). Configure `jaipilot.maxIterations` / `jaipilot.timeoutSeconds` in Maven,
-or the corresponding Gradle extension properties. Exit 0 means fresh verification
-passed; exit 2 means a valid run was blocked; exit 1 means an invalid request or error.
+(range 1–7,200). Configure `jaipilot.maxIterations` / `jaipilot.timeoutSeconds` in Maven.
+Exit 0 means fresh verification passed; exit 2 means a valid run was blocked;
+exit 1 means an invalid request or error.
