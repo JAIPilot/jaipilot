@@ -6,7 +6,7 @@
   </picture>
 </p>
 
-<h1 align="center">JAIPilot — faster Java testing, stronger coverage, fewer regressions</h1>
+<h1 align="center">JAIPilot — faster Java testing, stronger coverage, fewer bugs</h1>
 
 <p align="center">
   <strong>Make your tests bulletproof.<br>
